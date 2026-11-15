@@ -1,0 +1,163 @@
+<main class="mx-auto flex max-w-6xl flex-col gap-8 p-4 md:p-8">
+  <header class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl leading-8 font-bold">Design system</h1>
+      <p class="text-text-muted">Componenti di Priamus Trips, con i token e gli stili reali.</p>
+    </div>
+    <button type="button" class="pt-btn pt-btn--outline" (click)="toggleTheme()">
+      {{ dark() ? 'Tema chiaro' : 'Tema scuro' }}
+    </button>
+  </header>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-buttons">
+    <h2 id="g-buttons" class="pt-label">Pulsanti</h2>
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" class="pt-btn pt-btn--primary">Prepara fatturazione</button>
+      <button type="button" class="pt-btn">Modifica</button>
+      <button type="button" class="pt-btn pt-btn--outline">Annulla</button>
+      <button type="button" class="pt-btn pt-btn--danger">Disabilita utente</button>
+      <button type="button" class="pt-btn pt-btn--primary" disabled>Applica e calcola</button>
+      <button type="button" class="pt-btn pt-btn--primary pt-btn--sm">Nuovo viaggio</button>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-pills">
+    <h2 id="g-pills" class="pt-label">Pill e contatori</h2>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="pt-pill pt-pill--success">A peso</span>
+      <span class="pt-pill pt-pill--info">Oraria</span>
+      <span class="pt-pill pt-pill--purple">Forfettario</span>
+      <span class="pt-pill pt-pill--warn">Tariffa mancante</span>
+      <span class="pt-pill pt-pill--danger">Disabilitato</span>
+      <span class="pt-pill">Bozza</span>
+      <span class="pt-count">12</span>
+      <span class="pt-count pt-count--primary">3</span>
+      <span class="pt-count pt-count--warn">5</span>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-stats">
+    <h2 id="g-stats" class="pt-label">Stat card</h2>
+    <div class="grid gap-4 sm:grid-cols-3">
+      <div class="pt-card pt-stat">
+        <div>
+          <span class="pt-label">Viaggi</span>
+          <div class="pt-stat__value">124</div>
+        </div>
+      </div>
+      <div class="pt-card pt-stat">
+        <div>
+          <span class="pt-label">Quantità</span>
+          <div class="pt-stat__value">1.842 t</div>
+        </div>
+      </div>
+      <div class="pt-card pt-stat pt-stat--highlight">
+        <div>
+          <span class="pt-label">Da fatturare</span>
+          <div class="pt-stat__value">48.320,00 €</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-filters">
+    <h2 id="g-filters" class="pt-label">Viste salvate e filtri</h2>
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" class="pt-view" aria-pressed="true">
+        Da fatturare <span class="pt-count pt-count--primary">86</span>
+      </button>
+      <button type="button" class="pt-view pt-view--warn" aria-pressed="true">
+        Anomalie <span class="pt-count pt-count--warn">5</span>
+      </button>
+      <button type="button" class="pt-view" aria-pressed="false">Questo mese</button>
+      <button type="button" class="pt-filter__button">
+        <span class="pt-muted">Cliente:</span> Tutti
+      </button>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-fields">
+    <h2 id="g-fields" class="pt-label">Campi</h2>
+    <div class="grid max-w-3xl gap-4 sm:grid-cols-2">
+      <div class="pt-field">
+        <label class="pt-label" for="g-username">Nome utente</label>
+        <input class="pt-input" id="g-username" value="m.rossi" />
+      </div>
+      <div class="pt-field">
+        <label class="pt-label" for="g-rate">Tariffa (€/kg)</label>
+        <input class="pt-input pt-mono" id="g-rate" inputmode="decimal" value="0,10" />
+      </div>
+      <div class="pt-field">
+        <label class="pt-label" for="g-password">Password</label>
+        <input
+          class="pt-input"
+          id="g-password"
+          type="password"
+          value="abc"
+          aria-invalid="true"
+          aria-describedby="g-password-error"
+        />
+        <span class="pt-field__error" id="g-password-error">
+          La password deve contenere tra 8 e 128 caratteri, almeno una lettera, un numero e un
+          carattere speciale.
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-table">
+    <h2 id="g-table" class="pt-label">Tabella</h2>
+    <div class="pt-table-wrap">
+      <table class="pt-table">
+        <thead>
+          <tr>
+            <th scope="col">Viaggio</th>
+            <th scope="col" aria-sort="descending">Data</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Mezzo</th>
+            <th scope="col">Modalità</th>
+            <th scope="col" class="pt-num">Quantità</th>
+            <th scope="col" class="pt-num">Importo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pt-code">T-2026-0412</td>
+            <td>24/04</td>
+            <td>Ecorecuperi Adriatica</td>
+            <td class="pt-code">FX 482 KL</td>
+            <td><span class="pt-pill pt-pill--success">A peso</span></td>
+            <td class="pt-num">18.420 kg</td>
+            <td class="pt-num"><strong>1.842,00 €</strong></td>
+          </tr>
+          <tr class="pt-row--anomaly">
+            <td class="pt-code">T-2026-0411</td>
+            <td>24/04</td>
+            <td>Inerti Val Vibrata</td>
+            <td class="pt-code">GA 117 ZT</td>
+            <td><span class="pt-pill pt-pill--warn">Tariffa mancante</span></td>
+            <td class="pt-num">12.300 kg</td>
+            <td class="pt-num">
+              <button type="button" class="pt-btn pt-btn--outline pt-btn--sm">Risolvi</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="pt-code">T-2026-0410</td>
+            <td>23/04</td>
+            <td>Cementi del Tronto</td>
+            <td class="pt-code">FX 482 KL</td>
+            <td><span class="pt-pill pt-pill--info">Oraria</span></td>
+            <td class="pt-num">6,5 h</td>
+            <td class="pt-num"><strong>455,00 €</strong></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6"><span class="pt-label">Totale selezione · 3 viaggi</span></td>
+            <td class="pt-num">2.297,00 €</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+</main>

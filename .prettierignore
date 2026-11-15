@@ -1,0 +1,4 @@
+src/app/core/api/generated/
+openapi/
+src/styles/tokens.css
+src/styles/theme.css

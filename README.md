@@ -1,59 +1,49 @@
-# PriamusTripsFrontend
+# Priamus Trips — Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.4.
+Frontend of **Priamus Trips**: one Angular application with two areas, the back-office for the secretariat and the driver app. It talks to the backend only through its OpenAPI contract.
 
-## Development server
+## Repository structure
 
-To start a local development server, run:
-
-```bash
-ng serve
+```
+priamus-trips-frontend/
+├── CLAUDE.md               Instructions for Claude Code
+├── UX-CONTEXT.md           UX conventions, binding for every screen
+├── design-system/
+│   └── tokens.json         The design tokens (colours per theme, type, spacing, radii, shadow)
+├── docs/backlog.md         Work deferred on purpose
+├── openapi/v1.json         Snapshot of the backend contract (added with the first API slice)
+├── scripts/                tokens.mjs, api-snapshot.mjs, api-types.mjs
+└── src/
+    ├── styles.css          Tailwind, tokens, Tailwind theme mapping, component styles
+    ├── styles/             tokens.css and theme.css (generated), components.css
+    └── app/                core/, features/, shared/
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Prerequisites
 
-## Code scaffolding
+- Node.js 24 and npm 11
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Quick start
 
 ```bash
-ng generate --help
+npm install
+npm start
 ```
 
-## Building
+The application opens on `http://localhost:4200`. Until the first product screen exists, the root shows the design system gallery (`/design-system`).
 
-To build the project run:
+## Checks
 
 ```bash
-ng build
+npm run lint
+npm test
+npm run build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Design system
 
-## Running unit tests
+Change a token in `design-system/tokens.json`, then run `npm run tokens`. Component styles are the `pt-` classes of `src/styles/components.css`. The browsable reference, with guidelines per component, is published separately; its link is in `CLAUDE.md`.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## License
 
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Proprietary. © Fixato di Scotucci Michele
