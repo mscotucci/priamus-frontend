@@ -13,7 +13,6 @@ Work deferred on purpose, with the decision that deferred it. Items leave this f
 
 - **Fonts load from Google Fonts** (`index.html`). The driver app is meant to be installed and used on the road: self-host Manrope and JetBrains Mono before it ships.
 - **Driver components are missing.** The driver mockup's sources were not available; only its typefaces and ground were. Touch-sized components are designed with the first driver slice.
-- **Icons are not in the repository.** The set drawn in the mockups is described in the design system; the shared icon component and its SVGs arrive with the shell.
-- **Overlay components are styles only.** Drawer, dialog and the filter menu have their `pt-` classes, not their behaviour (focus handling, Escape, click outside); the Angular components wrapping them arrive with the first screen that opens one.
+- **Overlay components have styles, not behaviour.** Drawer, dialog, the filter menu, the toast region and the paging control have their `pt-` classes and gallery sections, not their behaviour (focus handling, Escape, click outside, dismissal of a toast, page changes); the Angular components wrapping them arrive with the first screen that opens one.
 - **The contract editor's components** (stepper, select, long form) exist only in an older mockup built on another library; they are redesigned when that screen is reached.
-- **Tokens live in two places**: `design-system/tokens.json` here and the published reference. A change goes to both; nothing checks it.
+- **Small muted text is not a token.** Screens and the gallery size small muted text with the Tailwind utility `text-xs`, a default (12/16, equal to the `small` style today) and not a token. To be decided with the first screens: a small muted text class, or the text styles mapped into the Tailwind theme.

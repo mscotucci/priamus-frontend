@@ -1,10 +1,18 @@
 /* Priamus Trips design system: component styles. Every value comes from a token of tokens.css.
    A component's look is decided here, in one place; screens lay components out, they do not restyle them. */
 
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+}
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
 .pt-root {
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
   font-weight: 500;
   color: var(--text);
   background: var(--bg);
@@ -23,8 +31,8 @@
   color: var(--text-muted);
 }
 .pt-icon {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-md);
+  height: var(--icon-md);
   flex: none;
   fill: none;
   stroke: currentColor;
@@ -33,49 +41,86 @@
   stroke-linejoin: round;
 }
 .pt-icon--lg {
-  width: 20px;
-  height: 20px;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
 }
 .pt-icon--sm {
-  width: 14px;
-  height: 14px;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 .pt-icon--xs {
-  width: 12px;
-  height: 12px;
+  width: var(--icon-xs);
+  height: var(--icon-xs);
 }
 
 .pt-root :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+/* Fields show one ring flush with the border instead: the longer selectors win by specificity. */
+.pt-root .pt-input:focus-visible {
+  border-color: var(--primary);
+  outline: 1px solid var(--primary);
+  outline-offset: 0;
+}
+.pt-root .pt-search input:focus-visible {
+  outline: none;
+}
 
 /* Label above a value */
 .pt-label {
   display: block;
-  font-size: 10px;
-  line-height: 16px;
+  font-size: var(--text-label-caps-size);
+  line-height: var(--text-label-caps-line);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-/* Button */
+/* Button: the height comes from the size, the text from the mapped text style */
 .pt-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-1-5);
-  padding: var(--space-2-5) var(--space-4);
+  height: var(--control-md);
+  padding: 0 var(--space-4);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   font: inherit;
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   background: var(--surface-alt);
   color: var(--text);
 }
+.pt-btn--sm {
+  height: var(--control-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
+}
+.pt-btn--lg {
+  height: var(--control-lg);
+  padding: 0 var(--space-5);
+  font-size: var(--text-card-title-size);
+  line-height: var(--text-card-title-line);
+}
+.pt-btn--icon {
+  width: var(--control-md);
+  padding: 0;
+  color: var(--text-muted);
+}
+.pt-btn--icon.pt-btn--sm {
+  width: var(--control-sm);
+}
+.pt-btn--icon.pt-btn--lg {
+  width: var(--control-lg);
+}
+/* The colour looks come after .pt-btn--icon, so that an icon button keeps the colour of its look */
 .pt-btn--primary {
   background: var(--primary);
   color: var(--on-primary);
@@ -87,20 +132,13 @@
   background: var(--surface);
   border-color: var(--border);
 }
+.pt-btn--warn {
+  background: var(--warn);
+  color: var(--on-warn);
+}
 .pt-btn--danger {
   background: var(--danger-soft);
   color: var(--danger);
-}
-.pt-btn--sm {
-  padding: var(--space-1-5) var(--space-3);
-  font-size: 12px;
-  line-height: 16px;
-}
-.pt-btn--icon {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  color: var(--text-muted);
 }
 .pt-btn:disabled {
   opacity: 0.5;
@@ -114,8 +152,8 @@
   gap: var(--space-1);
   padding: 2px var(--space-2);
   border-radius: var(--radius-sm);
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line);
   font-weight: 600;
   white-space: nowrap;
   background: var(--surface-alt);
@@ -146,8 +184,8 @@
 .pt-count {
   padding: 2px var(--space-1-5);
   border-radius: var(--radius-sm);
-  font-size: 10px;
-  line-height: 12px;
+  font-size: var(--text-label-caps-size);
+  line-height: calc(var(--text-label-caps-line) - var(--space-1));
   font-weight: 700;
   background: var(--surface-alt);
   color: var(--text-muted);
@@ -162,19 +200,12 @@
 }
 
 /* Navigation item */
-.pt-nav {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-}
 .pt-nav-item {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-2-5) 14px;
+  height: var(--control-md);
+  padding: 0 var(--space-4);
   border-radius: var(--radius-lg);
   color: var(--text-muted);
   text-decoration: none;
@@ -208,20 +239,9 @@
   margin-top: var(--space-1-5);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 24px;
-  line-height: 32px;
-  font-weight: 700;
-}
-.pt-stat__tile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  flex: none;
-  border-radius: var(--radius-lg);
-  background: var(--primary-soft);
-  color: var(--primary);
+  font-size: var(--text-figure-size);
+  line-height: var(--text-figure-line);
+  font-weight: var(--text-figure-weight);
 }
 .pt-stat--highlight {
   background: var(--primary-soft);
@@ -231,7 +251,7 @@
 .pt-stat--highlight .pt-stat__value {
   color: var(--primary);
 }
-.pt-stat--highlight .pt-stat__tile {
+.pt-stat--highlight .pt-tile {
   background: var(--primary);
   color: var(--on-primary);
 }
@@ -247,8 +267,8 @@
   background: var(--surface);
   color: var(--text-muted);
   font: inherit;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
   font-weight: 600;
   cursor: pointer;
 }
@@ -272,14 +292,15 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1-5);
-  padding: var(--space-1-5) var(--space-3);
+  height: var(--control-sm);
+  padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
   font-weight: 600;
   cursor: pointer;
 }
@@ -295,9 +316,11 @@
   box-shadow: var(--shadow-popover);
 }
 .pt-menu__item {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
-  padding: var(--space-2) var(--space-3);
+  height: var(--control-md);
+  padding: 0 var(--space-3);
   border: 0;
   background: none;
   color: var(--text);
@@ -318,14 +341,25 @@
 }
 .pt-input {
   width: 100%;
-  padding: var(--space-2-5) var(--space-3);
+  height: var(--control-md);
+  padding: 0 var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface-alt);
   color: var(--text);
   font: inherit;
-  font-size: 16px;
-  line-height: 24px;
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+}
+.pt-input--sm {
+  height: var(--control-sm);
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
+}
+.pt-input--lg {
+  height: var(--control-lg);
+  font-size: var(--text-card-title-size);
+  line-height: var(--text-card-title-line);
 }
 .pt-input::placeholder {
   color: var(--text-subtle);
@@ -333,20 +367,340 @@
 .pt-input[aria-invalid='true'] {
   border-color: var(--danger);
 }
+.pt-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+textarea.pt-input {
+  height: auto;
+  min-height: calc(var(--text-body-line) * 3 + var(--space-2) * 2);
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+.pt-field__hint {
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
+  color: var(--text-muted);
+}
 .pt-field__error {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
   font-weight: 600;
   color: var(--danger);
 }
 
-/* Notice */
-.pt-notice {
-  padding: var(--space-3);
+/* Select: the native element made customisable by the browser; its open list looks like .pt-menu */
+select.pt-input,
+select.pt-input::picker(select) {
+  appearance: base-select;
+}
+select.pt-input {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+select.pt-input::picker-icon {
+  content: '';
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+  background: var(--text-muted);
+  mask: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22m6 9 6 6 6-6%22/></svg>')
+    center / contain no-repeat;
+}
+select.pt-input::picker(select) {
+  margin-top: var(--space-1);
+  padding: var(--space-1-5);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-popover);
+}
+select.pt-input option {
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+  cursor: pointer;
+}
+select.pt-input option::checkmark {
+  display: none;
+}
+select.pt-input option:hover,
+select.pt-input option:focus-visible {
+  background: var(--surface-alt);
+  outline: none;
+}
+select.pt-input option:checked {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Search field: an input with its icon inside; the ring is on the container */
+.pt-search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: var(--control-md);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+}
+.pt-search--sm {
+  height: var(--control-sm);
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
+}
+.pt-search--lg {
+  height: var(--control-lg);
+  font-size: var(--text-card-title-size);
+  line-height: var(--text-card-title-line);
+}
+.pt-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.pt-search:focus-within {
+  border-color: var(--primary);
+  outline: 1px solid var(--primary);
+  outline-offset: 0;
+}
+
+/* Checkbox: the native control in the primary colour */
+.pt-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+.pt-check input {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+/* Notice: neutral by default, an optional action on the right; every notice is as high as one holding a small button */
+.pt-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: calc(var(--control-sm) + var(--space-2) * 2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--surface-alt);
+  color: var(--text);
+  font-weight: 600;
+}
+.pt-notice--info {
+  background: var(--info-soft);
+  color: var(--info);
+}
+.pt-notice--success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.pt-notice--warn {
   background: var(--warn-soft);
   color: var(--warn);
+}
+.pt-notice--danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Tile: the square that carries an icon (brand, dialog head, stat card, empty block) */
+.pt-tile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tile-md);
+  height: var(--tile-md);
+  border-radius: var(--radius-lg);
+  background: var(--surface-alt);
+  color: var(--text-muted);
+}
+.pt-tile--lg {
+  width: var(--tile-lg);
+  height: var(--tile-lg);
+}
+.pt-tile--primary {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.pt-tile--success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.pt-tile--warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.pt-tile--danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Avatar: initials on a circle */
+.pt-avatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-md);
+  height: var(--control-md);
+  border-radius: var(--radius-full);
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
   font-weight: 600;
+}
+
+/* Toast: the one floating message; its region sits at the bottom right, across the width under 640px */
+.pt-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-popover);
+  font-weight: 600;
+}
+.pt-toast .pt-icon {
+  color: var(--success);
+}
+.pt-toast-region {
+  position: fixed;
+  right: var(--space-8);
+  bottom: var(--space-8);
+}
+@media (max-width: 639px) {
+  .pt-toast-region {
+    right: var(--space-4);
+    bottom: var(--space-4);
+    left: var(--space-4);
+  }
+  .pt-toast-region .pt-toast {
+    display: flex;
+  }
+}
+
+/* Loading indicator */
+.pt-spinner {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  flex: none;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--primary);
+  border-radius: var(--radius-full);
+  animation: pt-spin 0.8s linear infinite;
+}
+@keyframes pt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pt-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* Empty block */
+.pt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8);
+  text-align: center;
+}
+
+/* Paging control, in a table footer */
+.pt-paging {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Shell pieces: brand block, group label of the navigation, top bar */
+.pt-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pt-brand__name {
+  font-weight: 700;
+  line-height: 1.25;
+}
+.pt-brand__line {
+  font-size: var(--text-small-size);
+  line-height: 1.25;
+  color: var(--text-muted);
+}
+/* Caption text style in capitals: group label of the navigation, table header, eyebrow */
+.pt-nav__group,
+.pt-eyebrow,
+.pt-table thead th {
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.pt-nav__group {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  color: var(--text-subtle);
+}
+.pt-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-8);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.pt-topbar__heading {
+  min-width: 0;
+  flex: 1;
+}
+.pt-topbar__title {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-page-title-size);
+  line-height: var(--text-page-title-line);
+  font-weight: var(--text-page-title-weight);
+  letter-spacing: -0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pt-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+@media (max-width: 639px) {
+  .pt-topbar {
+    padding: var(--space-3) var(--space-4);
+  }
 }
 
 /* Data table */
@@ -367,11 +721,6 @@
   white-space: nowrap;
 }
 .pt-table thead th {
-  font-size: 11px;
-  line-height: 16px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
   color: var(--text-muted);
   background: var(--surface-alt);
 }
@@ -393,6 +742,9 @@
   background: var(--surface-alt);
   font-weight: 700;
 }
+.pt-table tfoot td:has(.pt-paging) {
+  text-align: right;
+}
 .pt-table .pt-num {
   text-align: right;
   font-family: var(--font-mono);
@@ -400,8 +752,8 @@
 }
 .pt-table .pt-code {
   font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 16px;
+  font-size: var(--text-data-small-size);
+  line-height: var(--text-data-small-line);
 }
 
 /* Drawer and dialog */
@@ -439,17 +791,12 @@
   padding: var(--space-6);
 }
 .pt-eyebrow {
-  font-size: 11px;
-  line-height: 16px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
   color: var(--text-subtle);
 }
 .pt-title {
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 700;
+  font-size: var(--text-card-title-size);
+  line-height: var(--text-card-title-line);
+  font-weight: var(--text-card-title-weight);
 }
 .pt-calc {
   padding: var(--space-4);
@@ -466,16 +813,15 @@
   margin-top: var(--space-2);
 }
 .pt-calc__rule {
-  height: 1px;
   margin: var(--space-3) 0;
-  background: var(--border);
+  border-top: 1px solid var(--border);
 }
 .pt-amount {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 20px;
-  line-height: 28px;
-  font-weight: 700;
+  font-size: var(--text-amount-size);
+  line-height: var(--text-amount-line);
+  font-weight: var(--text-amount-weight);
   color: var(--primary);
 }
 .pt-dialog {
@@ -490,17 +836,6 @@
   align-items: center;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
-}
-.pt-dialog__tile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  flex: none;
-  border-radius: var(--radius-lg);
-  background: var(--warn-soft);
-  color: var(--warn);
 }
 .pt-dialog__actions {
   display: flex;
@@ -539,8 +874,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
   flex: none;
   margin-top: 2px;
   border-radius: var(--radius-full);
@@ -552,7 +887,7 @@
   color: var(--warn);
 }
 .pt-timeline__meta {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
   color: var(--text-muted);
 }

@@ -9,6 +9,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "tokens": "node scripts/tokens.mjs",
+    "ds:check": "node scripts/check-design-system.mjs",
+    "ds:reference": "npm run build && node scripts/reference.mjs",
     "api:snapshot": "node scripts/api-snapshot.mjs",
     "api:types": "node scripts/api-types.mjs"
   },

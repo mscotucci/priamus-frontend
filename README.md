@@ -38,11 +38,12 @@ The application opens on `http://localhost:4200`. Until the first product screen
 npm run lint
 npm test
 npm run build
+npm run ds:check
 ```
 
 ## Design system
 
-Change a token in `design-system/tokens.json`, then run `npm run tokens`. Component styles are the `pt-` classes of `src/styles/components.css`. The browsable reference, with guidelines per component, is published separately; its link is in `CLAUDE.md`.
+Change a token in `design-system/tokens.json`, then run `npm run tokens`. Component styles are the `pt-` classes of `src/styles/components.css`. The repository is the only source of the design system: the browsable reference is generated from it (tokens, component styles, gallery) with `npm run ds:reference`, which writes `dist/design-system-reference.html`, and is published from there; its link is in `CLAUDE.md`. The published page is never edited by hand. `npm run ds:check` verifies the rules that can be read from the files.
 
 ## License
 

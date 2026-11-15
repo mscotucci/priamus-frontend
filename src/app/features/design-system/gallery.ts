@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { Icon } from '../../shared/components/icon/icon';
 
 /**
  * Developer page that renders the design system's components with the real tokens and styles,
@@ -7,6 +8,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
  */
 @Component({
   selector: 'app-gallery',
+  imports: [Icon],
   templateUrl: './gallery.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

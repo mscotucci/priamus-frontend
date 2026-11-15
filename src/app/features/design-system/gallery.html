@@ -9,15 +9,81 @@
     </button>
   </header>
 
-  <section class="flex flex-col gap-3" aria-labelledby="g-buttons">
-    <h2 id="g-buttons" class="pt-label">Pulsanti</h2>
+  <section class="flex flex-col gap-3" aria-labelledby="g-icons">
+    <h2 id="g-icons" class="pt-label">Icone</h2>
+    <div class="flex flex-wrap gap-4">
+      <div class="flex flex-col items-center gap-1"><app-icon name="truck" size="lg" /><span class="pt-muted">truck</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="user" size="lg" /><span class="pt-muted">user</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="user-plus" size="lg" /><span class="pt-muted">user-plus</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="user-x" size="lg" /><span class="pt-muted">user-x</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="sign-out" size="lg" /><span class="pt-muted">sign-out</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="menu" size="lg" /><span class="pt-muted">menu</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="close" size="lg" /><span class="pt-muted">close</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="search" size="lg" /><span class="pt-muted">search</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="chevron" size="lg" /><span class="pt-muted">chevron</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="check" size="lg" /><span class="pt-muted">check</span></div>
+      <div class="flex flex-col items-center gap-1"><app-icon name="alert" size="lg" /><span class="pt-muted">alert</span></div>
+    </div>
+    <div class="flex flex-wrap items-center gap-4">
+      <app-icon name="truck" size="xs" />
+      <app-icon name="truck" size="sm" />
+      <app-icon name="truck" size="md" />
+      <app-icon name="truck" size="lg" />
+    </div>
+    <div class="flex flex-wrap items-center gap-4">
+      <svg class="pt-icon pt-icon--xs" aria-hidden="true"><use href="icons.svg#truck" /></svg>
+      <svg class="pt-icon pt-icon--sm" aria-hidden="true"><use href="icons.svg#truck" /></svg>
+      <svg class="pt-icon" aria-hidden="true"><use href="icons.svg#truck" /></svg>
+      <svg class="pt-icon pt-icon--lg" aria-hidden="true"><use href="icons.svg#truck" /></svg>
+      <span class="pt-muted">Classi dell'icona: pt-icon, --xs, --sm, --lg</span>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-sizes">
+    <h2 id="g-sizes" class="pt-label">Taglie — sm 30 px · md 36 px (default) · lg 44 px (tocco)</h2>
     <div class="flex flex-wrap items-center gap-2">
-      <button type="button" class="pt-btn pt-btn--primary">Prepara fatturazione</button>
-      <button type="button" class="pt-btn">Modifica</button>
-      <button type="button" class="pt-btn pt-btn--outline">Annulla</button>
-      <button type="button" class="pt-btn pt-btn--danger">Disabilita utente</button>
-      <button type="button" class="pt-btn pt-btn--primary" disabled>Applica e calcola</button>
-      <button type="button" class="pt-btn pt-btn--primary pt-btn--sm">Nuovo viaggio</button>
+      <span class="pt-muted w-10">sm</span>
+      <button type="button" class="pt-btn pt-btn--primary pt-btn--sm">Pulsante</button>
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm">Pulsante</button>
+      <button type="button" class="pt-btn pt-btn--icon pt-btn--sm" aria-label="Chiudi"><app-icon name="close" size="sm" /></button>
+      <input class="pt-input pt-input--sm w-40!" value="Campo" aria-label="Campo" />
+      <select class="pt-input pt-input--sm w-40!" aria-label="Select"><option>Select</option></select>
+      <label class="pt-search pt-search--sm"><app-icon name="search" size="sm" /><input placeholder="Cerca…" aria-label="Cerca" /></label>
+      <button type="button" class="pt-filter__button">
+        <span class="pt-muted">Filtro:</span> tutti <app-icon name="chevron" size="xs" />
+      </button>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="pt-muted w-10">md</span>
+      <button type="button" class="pt-btn pt-btn--primary">Pulsante</button>
+      <button type="button" class="pt-btn pt-btn--outline">Pulsante</button>
+      <button type="button" class="pt-btn pt-btn--icon" aria-label="Chiudi"><app-icon name="close" /></button>
+      <input class="pt-input w-40!" value="Campo" aria-label="Campo" />
+      <select class="pt-input w-40!" aria-label="Select"><option>Select</option></select>
+      <label class="pt-search"><app-icon name="search" /><input placeholder="Cerca…" aria-label="Cerca" /></label>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="pt-muted w-10">lg</span>
+      <button type="button" class="pt-btn pt-btn--primary pt-btn--lg">Pulsante</button>
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--lg">Pulsante</button>
+      <button type="button" class="pt-btn pt-btn--icon pt-btn--lg" aria-label="Chiudi"><app-icon name="close" size="lg" /></button>
+      <input class="pt-input pt-input--lg w-40!" value="Campo" aria-label="Campo" />
+      <select class="pt-input pt-input--lg w-40!" aria-label="Select"><option>Select</option></select>
+      <label class="pt-search pt-search--lg"><app-icon name="search" size="lg" /><input placeholder="Cerca…" aria-label="Cerca" /></label>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-buttons">
+    <h2 id="g-buttons" class="pt-label">Pulsanti — colori</h2>
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" class="pt-btn">Neutro</button>
+      <button type="button" class="pt-btn pt-btn--outline">Contorno</button>
+      <button type="button" class="pt-btn pt-btn--primary">Primario</button>
+      <button type="button" class="pt-btn pt-btn--warn">Attenzione</button>
+      <button type="button" class="pt-btn pt-btn--danger">Pericolo</button>
+      <button type="button" class="pt-btn pt-btn--icon pt-btn--primary" aria-label="Aggiungi utente"><app-icon name="user-plus" /></button>
+      <button type="button" class="pt-btn pt-btn--icon pt-btn--danger" aria-label="Chiudi"><app-icon name="close" /></button>
+      <button type="button" class="pt-btn pt-btn--primary" disabled>Disabilitato</button>
     </div>
   </section>
 
@@ -44,18 +110,21 @@
           <span class="pt-label">Viaggi</span>
           <div class="pt-stat__value">124</div>
         </div>
+        <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
       </div>
       <div class="pt-card pt-stat">
         <div>
           <span class="pt-label">Quantità</span>
           <div class="pt-stat__value">1.842 t</div>
         </div>
+        <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
       </div>
       <div class="pt-card pt-stat pt-stat--highlight">
         <div>
           <span class="pt-label">Da fatturare</span>
           <div class="pt-stat__value">48.320,00 €</div>
         </div>
+        <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
       </div>
     </div>
   </section>
@@ -77,31 +146,56 @@
   </section>
 
   <section class="flex flex-col gap-3" aria-labelledby="g-fields">
-    <h2 id="g-fields" class="pt-label">Campi</h2>
+    <h2 id="g-fields" class="pt-label">Campo — etichetta, riga di aiuto, errore</h2>
     <div class="grid max-w-3xl gap-4 sm:grid-cols-2">
       <div class="pt-field">
         <label class="pt-label" for="g-username">Nome utente</label>
-        <input class="pt-input" id="g-username" value="m.rossi" />
-      </div>
-      <div class="pt-field">
-        <label class="pt-label" for="g-rate">Tariffa (€/kg)</label>
-        <input class="pt-input pt-mono" id="g-rate" inputmode="decimal" value="0,10" />
+        <input class="pt-input" id="g-username" value="m.rossi" aria-describedby="g-username-hint" />
+        <span class="pt-field__hint" id="g-username-hint">Da 3 a 64 caratteri: lettere minuscole, cifre, punto, trattino.</span>
       </div>
       <div class="pt-field">
         <label class="pt-label" for="g-password">Password</label>
-        <input
-          class="pt-input"
-          id="g-password"
-          type="password"
-          value="abc"
-          aria-invalid="true"
-          aria-describedby="g-password-error"
-        />
+        <div class="flex gap-2">
+          <input
+            class="pt-input"
+            id="g-password"
+            type="password"
+            value="abc"
+            aria-invalid="true"
+            aria-describedby="g-password-error"
+          />
+          <button type="button" class="pt-btn pt-btn--outline">Mostra</button>
+        </div>
         <span class="pt-field__error" id="g-password-error">
-          La password deve contenere tra 8 e 128 caratteri, almeno una lettera, un numero e un
-          carattere speciale.
+          La password deve contenere tra 8 e 128 caratteri.
         </span>
       </div>
+      <div class="pt-field">
+        <label class="pt-label" for="g-role">Ruolo</label>
+        <select class="pt-input" id="g-role">
+          <option value="">Scegli un ruolo</option>
+          <option>Amministratore</option>
+          <option selected>Segreteria</option>
+          <option>Autista</option>
+        </select>
+      </div>
+      <div class="pt-field">
+        <label class="pt-label" for="g-disabled">Campo disabilitato</label>
+        <input class="pt-input" id="g-disabled" value="non modificabile" disabled />
+      </div>
+      <div class="pt-field sm:col-span-2">
+        <label class="pt-label" for="g-notes">Note</label>
+        <textarea class="pt-input" id="g-notes">Consegna al cancello 2, chiedere del capocantiere.</textarea>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-check">
+    <h2 id="g-check" class="pt-label">Casella di spunta</h2>
+    <div class="flex flex-wrap items-center gap-6">
+      <label class="pt-check"><input type="checkbox" checked /> Selezionata</label>
+      <label class="pt-check"><input type="checkbox" /> Non selezionata</label>
+      <label class="pt-check"><input type="checkbox" disabled /> Disabilitata</label>
     </div>
   </section>
 
@@ -158,6 +252,249 @@
           </tr>
         </tfoot>
       </table>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-notice">
+    <h2 id="g-notice" class="pt-label">Avviso — neutro e quattro colori, con azione facoltativa</h2>
+    <div class="flex max-w-3xl flex-col gap-2">
+      <div class="pt-notice">Le modifiche valgono dal prossimo accesso.</div>
+      <div class="pt-notice pt-notice--info">L'app autisti non è ancora disponibile.</div>
+      <div class="pt-notice pt-notice--success">Tutte le anomalie del mese sono risolte.</div>
+      <div class="pt-notice pt-notice--warn" role="alert">
+        <span>2 viaggi hanno tariffa mancante.</span>
+        <button type="button" class="pt-btn pt-btn--warn pt-btn--sm">Mostra anomalie</button>
+      </div>
+      <div class="pt-notice pt-notice--danger" role="alert">
+        <span>Si è verificato un errore. Riprova tra poco.</span>
+        <button type="button" class="pt-btn pt-btn--outline pt-btn--sm">Riprova</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-toast">
+    <h2 id="g-toast" class="pt-label">Messaggio a scomparsa — in basso a destra, 4 secondi, uno alla volta</h2>
+    <div class="flex">
+      <div class="pt-toast" role="status"><app-icon name="check" />Utente a.rossetti disabilitato</div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-loading">
+    <h2 id="g-loading" class="pt-label">Caricamento — al posto del contenuto</h2>
+    <div class="pt-card flex h-32 max-w-3xl items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span><span class="pt-muted">Caricamento…</span>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-tile">
+    <h2 id="g-tile" class="pt-label">Riquadro con icona — due taglie, colori</h2>
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="pt-tile"><app-icon name="truck" size="lg" /></div>
+      <div class="pt-tile pt-tile--primary"><app-icon name="user-plus" size="lg" /></div>
+      <div class="pt-tile pt-tile--success"><app-icon name="check" size="lg" /></div>
+      <div class="pt-tile pt-tile--warn"><app-icon name="alert" size="lg" /></div>
+      <div class="pt-tile pt-tile--danger"><app-icon name="user-x" size="lg" /></div>
+      <div class="pt-tile pt-tile--lg pt-tile--primary"><app-icon name="truck" size="lg" /></div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-identity">
+    <h2 id="g-identity" class="pt-label">Marchio e utente</h2>
+    <div class="flex flex-wrap items-center gap-10">
+      <div class="pt-brand">
+        <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
+        <div>
+          <p class="pt-brand__name">Priamus</p>
+          <p class="pt-brand__line">Gestione Viaggi</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="pt-avatar">MR</div>
+        <div>
+          <p>m.rossi</p>
+          <p class="pt-muted text-xs">Segreteria</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-empty">
+    <h2 id="g-empty" class="pt-label">Blocco vuoto</h2>
+    <div class="pt-card pt-empty max-w-3xl">
+      <div class="pt-tile pt-tile--lg pt-tile--primary"><app-icon name="truck" size="lg" /></div>
+      <p class="pt-title">Nessun utente trovato</p>
+      <p class="pt-muted">Prova a cambiare la ricerca o i filtri.</p>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-paging">
+    <h2 id="g-paging" class="pt-label">Paginazione — nel piede della tabella</h2>
+    <div class="pt-table-wrap max-w-3xl">
+      <table class="pt-table">
+        <tfoot>
+          <tr>
+            <td><span class="pt-label">Utenti 21–23 di 23</span></td>
+            <td>
+              <span class="pt-paging">
+                <button type="button" class="pt-btn pt-btn--outline pt-btn--sm">Precedente</button>
+                <span class="pt-muted">Pagina 2 di 2</span>
+                <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" disabled>Successiva</button>
+              </span>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-shell">
+    <h2 id="g-shell" class="pt-label">Barra superiore e navigazione</h2>
+    <div class="flex h-80 overflow-hidden border border-[var(--border)]">
+      <aside class="flex w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
+        <div class="border-b border-[var(--border)] p-5">
+          <div class="pt-brand">
+            <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
+            <div class="min-w-0">
+              <p class="pt-brand__name">Priamus</p>
+              <p class="pt-brand__line">Gestione Viaggi</p>
+            </div>
+          </div>
+        </div>
+        <nav class="flex flex-1 flex-col gap-1 p-3" aria-label="Navigazione di esempio">
+          <p class="pt-nav__group">Sistema</p>
+          <a class="pt-nav-item" aria-current="page" href="#"><app-icon name="user" size="lg" />Utenti</a>
+          <a class="pt-nav-item" href="#"><app-icon name="truck" size="lg" />Viaggi</a>
+        </nav>
+        <div class="flex items-center gap-3 border-t border-[var(--border)] p-4">
+          <div class="pt-avatar">AD</div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate">admin</p>
+            <p class="pt-muted truncate text-xs">Amministratore</p>
+          </div>
+          <button type="button" class="pt-btn pt-btn--icon" aria-label="Esci" title="Esci">
+            <app-icon name="sign-out" />
+          </button>
+        </div>
+      </aside>
+      <div class="flex min-w-0 flex-1 flex-col">
+        <header class="pt-topbar">
+          <div class="pt-topbar__heading">
+            <p class="pt-eyebrow">Sistema · Utenti</p>
+            <p class="pt-topbar__title">Utenti</p>
+          </div>
+          <div class="pt-topbar__actions">
+            <button type="button" class="pt-btn pt-btn--primary">Nuovo utente</button>
+          </div>
+        </header>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-nav">
+    <h2 id="g-nav" class="pt-label">Elemento di navigazione — normale, corrente, con contatore</h2>
+    <nav class="flex w-64 flex-col gap-1 border border-[var(--border)] p-3" aria-label="Stati della navigazione">
+      <a class="pt-nav-item" aria-current="page" href="#"><app-icon name="user" size="lg" />Utenti</a>
+      <a class="pt-nav-item" href="#"><app-icon name="truck" size="lg" />Viaggi</a>
+      <a class="pt-nav-item" href="#">
+        <app-icon name="menu" size="lg" />Anomalie <span class="pt-count pt-count--warn">5</span>
+      </a>
+    </nav>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-menu">
+    <h2 id="g-menu" class="pt-label">Menu — aperto, con una voce selezionata</h2>
+    <div class="pt-filter">
+      <button type="button" class="pt-filter__button" aria-expanded="true">
+        <span class="pt-muted">Ruolo:</span> Segreteria <app-icon name="chevron" size="xs" />
+      </button>
+      <div class="pt-menu mt-1" role="listbox" aria-label="Ruolo">
+        <button type="button" class="pt-menu__item" role="option" aria-selected="false">Tutti</button>
+        <button type="button" class="pt-menu__item" role="option" aria-selected="true">Segreteria</button>
+        <button type="button" class="pt-menu__item" role="option" aria-selected="false">Autista</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-dialog">
+    <h2 id="g-dialog" class="pt-label">Finestra di dialogo — riquadro primario e pericolo, sul velo</h2>
+    <div class="pt-scrim flex flex-wrap justify-center gap-6 p-8">
+      <div class="pt-dialog" role="dialog" aria-labelledby="g-dialog-t1">
+        <div class="pt-dialog__head">
+          <div class="pt-tile pt-tile--primary"><app-icon name="user-plus" size="lg" /></div>
+          <div>
+            <p class="pt-title" id="g-dialog-t1">Nuovo utente</p>
+            <p class="pt-muted text-xs">Segreteria</p>
+          </div>
+        </div>
+        <p>L'utente potrà accedere con la password temporanea.</p>
+        <div class="pt-dialog__actions">
+          <button type="button" class="pt-btn pt-btn--outline">Annulla</button>
+          <button type="button" class="pt-btn pt-btn--primary">Crea</button>
+        </div>
+      </div>
+      <div class="pt-dialog" role="alertdialog" aria-labelledby="g-dialog-t2">
+        <div class="pt-dialog__head">
+          <div class="pt-tile pt-tile--danger"><app-icon name="user-x" size="lg" /></div>
+          <div>
+            <p class="pt-title" id="g-dialog-t2">Disabilitare a.rossetti?</p>
+            <p class="pt-muted text-xs">Autista</p>
+          </div>
+        </div>
+        <p>Non potrà più accedere. Potrai riattivarlo in ogni momento.</p>
+        <div class="pt-dialog__actions">
+          <button type="button" class="pt-btn pt-btn--outline">Annulla</button>
+          <button type="button" class="pt-btn pt-btn--danger">Disabilita</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-drawer">
+    <h2 id="g-drawer" class="pt-label">Pannello laterale — testata, corpo, azioni</h2>
+    <div class="pt-scrim flex justify-end">
+      <div class="pt-drawer" role="dialog" aria-labelledby="g-drawer-t">
+        <div class="pt-drawer__head">
+          <div>
+            <p class="pt-eyebrow">Viaggio T-2026-0411</p>
+            <p class="pt-title" id="g-drawer-t">Risolvi anomalia tariffa</p>
+          </div>
+          <button type="button" class="pt-btn pt-btn--icon" aria-label="Chiudi"><app-icon name="close" /></button>
+        </div>
+        <div class="pt-drawer__body">
+          <div class="pt-field">
+            <label class="pt-label" for="g-drawer-rate">Tariffa</label>
+            <input class="pt-input pt-mono" id="g-drawer-rate" value="18,50" />
+          </div>
+          <div class="pt-calc">
+            <div class="pt-calc__row"><span class="pt-muted">Quantità</span><span class="pt-mono">12.300 kg</span></div>
+            <div class="pt-calc__row"><span class="pt-muted">Tariffa</span><span class="pt-mono">18,50 € / t</span></div>
+            <div class="pt-calc__rule"></div>
+            <div class="pt-calc__row"><span class="pt-label">Importo</span><span class="pt-amount">227,55 €</span></div>
+          </div>
+          <div class="pt-strip"><span>Importo calcolato</span><span class="pt-amount">227,55 €</span></div>
+          <ul class="pt-timeline">
+            <li class="pt-timeline__item">
+              <span class="pt-timeline__dot"><app-icon name="check" size="sm" /></span>
+              <div><p>Viaggio registrato</p><p class="pt-timeline__meta">24/04 · 08:12</p></div>
+            </li>
+            <li class="pt-timeline__item">
+              <span class="pt-timeline__dot pt-timeline__dot--warn"><app-icon name="alert" size="sm" /></span>
+              <div><p>Tariffa mancante</p><p class="pt-timeline__meta">24/04 · 08:13</p></div>
+            </li>
+          </ul>
+        </div>
+        <div class="pt-drawer__foot">
+          <button type="button" class="pt-btn pt-btn--outline">Annulla</button>
+          <button type="button" class="pt-btn pt-btn--primary">Salva</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-toast-region">
+    <h2 id="g-toast-region" class="pt-label">Area dei messaggi — in produzione fissa in basso a destra, qui in linea</h2>
+    <div class="pt-toast-region" style="position: static">
+      <div class="pt-toast" role="status"><app-icon name="check" />Utente a.rossetti riattivato</div>
     </div>
   </section>
 </main>
