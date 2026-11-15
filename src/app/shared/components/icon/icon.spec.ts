@@ -9,25 +9,25 @@ async function render(inputs: Record<string, string>) {
 }
 
 describe('Icon', () => {
-  it('AC-6 points the use element at the named symbol of the sprite', async () => {
+  it('points the use element at the named symbol of the sprite', async () => {
     const svg = await render({ name: 'user-plus' });
 
     expect(svg.querySelector('use')!.getAttribute('href')).toBe('icons.svg#user-plus');
   });
 
-  it('AC-6 adds the size modifier for a size other than the default', async () => {
+  it('adds the size modifier for a size other than the default', async () => {
     const svg = await render({ name: 'truck', size: 'lg' });
 
     expect(svg.getAttribute('class')).toBe('pt-icon pt-icon--lg');
   });
 
-  it('AC-6 adds no size modifier by default', async () => {
+  it('adds no size modifier by default', async () => {
     const svg = await render({ name: 'truck' });
 
     expect(svg.getAttribute('class')).toBe('pt-icon');
   });
 
-  it('AC-6 hides the svg from assistive technology', async () => {
+  it('hides the svg from assistive technology', async () => {
     const svg = await render({ name: 'search' });
 
     expect(svg.getAttribute('aria-hidden')).toBe('true');

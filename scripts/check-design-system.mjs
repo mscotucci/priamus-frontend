@@ -1,5 +1,5 @@
-// Checks of the design system that can be read from the files. Each check is named after the
-// criterion it proves; later phases add their checks to the list. Exit code 1 if one fails.
+// Checks of the design system that can be read from the files. The name of a check says what it
+// proves. Exit code 1 if one fails.
 import { readdir } from 'node:fs/promises';
 import { buildTokens, read } from './tokens-build.mjs';
 
@@ -159,7 +159,7 @@ const modifiersOutsideTable = (text, bases) =>
 
 const checks = [
   {
-    name: 'AC-3 the control sizes are named tokens',
+    name: 'the control sizes are named tokens',
     async run() {
       const { tokens } = await buildTokens();
       const css = await read('src/styles/tokens.css');
@@ -173,7 +173,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-3 every text style is emitted as a custom property',
+    name: 'every text style is emitted as a custom property',
     async run() {
       const { tokens } = await buildTokens();
       const css = await read('src/styles/tokens.css');
@@ -199,7 +199,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-7 the icons of the first screens are in the sprite',
+    name: 'the icons of the first screens are in the sprite',
     async run() {
       const ids = await spriteIds();
       return ['truck', 'user', 'user-plus', 'user-x', 'sign-out', 'menu', 'close', 'search', 'chevron']
@@ -208,7 +208,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-10 every icon of the sprite is shown in the gallery',
+    name: 'every icon of the sprite is shown in the gallery',
     async run() {
       const html = await galleryHtml();
       return (await spriteIds())
@@ -230,7 +230,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-2 every sized control has sm and lg',
+    name: 'every sized control has sm and lg',
     async run() {
       const rules = await componentRules();
       const heights = [
@@ -256,7 +256,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-5 the default control is 36px high with 14px text',
+    name: 'the default control is 36px high with 14px text',
     async run() {
       const css = await read('src/styles/tokens.css');
       const rules = await componentRules();
@@ -274,7 +274,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-12 the filter chip is a small control',
+    name: 'the filter chip is a small control',
     async run() {
       const rules = await componentRules();
       const mapped = [
@@ -294,7 +294,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-13 the looks of a button',
+    name: 'the looks of a button',
     async run() {
       const rules = await componentRules();
       const top = await topLevelRules();
@@ -316,7 +316,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-14 a field has a rule line, an error line, a red invalid border and a disabled state',
+    name: 'a field has a rule line, an error line, a red invalid border and a disabled state',
     async run() {
       const rules = await componentRules();
       return [
@@ -328,7 +328,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-15 the select has the box of an input in every size',
+    name: 'the select has the box of an input in every size',
     async run() {
       const rules = await componentRules();
       return rules
@@ -339,7 +339,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-16 the select opts into the customisable list',
+    name: 'the select opts into the customisable list',
     async run() {
       const rules = await componentRules();
       return [
@@ -352,7 +352,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-17 the textarea is three lines high and resizes vertically',
+    name: 'the textarea is three lines high and resizes vertically',
     async run() {
       const rules = await componentRules();
       return [
@@ -368,7 +368,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-18 the checkbox is native, icon-md square, in the primary colour',
+    name: 'the checkbox is native, icon-md square, in the primary colour',
     async run() {
       const css = await read('src/styles/tokens.css');
       const rules = await componentRules();
@@ -381,7 +381,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-19 one focus ring on fields',
+    name: 'one focus ring on fields',
     async run() {
       const rules = await componentRules();
       return [
@@ -393,7 +393,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-20 buttons, links and navigation keep the detached ring on :focus-visible only',
+    name: 'buttons, links and navigation keep the detached ring on :focus-visible only',
     async run() {
       const rules = await componentRules();
       const bare = rules
@@ -406,7 +406,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-1 the controls follow the grammar: base, size, colour, states from attributes',
+    name: 'the controls follow the grammar: base, size, colour, states from attributes',
     async run() {
       const selectors = (await componentRules()).flatMap((r) => r.selectors);
       return [
@@ -418,7 +418,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-3 no pixel literal in a height or text size',
+    name: 'no pixel literal in a height or text size',
     async run() {
       return (await componentRules()).flatMap((r) =>
         ['height', 'min-height', 'font-size', 'line-height', 'font']
@@ -429,7 +429,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-4 the button colours use the shared names',
+    name: 'the button colours use the shared names',
     async run() {
       const rules = await componentRules();
       return [
@@ -443,10 +443,10 @@ const checks = [
     },
   },
   {
-    name: 'AC-6 the controls of the catalogue are shown in the gallery',
+    name: 'the controls of the catalogue are shown in the gallery',
     async run() {
       const html = await galleryHtml();
-      // The single classes are covered by 'AC-10 the gallery shows every class'.
+      // The single classes are covered by 'the gallery shows every class'.
       return [
         { names: ['pt-btn', 'pt-btn--icon'] },
         { names: ['pt-input'], tag: 'input' },
@@ -458,7 +458,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-7 the select, the rule line and the compact search field with its icon exist',
+    name: 'the select, the rule line and the compact search field with its icon exist',
     async run() {
       const html = await galleryHtml();
       const top = await topLevelRules();
@@ -472,7 +472,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-10 the gallery shows every size and look of the controls',
+    name: 'the gallery shows every size and look of the controls',
     async run() {
       const html = await galleryHtml();
       return [
@@ -492,7 +492,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-21 the notice has its four colours and a neutral default',
+    name: 'the notice has its four colours and a neutral default',
     async run() {
       const rules = await componentRules();
       return [
@@ -515,7 +515,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-24 one tile component',
+    name: 'one tile component',
     async run() {
       const rules = await componentRules();
       const old = ['pt-dialog__tile', 'pt-stat__tile'];
@@ -539,7 +539,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-22 the toast and its region exist',
+    name: 'the toast and its region exist',
     async run() {
       const css = await read('src/styles/components.css');
       const html = await galleryHtml();
@@ -568,7 +568,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-23 the spinner honours reduced motion',
+    name: 'the spinner honours reduced motion',
     async run() {
       const css = await read('src/styles/components.css');
       const rules = await componentRules();
@@ -597,7 +597,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-25 the avatar is a control-md circle with initials',
+    name: 'the avatar is a control-md circle with initials',
     async run() {
       const rules = await componentRules();
       return [
@@ -611,7 +611,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-26 the empty block is a centred column',
+    name: 'the empty block is a centred column',
     async run() {
       const rules = await componentRules();
       const html = await galleryHtml();
@@ -637,7 +637,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-27 the paging control sits right in the table footer',
+    name: 'the paging control sits right in the table footer',
     async run() {
       const rules = await componentRules();
       const footers = galleryElements(await galleryHtml())
@@ -668,14 +668,14 @@ const checks = [
     },
   },
   {
-    name: 'AC-4 colour modifiers use the shared names',
+    name: 'colour modifiers use the shared names',
     async run() {
       const text = (await read('src/styles/components.css')) + (await galleryHtml());
       return modifiersOutsideTable(text, ['btn', 'notice', 'pill', 'count', 'tile']);
     },
   },
   {
-    name: 'AC-1 the notice, tile, toast, spinner, avatar, empty block and paging follow the grammar',
+    name: 'the notice, tile, toast, spinner, avatar, empty block and paging follow the grammar',
     async run() {
       const selectors = (await componentRules()).flatMap((r) => r.selectors);
       return modifiersOutsideTable(
@@ -685,7 +685,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-7 the danger notice, the paging control, the toast and the primary and danger tiles exist',
+    name: 'the danger notice, the paging control, the toast and the primary and danger tiles exist',
     async run() {
       const top = await topLevelRules();
       const html = await galleryHtml();
@@ -700,7 +700,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-8 the plain notice is neutral',
+    name: 'the plain notice is neutral',
     async run() {
       const rules = await componentRules();
       const html = await galleryHtml();
@@ -713,7 +713,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-1 no state class',
+    name: 'no state class',
     async run() {
       return [...classNames(await componentRules())]
         .filter((n) => /--(?:[a-z0-9]+-)*(disabled|invalid|selected|current|pressed|sorted|checked|focus|active|open)(?![a-z0-9])/.test(n) || n.startsWith('is-'))
@@ -721,7 +721,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-1 every class has the pt- prefix',
+    name: 'every class has the pt- prefix',
     async run() {
       return [...classNames(await componentRules())]
         .filter((n) => !n.startsWith('pt-'))
@@ -729,7 +729,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-4 the pill and the count have the shared colours',
+    name: 'the pill and the count have the shared colours',
     async run() {
       const names = classNames(await componentRules());
       const modifiers = (base) =>
@@ -743,7 +743,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-9 every colour is a token',
+    name: 'every colour is a token',
     async run() {
       const css = await read('src/styles/components.css');
       const { tokens } = await buildTokens();
@@ -767,7 +767,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-9 native controls follow the theme',
+    name: 'native controls follow the theme',
     async run() {
       const rules = await componentRules();
       return [
@@ -777,7 +777,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-10 the gallery shows every class',
+    name: 'the gallery shows every class',
     async run() {
       const html = await galleryHtml();
       return [...classNames(await componentRules())]
@@ -786,10 +786,10 @@ const checks = [
     },
   },
   {
-    name: 'AC-6 the catalogue is complete',
+    name: 'the catalogue is complete',
     async run() {
       const top = await topLevelRules();
-      // One class per component, in the order of the criterion.
+      // One class per component of the catalogue.
       return [
         '.pt-btn', '.pt-btn--icon', '.pt-input', 'select.pt-input', 'textarea.pt-input', '.pt-check', '.pt-search',
         '.pt-field', '.pt-label', '.pt-field__error',
@@ -803,9 +803,9 @@ const checks = [
     },
   },
   {
-    name: 'AC-8 no class of the old catalogue was lost',
+    name: 'no class of the old catalogue was lost',
     async run() {
-      // The classes of components.css before this plan; the two tiles were renamed to pt-tile and
+      // The classes components.css had before sizes and colours got one grammar; the two tiles were renamed to pt-tile and
       // pt-nav was removed on purpose.
       const old = ['pt-amount', 'pt-btn', 'pt-btn--danger', 'pt-btn--icon', 'pt-btn--outline', 'pt-btn--primary', 'pt-btn--sm', 'pt-calc', 'pt-calc__row', 'pt-calc__rule', 'pt-card', 'pt-code', 'pt-count', 'pt-count--primary', 'pt-count--warn', 'pt-dialog', 'pt-dialog__actions', 'pt-dialog__head', 'pt-dialog__tile', 'pt-drawer', 'pt-drawer__body', 'pt-drawer__foot', 'pt-drawer__head', 'pt-eyebrow', 'pt-field', 'pt-field__error', 'pt-filter', 'pt-filter__button', 'pt-icon', 'pt-icon--lg', 'pt-icon--sm', 'pt-icon--xs', 'pt-input', 'pt-label', 'pt-menu', 'pt-menu__item', 'pt-mono', 'pt-muted', 'pt-nav', 'pt-nav-item', 'pt-notice', 'pt-num', 'pt-pill', 'pt-pill--danger', 'pt-pill--info', 'pt-pill--purple', 'pt-pill--success', 'pt-pill--warn', 'pt-root', 'pt-row--anomaly', 'pt-scrim', 'pt-stat', 'pt-stat--highlight', 'pt-stat__tile', 'pt-stat__value', 'pt-strip', 'pt-table', 'pt-table-wrap', 'pt-timeline', 'pt-timeline__dot', 'pt-timeline__dot--warn', 'pt-timeline__item', 'pt-timeline__meta', 'pt-title', 'pt-view', 'pt-view--warn'];
       const renamed = { 'pt-dialog__tile': 'pt-tile', 'pt-stat__tile': 'pt-tile' };
@@ -817,7 +817,7 @@ const checks = [
         for (const n of Object.keys(removed))
           if (new RegExp(`(?<![\\w-])${n}(?![\\w-])`).test(text)) users.push(`${file} still uses .${n}, removed on purpose: ${removed[n]}`);
       }
-      // That the renamed classes are no longer used anywhere is checked by 'AC-24 one tile component'.
+      // That the renamed classes are no longer used anywhere is checked by 'one tile component'.
       return [
         ...old
           .filter((n) => !(n in removed) && !names.has(renamed[n] ?? n))
@@ -830,7 +830,7 @@ const checks = [
     },
   },
   {
-    name: 'AC-11 the reference is generated from the repository',
+    name: 'the reference is generated from the repository',
     async run() {
       let html;
       try {
