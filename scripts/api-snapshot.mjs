@@ -2,7 +2,7 @@
 // URL: first argument, else OPENAPI_URL, else the local development backend.
 import { mkdir, writeFile } from 'node:fs/promises';
 
-const url = process.argv[2] ?? process.env.OPENAPI_URL ?? 'http://localhost:49686/openapi/v1.json';
+const url = process.argv[2] ?? process.env.OPENAPI_URL ?? 'http://localhost:5210/openapi/v1.json';
 
 function sortKeys(value) {
   if (Array.isArray(value)) {

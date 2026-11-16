@@ -1,0 +1,113 @@
+<app-dialog
+  icon="user-plus"
+  tone="primary"
+  [title]="'users.create.title' | translate"
+  [line]="'users.create.line' | translate"
+  [busy]="facade.creating()"
+  (closeRequested)="close()"
+>
+  <form id="user-create-form" class="flex flex-col gap-3" novalidate (submit)="onSubmit($event)">
+    @if (notice(); as notice) {
+      <app-notice [notice]="notice" />
+    }
+    <div class="pt-field">
+      <label class="pt-label" for="create-username">{{
+        'users.create.username.label' | translate
+      }}</label>
+      <input
+        #username
+        class="pt-input"
+        id="create-username"
+        autocomplete="off"
+        [formField]="createForm.username"
+        [attr.aria-invalid]="usernameError() ? 'true' : null"
+        aria-describedby="create-username-note"
+      />
+      @if (usernameError(); as error) {
+        <span class="pt-field__error" id="create-username-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="create-username-note">{{
+          'users.create.username.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="create-password">{{
+        'users.create.password.label' | translate
+      }}</label>
+      <div class="flex gap-2">
+        <input
+          class="pt-input min-w-0 flex-1"
+          id="create-password"
+          autocomplete="new-password"
+          [type]="showPassword() ? 'text' : 'password'"
+          [formField]="createForm.password"
+          [attr.aria-invalid]="passwordError() ? 'true' : null"
+          aria-describedby="create-password-note"
+        />
+        <button
+          type="button"
+          class="pt-btn pt-btn--outline"
+          [disabled]="facade.creating()"
+          (click)="showPassword.set(!showPassword())"
+        >
+          {{
+            (showPassword() ? 'users.create.password.hide' : 'users.create.password.show')
+              | translate
+          }}
+        </button>
+      </div>
+      @if (passwordError(); as error) {
+        <span class="pt-field__error" id="create-password-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="create-password-note">{{
+          'users.create.password.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="create-role">{{ 'users.create.role.label' | translate }}</label>
+      <select
+        class="pt-input"
+        id="create-role"
+        [formField]="createForm.role"
+        [attr.aria-invalid]="roleError() ? 'true' : null"
+        [attr.aria-describedby]="roleError() ? 'create-role-note' : null"
+      >
+        <option value="">{{ 'users.create.role.placeholder' | translate }}</option>
+        <option value="Admin">{{ 'role.admin' | translate }}</option>
+        <option value="BackOffice">{{ 'role.backoffice' | translate }}</option>
+        <option value="Driver">{{ 'role.driver' | translate }}</option>
+      </select>
+      @if (roleError(); as error) {
+        <span class="pt-field__error" id="create-role-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      }
+    </div>
+  </form>
+  <button
+    actions
+    type="button"
+    class="pt-btn pt-btn--outline"
+    [disabled]="facade.creating()"
+    (click)="close()"
+  >
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button
+    actions
+    type="submit"
+    form="user-create-form"
+    class="pt-btn pt-btn--primary"
+    [disabled]="facade.creating()"
+  >
+    {{
+      (facade.creating() ? 'users.create.submit.pending' : 'users.create.submit.idle') | translate
+    }}
+  </button>
+</app-dialog>

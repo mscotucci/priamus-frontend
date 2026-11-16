@@ -1,0 +1,35 @@
+<app-dialog
+  icon="user-x"
+  tone="danger"
+  [title]="'users.disable.title' | translate: { username: user().username }"
+  [line]="roleKey() | translate"
+  [busy]="facade.disabling()"
+  (closeRequested)="close()"
+>
+  @if (notice(); as notice) {
+    <app-notice class="mb-3" [notice]="notice" />
+  }
+  <p>{{ 'users.disable.text' | translate }}</p>
+  <button
+    actions
+    #cancel
+    type="button"
+    class="pt-btn pt-btn--outline"
+    [disabled]="facade.disabling()"
+    (click)="close()"
+  >
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button
+    actions
+    type="button"
+    class="pt-btn pt-btn--danger"
+    [disabled]="facade.disabling()"
+    (click)="disable()"
+  >
+    {{
+      (facade.disabling() ? 'users.disable.submit.pending' : 'users.disable.submit.idle')
+        | translate
+    }}
+  </button>
+</app-dialog>

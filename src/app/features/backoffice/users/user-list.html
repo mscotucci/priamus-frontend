@@ -1,0 +1,179 @@
+<app-topbar
+  [section]="'shell.nav.system' | translate"
+  [page]="'shell.nav.users' | translate"
+  [title]="'users.list.title' | translate"
+  [line]="
+    facade.loaded()
+      ? ((facade.total() === 1 ? 'users.list.count.one' : 'users.list.count.other')
+        | translate: { count: facade.total() })
+      : undefined
+  "
+>
+  <button type="button" class="pt-btn pt-btn--primary" (click)="openCreate()">
+    {{ 'users.list.new' | translate }}
+  </button>
+</app-topbar>
+<main class="flex flex-col gap-4 p-8">
+  @if (facade.enableNotice(); as notice) {
+    <app-notice [notice]="notice" />
+  }
+  <div class="pt-card flex flex-wrap items-center gap-2">
+    <label class="pt-search pt-search--sm">
+      <app-icon name="search" size="sm" />
+      <input
+        #searchField
+        class="w-56"
+        type="search"
+        [placeholder]="'users.list.search.placeholder' | translate"
+        [attr.aria-label]="'users.list.search.label' | translate"
+        (input)="searchFor(searchField.value)"
+      />
+    </label>
+    <app-filter-menu
+      labelKey="users.list.filter.role"
+      [options]="roles"
+      [value]="facade.role()"
+      (valueChange)="facade.setRole($event)"
+    />
+    <app-filter-menu
+      labelKey="users.list.filter.status"
+      [options]="statuses"
+      [value]="facade.status()"
+      (valueChange)="facade.setStatus($event)"
+    />
+    @if (filtered()) {
+      <button
+        type="button"
+        class="pt-btn pt-btn--outline pt-btn--sm"
+        (click)="clearFilters(searchField)"
+      >
+        {{ 'users.list.clear' | translate }}
+      </button>
+    }
+  </div>
+  @if (facade.loading()) {
+    <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'users.list.loading' | translate }}</span>
+    </div>
+  } @else if (facade.failed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="facade.reload()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (facade.total() === 0) {
+    <div class="pt-card pt-empty">
+      <p class="pt-title">{{ 'users.list.empty.title' | translate }}</p>
+      @if (filtered()) {
+        <p class="pt-muted">{{ 'users.list.empty.hint' | translate }}</p>
+      }
+    </div>
+  } @else {
+    <div class="pt-table-wrap">
+      <table class="pt-table">
+        <thead>
+          <tr>
+            @for (column of columns; track column.key) {
+              <th
+                scope="col"
+                [attr.aria-sort]="
+                  facade.sortColumn() === column.key
+                    ? facade.sortDirection() === 'Ascending'
+                      ? 'ascending'
+                      : 'descending'
+                    : null
+                "
+              >
+                <button
+                  type="button"
+                  class="inline-flex cursor-pointer items-center gap-1 uppercase"
+                  (click)="sortBy(column.key)"
+                >
+                  {{ 'users.list.column.' + column.suffix | translate }}
+                  @if (facade.sortColumn() === column.key) {
+                    <app-icon
+                      name="chevron"
+                      size="xs"
+                      [class.rotate-180]="facade.sortDirection() === 'Ascending'"
+                    />
+                  }
+                </button>
+              </th>
+            }
+            <th scope="col">
+              <span class="sr-only">{{ 'users.list.column.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of facade.items(); track user.id) {
+            <tr>
+              <td>
+                <strong>{{ user.username }}</strong>
+                @if (user.id === facade.currentUserId()) {
+                  <span class="pt-muted ml-1 text-xs">{{ 'users.list.you' | translate }}</span>
+                }
+              </td>
+              <td>{{ 'role.' + user.role.toLowerCase() | translate }}</td>
+              <td>
+                <span
+                  class="pt-pill"
+                  [class.pt-pill--success]="user.status === 'Active'"
+                  [class.pt-pill--danger]="user.status === 'Disabled'"
+                  >{{ 'users.status.' + user.status.toLowerCase() | translate }}</span
+                >
+              </td>
+              <td>{{ user.createdAt | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ user.lastModifiedAt | date: 'dd/MM/yyyy' }}</td>
+              <td class="text-right">
+                @if (user.status === 'Disabled') {
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    [disabled]="facade.enablingId() !== null"
+                    (click)="facade.enable(user.id, user.username)"
+                  >
+                    {{
+                      (facade.enablingId() === user.id
+                        ? 'users.enable.pending'
+                        : 'users.enable.action'
+                      ) | translate
+                    }}
+                  </button>
+                } @else if (user.id !== facade.currentUserId()) {
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    (click)="openDisable(user)"
+                  >
+                    {{ 'users.disable.action' | translate }}
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td [attr.colspan]="columns.length + 1">
+              <app-paging
+                [page]="facade.page()"
+                [pageSize]="pageSize"
+                [total]="facade.total()"
+                rangeKey="users.list.range"
+                (pageChange)="facade.setPage($event)"
+              />
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  }
+</main>
+@if (createOpen()) {
+  <app-user-create-dialog (closed)="createOpen.set(false)" />
+}
+@if (disableTarget(); as user) {
+  <app-user-disable-dialog [user]="user" (closed)="disableTarget.set(null)" />
+}

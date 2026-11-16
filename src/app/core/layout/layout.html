@@ -1,0 +1,76 @@
+<ng-template #panel let-inDrawer>
+  <div class="flex h-full flex-col">
+    <div class="flex items-center justify-between gap-3 border-b border-[var(--border)] p-5">
+      <div class="pt-brand min-w-0">
+        <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
+        <div class="min-w-0">
+          <p class="pt-brand__name">{{ 'brand.name' | translate }}</p>
+          <p class="pt-brand__line">{{ 'brand.tagline' | translate }}</p>
+        </div>
+      </div>
+      @if (inDrawer) {
+        <button
+          type="button"
+          class="pt-btn pt-btn--icon"
+          [attr.aria-label]="'shell.menu.close' | translate"
+          (click)="closeDrawer()"
+        >
+          <app-icon name="close" />
+        </button>
+      }
+    </div>
+    <nav
+      class="flex flex-1 flex-col gap-1 overflow-y-auto p-3"
+      [attr.aria-label]="'shell.nav.label' | translate"
+    >
+      @for (group of groups(); track group.labelKey) {
+        <p class="pt-nav__group">{{ group.labelKey | translate }}</p>
+        @for (item of group.items; track item.path) {
+          <a
+            class="pt-nav-item"
+            [routerLink]="item.path"
+            routerLinkActive
+            ariaCurrentWhenActive="page"
+            (click)="closeDrawer()"
+          >
+            <app-icon [name]="item.icon" size="lg" />{{ item.labelKey | translate }}
+          </a>
+        }
+      }
+    </nav>
+    @if (user(); as user) {
+      <div class="flex items-center gap-3 border-t border-[var(--border)] p-4">
+        <div class="pt-avatar">{{ initials() }}</div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate">{{ user.username }}</p>
+          <p class="pt-muted truncate text-xs">{{ roleKey() | translate }}</p>
+        </div>
+        <button
+          type="button"
+          class="pt-btn pt-btn--icon"
+          [attr.aria-label]="'shell.signout' | translate"
+          [title]="'shell.signout' | translate"
+          (click)="signOut()"
+        >
+          <app-icon name="sign-out" />
+        </button>
+      </div>
+    }
+  </div>
+</ng-template>
+
+<div class="flex h-screen">
+  <aside class="hidden w-64 shrink-0 border-r border-[var(--border)] bg-surface min-[900px]:block">
+    <ng-container *ngTemplateOutlet="panel; context: { $implicit: false }" />
+  </aside>
+  <dialog
+    #drawer
+    class="m-0 h-full max-h-none w-64 max-w-none bg-surface p-0 text-inherit backdrop:bg-scrim"
+    [attr.aria-label]="'shell.menu.label' | translate"
+  >
+    <ng-container *ngTemplateOutlet="panel; context: { $implicit: true }" />
+  </dialog>
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
+    <router-outlet />
+  </div>
+</div>

@@ -1,0 +1,52 @@
+<main class="flex min-h-screen items-center justify-center p-4">
+  <form class="pt-card flex w-full max-w-sm flex-col gap-4" novalidate (submit)="onSubmit($event)">
+    <div class="pt-brand">
+      <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
+      <div>
+        <p class="pt-brand__name">{{ 'brand.name' | translate }}</p>
+        <p class="pt-brand__line">{{ 'brand.tagline' | translate }}</p>
+      </div>
+    </div>
+    <h1 class="pt-title">{{ 'login.title' | translate }}</h1>
+    @if (facade.notice(); as notice) {
+      <app-notice [notice]="notice" />
+    }
+    <div class="pt-field">
+      <label class="pt-label" for="login-username">{{ 'login.username.label' | translate }}</label>
+      <input
+        class="pt-input"
+        id="login-username"
+        autocomplete="username"
+        [formField]="loginForm.username"
+        [attr.aria-invalid]="usernameInvalid() ? 'true' : null"
+        [attr.aria-describedby]="usernameInvalid() ? 'login-username-error' : null"
+      />
+      @if (usernameInvalid()) {
+        <span class="pt-field__error" id="login-username-error">{{
+          loginForm.username().errors()[0].message! | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="login-password">{{ 'login.password.label' | translate }}</label>
+      <input
+        #password
+        class="pt-input"
+        id="login-password"
+        type="password"
+        autocomplete="current-password"
+        [formField]="loginForm.password"
+        [attr.aria-invalid]="passwordInvalid() ? 'true' : null"
+        [attr.aria-describedby]="passwordInvalid() ? 'login-password-error' : null"
+      />
+      @if (passwordInvalid()) {
+        <span class="pt-field__error" id="login-password-error">{{
+          loginForm.password().errors()[0].message! | translate
+        }}</span>
+      }
+    </div>
+    <button type="submit" class="pt-btn pt-btn--primary" [disabled]="facade.pending()">
+      {{ (facade.pending() ? 'login.submit.pending' : 'login.submit.idle') | translate }}
+    </button>
+  </form>
+</main>

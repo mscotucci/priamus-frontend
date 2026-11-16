@@ -1,0 +1,148 @@
+{
+  "brand": {
+    "name": "Priamus",
+    "tagline": "Gestione Viaggi"
+  },
+  "common": {
+    "actions": {
+      "retry": "Riprova",
+      "cancel": "Annulla"
+    }
+  },
+  "errors": {
+    "generic": "Si è verificato un errore. Riprova tra poco."
+  },
+  "home": {
+    "title": "Benvenuto",
+    "empty": "Nessuna sezione disponibile per ora"
+  },
+  "login": {
+    "title": "Accedi",
+    "username": {
+      "label": "Nome utente",
+      "required": "Inserisci il nome utente."
+    },
+    "password": {
+      "label": "Password",
+      "required": "Inserisci la password."
+    },
+    "submit": {
+      "idle": "Accedi",
+      "pending": "Accesso in corso…"
+    },
+    "driver": {
+      "unavailable": "L'app autisti non è ancora disponibile."
+    }
+  },
+  "role": {
+    "admin": "Amministratore",
+    "backoffice": "Segreteria",
+    "driver": "Autista"
+  },
+  "session": {
+    "expired": "Sessione scaduta. Accedi di nuovo."
+  },
+  "shell": {
+    "menu": {
+      "label": "Menu",
+      "open": "Apri il menu",
+      "close": "Chiudi il menu"
+    },
+    "nav": {
+      "label": "Navigazione principale",
+      "system": "Sistema",
+      "users": "Utenti"
+    },
+    "signout": "Esci"
+  },
+  "paging": {
+    "previous": "Precedente",
+    "next": "Successiva",
+    "page": "Pagina {{page}} di {{pages}}"
+  },
+  "users": {
+    "list": {
+      "title": "Utenti",
+      "new": "Nuovo utente",
+      "loading": "Caricamento…",
+      "range": "Utenti {{from}}–{{to}} di {{total}}",
+      "count": {
+        "one": "{{count}} utente",
+        "other": "{{count}} utenti"
+      },
+      "column": {
+        "username": "Nome utente",
+        "role": "Ruolo",
+        "status": "Stato",
+        "created": "Creato il",
+        "modified": "Ultima modifica",
+        "actions": "Azioni"
+      },
+      "search": {
+        "label": "Cerca nome utente",
+        "placeholder": "Cerca nome utente…"
+      },
+      "filter": {
+        "role": "Ruolo:",
+        "status": "Stato:"
+      },
+      "you": "(tu)",
+      "clear": "Azzera filtri",
+      "empty": {
+        "title": "Nessun utente trovato",
+        "hint": "Prova a cambiare la ricerca o i filtri."
+      }
+    },
+    "status": {
+      "active": "Attivo",
+      "disabled": "Disabilitato"
+    },
+    "create": {
+      "title": "Nuovo utente",
+      "line": "Potrà accedere subito con queste credenziali.",
+      "username": {
+        "label": "Nome utente",
+        "hint": "Da 3 a 64 caratteri: lettere minuscole, cifre, punto, trattino e trattino basso.",
+        "invalid": "Usa da 3 a 64 caratteri: solo lettere minuscole, cifre, punto, trattino e trattino basso, iniziando con una lettera o una cifra."
+      },
+      "password": {
+        "label": "Password",
+        "hint": "Da 8 a 128 caratteri, con almeno una lettera, un numero e un carattere speciale.",
+        "invalid": "La password deve contenere tra 8 e 128 caratteri, almeno una lettera, un numero e un carattere speciale.",
+        "show": "Mostra",
+        "hide": "Nascondi"
+      },
+      "role": {
+        "label": "Ruolo",
+        "placeholder": "Scegli un ruolo",
+        "invalid": "Scegli un ruolo."
+      },
+      "submit": {
+        "idle": "Crea utente",
+        "pending": "Creazione in corso…"
+      },
+      "done": "Utente {{username}} creato"
+    },
+    "disable": {
+      "action": "Disabilita",
+      "title": "Disabilitare {{username}}?",
+      "text": "Non potrà più accedere. Se è già dentro, resterà attivo al massimo per un'ora. Potrai riattivarlo in ogni momento.",
+      "submit": {
+        "idle": "Disabilita",
+        "pending": "Disabilitazione…"
+      },
+      "done": "Utente {{username}} disabilitato"
+    },
+    "enable": {
+      "action": "Riattiva",
+      "pending": "Riattivazione…",
+      "done": "Utente {{username}} riattivato"
+    }
+  },
+  "filter": {
+    "all": {
+      "label": "Tutti",
+      "value": "tutti"
+    }
+  }
+}
