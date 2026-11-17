@@ -2,7 +2,13 @@ import { httpResource } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
-import { ApiError, NoticeContent, noticeOf, toApiError } from '../../../core/api/api-error';
+import {
+  ApiError,
+  isStale,
+  NoticeContent,
+  noticeOf,
+  toApiError,
+} from '../../../core/api/api-error';
 import { Toast } from '../../../core/toast/toast';
 import {
   SortColumn,
@@ -71,7 +77,14 @@ export class VehiclesFacade {
   );
   readonly total = computed(() => (this.list.hasValue() ? this.list.value().totalCount : 0));
   readonly loaded = computed(() => this.list.hasValue());
-  readonly loading = computed(() => this.list.isLoading());
+  /** The list is read for the first time or for a new query: nothing current to show. */
+  readonly loading = computed(
+    () =>
+      this.list.status() === 'loading' ||
+      (this.list.status() === 'reloading' && !this.list.hasValue()),
+  );
+  /** The same list is read again (after a write): the rows on screen stay until the answer. */
+  readonly reloading = computed(() => this.list.status() === 'reloading' && this.list.hasValue());
   readonly failed = computed(() => this.list.status() === 'error');
 
   setSearch(search: string): void {
@@ -119,7 +132,7 @@ export class VehiclesFacade {
   /** A write refused with 409 means the list is stale: it is read again, keeping its state. */
   private refused(error: unknown): ApiError {
     const apiError = toApiError(error);
-    if (apiError.kind === 'domain' && apiError.status === 409) {
+    if (isStale(apiError)) {
       this.reload();
     }
     return apiError;

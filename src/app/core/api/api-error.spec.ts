@@ -1,5 +1,22 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ApiError, fieldErrors, noticeOf, toApiError } from './api-error';
+import { ApiError, fieldErrors, isStale, noticeOf, toApiError } from './api-error';
+
+describe('isStale', () => {
+  it('is true for a domain error with status 409', () => {
+    expect(isStale({ kind: 'domain', status: 409, errorCode: 'X', detail: null })).toBe(true);
+  });
+
+  it.each([
+    [
+      'a domain error with another status',
+      { kind: 'domain', status: 404, errorCode: 'X', detail: null },
+    ],
+    ['a validation error', { kind: 'validation', errors: {} }],
+    ['a generic error', { kind: 'generic' }],
+  ] as const)('is false for %s', (_name, error) => {
+    expect(isStale(error)).toBe(false);
+  });
+});
 
 describe('toApiError', () => {
   it('maps a 401 with an errorCode to a domain error carrying its detail', () => {

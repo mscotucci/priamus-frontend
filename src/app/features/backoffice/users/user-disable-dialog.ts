@@ -45,8 +45,7 @@ export class UserDisableDialog {
       return;
     }
     this.refusal.set(null);
-    const { id, username } = this.user();
-    const outcome = await this.facade.disable(id, username);
+    const outcome = await this.facade.disable(this.user());
     if (outcome === 'disabled') {
       this.closed.emit();
     } else if (outcome !== 'ignored') {

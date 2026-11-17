@@ -66,12 +66,12 @@ export class VehicleList {
       this.facade.total() === 0 &&
       !this.filtered(),
   );
-  protected readonly columns: { key: SortColumn; suffix: string }[] = [
-    { key: 'licensePlate', suffix: 'plate' },
-    { key: 'description', suffix: 'description' },
-    { key: 'type', suffix: 'type' },
-    { key: 'status', suffix: 'status' },
-    { key: 'lastModifiedAt', suffix: 'modified' },
+  protected readonly columns: { sortKey: SortColumn | null; suffix: string }[] = [
+    { sortKey: 'licensePlate', suffix: 'plate' },
+    { sortKey: 'description', suffix: 'description' },
+    { sortKey: null, suffix: 'type' },
+    { sortKey: null, suffix: 'status' },
+    { sortKey: 'lastModifiedAt', suffix: 'modified' },
   ];
 
   constructor() {

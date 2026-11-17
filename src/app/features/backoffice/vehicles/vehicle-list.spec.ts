@@ -481,7 +481,7 @@ describe('VehicleList', () => {
     expect(sorts()).toEqual([null, null, null, null, null, 'descending', null]);
   });
 
-  it('Rimorchio and the actions column are not sort controls', async () => {
+  it('Tipologia, Rimorchio, Stato and the actions column are plain headers; Targa, Descrizione and Ultima modifica sort', async () => {
     const fixture = render();
     await flush(fixture, answer(5));
     const headers = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('th'));
@@ -489,13 +489,48 @@ describe('VehicleList', () => {
     expect(headers.map((th) => th.querySelector('button') !== null)).toEqual([
       true,
       true,
-      true,
       false,
-      true,
+      false,
+      false,
       true,
       false,
     ]);
+    for (const index of [2, 3, 4, 6]) {
+      expect(headers[index].hasAttribute('aria-sort')).toBe(false);
+    }
   });
+
+  it.each([
+    ['Targa', 0, 'licensePlate', 'Descending'],
+    ['Descrizione', 1, 'description', 'Ascending'],
+    ['Ultima modifica', 5, 'lastModifiedAt', 'Ascending'],
+  ])(
+    '%s sorts on the first click and inverts on the second',
+    async (_name, index, column, firstDirection) => {
+      const fixture = render();
+      await flush(fixture, answer(42));
+      const element = fixture.nativeElement as HTMLElement;
+      const press = async () => {
+        element.querySelectorAll('th')[index].querySelector('button')!.click();
+        TestBed.tick();
+        const request = http.expectOne((r) => r.url === URL);
+        const result = [
+          request.request.params.get('sortColumn'),
+          request.request.params.get('sortDirection'),
+        ];
+        request.flush(answer(42));
+        await fixture.whenStable();
+        fixture.detectChanges();
+        return result;
+      };
+
+      expect(await press()).toEqual([column, firstDirection]);
+      expect(await press()).toEqual([
+        column,
+        firstDirection === 'Ascending' ? 'Descending' : 'Ascending',
+      ]);
+    },
+  );
 
   describe('vehicle form dialog', () => {
     beforeEach(() => {
@@ -615,6 +650,41 @@ describe('VehicleList', () => {
       reload.flush(answer(50));
     });
 
+    it('while the list is read again after a write the table stays, with a small indicator at the end of the filters, and the row keeps its button', async () => {
+      const fixture = render();
+      await flush(fixture, answer(5));
+      const element = fixture.nativeElement as HTMLElement;
+      const opener = actionButton(element, 0, 'Dismetti');
+
+      opener.click();
+      fixture.detectChanges();
+      TestBed.tick();
+      element.querySelectorAll<HTMLButtonElement>('.pt-dialog__actions button')[1].click();
+      fixture.detectChanges();
+      writes()[0].flush(null, { status: 204, statusText: 'No Content' });
+      await settle(fixture);
+
+      const reload = http.expectOne((r) => r.url === URL);
+      const filters = element.querySelector('main > .pt-card')!;
+      expect(element.querySelector('table')?.getAttribute('aria-busy')).toBe('true');
+      expect(filters.querySelector('.pt-spinner--sm[role="status"]')?.textContent?.trim()).toBe(
+        'Aggiornamento…',
+      );
+      expect(element.contains(opener)).toBe(true);
+
+      const updated = answer(5);
+      updated.data[0].status = 'Decommissioned';
+      reload.flush(updated);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(element.querySelector('table')?.hasAttribute('aria-busy')).toBe(false);
+      expect(element.querySelector('.pt-spinner')).toBeNull();
+      // the same button now reactivates: the status change does not replace it
+      expect(element.contains(opener)).toBe(true);
+      expect(opener.textContent?.trim()).toBe('Riattiva');
+    });
+
     it('"Riattiva" sends at once the version of the row, with no confirmation, and reads Riattivazione… while it runs', async () => {
       const fixture = render();
       await flush(fixture, answer(5));
@@ -629,7 +699,9 @@ describe('VehicleList', () => {
       expect(element.querySelector('dialog')).toBeNull();
       const running = Array.from(rowCells(element, 4)[6].querySelectorAll('button')).pop()!;
       expect(running.textContent?.trim()).toBe('Riattivazione…');
-      expect(running.disabled).toBe(true);
+      // aria-disabled, not disabled: the button keeps the focus while it runs
+      expect(running.getAttribute('aria-disabled')).toBe('true');
+      expect(running.disabled).toBe(false);
       http.match(() => true);
     });
 

@@ -50,6 +50,11 @@
         {{ 'users.list.clear' | translate }}
       </button>
     }
+    @if (facade.reloading()) {
+      <span class="pt-spinner pt-spinner--sm ml-auto" role="status"
+        ><span class="sr-only">{{ 'common.refreshing' | translate }}</span></span
+      >
+    }
   </div>
   @if (facade.loading()) {
     <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
@@ -71,35 +76,39 @@
     </div>
   } @else {
     <div class="pt-table-wrap">
-      <table class="pt-table">
+      <table class="pt-table" [attr.aria-busy]="facade.reloading() || null">
         <thead>
           <tr>
-            @for (column of columns; track column.key) {
-              <th
-                scope="col"
-                [attr.aria-sort]="
-                  facade.sortColumn() === column.key
-                    ? facade.sortDirection() === 'Ascending'
-                      ? 'ascending'
-                      : 'descending'
-                    : null
-                "
-              >
-                <button
-                  type="button"
-                  class="inline-flex cursor-pointer items-center gap-1 uppercase"
-                  (click)="sortBy(column.key)"
+            @for (column of columns; track column.suffix) {
+              @if (column.sortKey === null) {
+                <th scope="col">{{ 'users.list.column.' + column.suffix | translate }}</th>
+              } @else {
+                <th
+                  scope="col"
+                  [attr.aria-sort]="
+                    facade.sortColumn() === column.sortKey
+                      ? facade.sortDirection() === 'Ascending'
+                        ? 'ascending'
+                        : 'descending'
+                      : null
+                  "
                 >
-                  {{ 'users.list.column.' + column.suffix | translate }}
-                  @if (facade.sortColumn() === column.key) {
-                    <app-icon
-                      name="chevron"
-                      size="xs"
-                      [class.rotate-180]="facade.sortDirection() === 'Ascending'"
-                    />
-                  }
-                </button>
-              </th>
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1 uppercase"
+                    (click)="sortBy(column.sortKey)"
+                  >
+                    {{ 'users.list.column.' + column.suffix | translate }}
+                    @if (facade.sortColumn() === column.sortKey) {
+                      <app-icon
+                        name="chevron"
+                        size="xs"
+                        [class.rotate-180]="facade.sortDirection() === 'Ascending'"
+                      />
+                    }
+                  </button>
+                </th>
+              }
             }
             <th scope="col">
               <span class="sr-only">{{ 'users.list.column.actions' | translate }}</span>
@@ -127,27 +136,24 @@
               <td>{{ user.createdAt | date: 'dd/MM/yyyy' }}</td>
               <td>{{ user.lastModifiedAt | date: 'dd/MM/yyyy' }}</td>
               <td class="text-right">
-                @if (user.status === 'Disabled') {
+                @if (user.status === 'Disabled' || user.id !== facade.currentUserId()) {
+                  <!-- one button for both statuses: it survives the status change, and so does its focus -->
                   <button
                     type="button"
                     class="pt-btn pt-btn--outline pt-btn--sm"
-                    [disabled]="facade.enablingId() !== null"
-                    (click)="facade.enable(user.id, user.username)"
+                    [attr.aria-disabled]="
+                      (user.status === 'Disabled' && facade.enablingId() !== null) || null
+                    "
+                    (click)="user.status === 'Disabled' ? facade.enable(user) : openDisable(user)"
                   >
                     {{
-                      (facade.enablingId() === user.id
-                        ? 'users.enable.pending'
-                        : 'users.enable.action'
+                      (user.status === 'Active'
+                        ? 'users.disable.action'
+                        : facade.enablingId() === user.id
+                          ? 'users.enable.pending'
+                          : 'users.enable.action'
                       ) | translate
                     }}
-                  </button>
-                } @else if (user.id !== facade.currentUserId()) {
-                  <button
-                    type="button"
-                    class="pt-btn pt-btn--outline pt-btn--sm"
-                    (click)="openDisable(user)"
-                  >
-                    {{ 'users.disable.action' | translate }}
                   </button>
                 }
               </td>

@@ -19,6 +19,7 @@ const USER: UserListItem = {
   status: 'Active',
   createdAt: '2026-05-14T12:00:00Z',
   lastModifiedAt: '2026-05-14T12:00:00Z',
+  version: 4,
 };
 
 describe('UserDisableDialog', () => {
@@ -112,6 +113,40 @@ describe('UserDisableDialog', () => {
 
     expect(closedCount()).toBe(1);
     expect(TestBed.inject(Toast).current()).toBe('Utente a.rossetti disabilitato');
+    http.match(() => true);
+  });
+
+  it('Disabilita sends the version of the user the dialog was opened with', async () => {
+    const { fixture } = render();
+    await press(fixture, 1);
+
+    const [request] = posts();
+    expect(request.request.body).toEqual({ version: 4 });
+    http.match(() => true);
+  });
+
+  it('after a 409 the dialog stays open with the message, the list is read again, and a second Disabilita sends the same version', async () => {
+    const { fixture, element, closedCount } = render();
+    await press(fixture, 1);
+
+    posts()[0].flush(
+      {
+        errorCode: 'Identity.User.ConcurrentUpdate',
+        detail: "L'utente è stato modificato da un altro utente nel frattempo.",
+      },
+      { status: 409, statusText: 'Conflict' },
+    );
+    await settle(fixture);
+
+    expect(text(element, 'dialog .pt-notice--danger')).toBe(
+      "L'utente è stato modificato da un altro utente nel frattempo.",
+    );
+    expect(closedCount()).toBe(0);
+    http.expectOne((r) => r.url === URL && r.method === 'GET');
+
+    await press(fixture, 1);
+    const [again] = posts();
+    expect(again.request.body).toEqual({ version: 4 });
     http.match(() => true);
   });
 

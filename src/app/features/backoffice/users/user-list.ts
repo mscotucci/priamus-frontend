@@ -57,12 +57,12 @@ export class UserList {
     () =>
       this.facade.search() !== '' || this.facade.role() !== null || this.facade.status() !== null,
   );
-  protected readonly columns: { key: SortColumn; suffix: string }[] = [
-    { key: 'username', suffix: 'username' },
-    { key: 'role', suffix: 'role' },
-    { key: 'status', suffix: 'status' },
-    { key: 'createdAt', suffix: 'created' },
-    { key: 'lastModifiedAt', suffix: 'modified' },
+  protected readonly columns: { sortKey: SortColumn | null; suffix: string }[] = [
+    { sortKey: 'username', suffix: 'username' },
+    { sortKey: null, suffix: 'role' },
+    { sortKey: null, suffix: 'status' },
+    { sortKey: 'createdAt', suffix: 'created' },
+    { sortKey: 'lastModifiedAt', suffix: 'modified' },
   ];
 
   protected sortBy(column: SortColumn): void {

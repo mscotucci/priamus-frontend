@@ -262,6 +262,22 @@ export interface components {
             /** Format: int32 */
             version: number | null;
         };
+        /**
+         * @description Request body for `POST /api/identity/users/{id}/disable`. `Version` is the version
+         *     the client read; the change is refused when the user has changed since.
+         */
+        DisableUserRequest: {
+            /** Format: int32 */
+            version: number | null;
+        };
+        /**
+         * @description Request body for `POST /api/identity/users/{id}/enable`. `Version` is the version
+         *     the client read; the change is refused when the user has changed since.
+         */
+        EnableUserRequest: {
+            /** Format: int32 */
+            version: number | null;
+        };
         /** @description The signed-in user as the database knows it now. */
         GetCurrentUserResponse: {
             /**
@@ -425,6 +441,8 @@ export interface components {
             role: components["schemas"]["UserRole"];
             status: components["schemas"]["UserStatus"];
             username: string;
+            /** Format: int32 */
+            version: number;
         };
         /**
          * @description Functional role assigned to a User. Drives both back-office
@@ -901,7 +919,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisableUserRequest"];
+            };
+        };
         responses: {
             /** @description No Content */
             204: {
@@ -909,6 +931,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
             };
             /** @description Unauthorized */
             401: {
@@ -957,7 +988,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnableUserRequest"];
+            };
+        };
         responses: {
             /** @description No Content */
             204: {
@@ -965,6 +1000,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
             };
             /** @description Unauthorized */
             401: {
@@ -986,6 +1030,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

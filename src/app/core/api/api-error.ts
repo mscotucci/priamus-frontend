@@ -40,6 +40,11 @@ export function toApiError(response: unknown): ApiError {
   return { kind: 'generic' };
 }
 
+/** A write refused with 409 means the list is stale. */
+export function isStale(error: ApiError): boolean {
+  return error.kind === 'domain' && error.status === 409;
+}
+
 export function noticeOf(error: ApiError, fallbackKey = 'errors.generic'): NoticeContent {
   return error.kind === 'domain' && error.detail !== null
     ? { detail: error.detail }

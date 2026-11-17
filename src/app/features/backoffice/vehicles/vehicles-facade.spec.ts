@@ -99,6 +99,37 @@ describe('VehiclesFacade', () => {
     expect(facade.loading()).toBe(false);
   });
 
+  it('reading the same list again keeps its rows: reloading, not loading, until the answer', async () => {
+    lastRequest().flush(page(1));
+    await settle();
+
+    facade.reload();
+    const again = lastRequest();
+    expect(facade.loading()).toBe(false);
+    expect(facade.reloading()).toBe(true);
+    expect(facade.total()).toBe(1);
+
+    again.flush(page(2));
+    await settle();
+
+    expect(facade.reloading()).toBe(false);
+    expect(facade.total()).toBe(2);
+  });
+
+  it('a new search is a load, not a reload', async () => {
+    lastRequest().flush(page(1));
+    await settle();
+
+    facade.setSearch('xyz');
+    const next = lastRequest();
+    expect(facade.loading()).toBe(true);
+    expect(facade.reloading()).toBe(false);
+    next.flush(page(0));
+    await settle();
+
+    expect(facade.loading()).toBe(false);
+  });
+
   it('a failed load is reported as failure and reload asks again', async () => {
     lastRequest().flush(null, { status: 500, statusText: 'Server Error' });
     await settle();
@@ -109,6 +140,9 @@ describe('VehiclesFacade', () => {
     facade.reload();
     const retry = lastRequest();
     expect(facade.failed()).toBe(false);
+    // nothing was shown before: the retry is a load, so the indicator replaces the notice
+    expect(facade.loading()).toBe(true);
+    expect(facade.reloading()).toBe(false);
     retry.flush(page(2));
     await settle();
 
@@ -190,7 +224,7 @@ describe('VehiclesFacade', () => {
     lastRequest().flush(page(50));
     facade.setSearch('ab');
     facade.setType('Tractor');
-    facade.setSort('status', 'Descending');
+    facade.setSort('lastModifiedAt', 'Descending');
     lastRequest().flush(page(5));
 
     expect(localStorage.length).toBe(0);

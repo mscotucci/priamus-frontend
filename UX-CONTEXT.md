@@ -38,6 +38,7 @@ Reusable UX conventions. Single-screen details live in the mockups, behaviour in
 - A list page carries, top to bottom: title and main action, the figures of the current selection (stat cards), saved views, filter chips, the table, its total.
 - Filters apply as soon as a value is picked and drive the table, the figures and the total together. A searchable list queries the API, never filters on the client.
 - Lists that can grow are paged by the server.
+- A column that has a filter is not sorted: its header is plain text, with no sort control.
 - In a filter row the search field and the filter chips have the same height.
 - A row with an open anomaly is highlighted and sorts to the top, with the action that resolves it in the row.
 - Opening a row shows its detail in a drawer over the list, which keeps its state (to confirm).
@@ -46,7 +47,7 @@ Reusable UX conventions. Single-screen details live in the mockups, behaviour in
 
 ## Feedback
 
-- Loading a list: the page title stays, a loading indicator replaces the table. A button that is saving changes its label and is disabled, without an indicator.
+- Loading a list: the page title stays, a loading indicator replaces the table — when the list opens and when its search, filters, sorting or page change. When the same list is read again after a write, the table stays (so the focus stays where it was) and a small indicator shows at the end of the filter row until the new rows arrive. A button that is saving changes its label and is disabled, without an indicator; a row action that runs at once (enable) is marked `aria-disabled` instead, so it keeps the focus.
 - A list that fails to load: an alert with "Riprova" replaces the table.
 - A create, edit or delete that succeeds: a toast at the bottom right that dismisses itself after 4 seconds, one at a time. Loading never shows a toast, and neither does an error: errors are notices in the page.
 - A reversible, non-destructive row action (enable) runs at once without confirmation; its failure shows as a notice above the table.

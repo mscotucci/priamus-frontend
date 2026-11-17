@@ -138,7 +138,7 @@ const allowedModifiers = {
   count: ['primary', 'warn'],
   tile: ['lg', 'primary', 'success', 'warn', 'danger'],
   toast: [],
-  spinner: [],
+  spinner: ['sm'],
   avatar: [],
   empty: [],
   paging: [],
@@ -312,6 +312,7 @@ const checks = [
           .filter((n) => icon !== -1 && colourAt(`.pt-btn--${n}`) < icon)
           .map((n) => `.pt-btn--${n} sets its colour before .pt-btn--icon, which overrides it on an icon button`),
         ...hasDeclaration(rules, '.pt-btn:disabled', 'opacity', '0.5'),
+        ...hasDeclaration(rules, ".pt-btn[aria-disabled='true']", 'opacity', '0.5'),
       ];
     },
   },
@@ -580,6 +581,8 @@ const checks = [
         ...hasDeclaration(rules, '.pt-spinner', 'border', '2px solid var(--border-strong)'),
         ...hasDeclaration(rules, '.pt-spinner', 'border-top-color', 'var(--primary)'),
         ...hasDeclaration(rules, '.pt-spinner', 'animation', 'pt-spin 0.8s linear infinite'),
+        ...hasDeclaration(rules, '.pt-spinner--sm', 'width', 'var(--icon-sm)'),
+        ...hasDeclaration(rules, '.pt-spinner--sm', 'height', 'var(--icon-sm)'),
         ...hasDeclaration(
           rulesOf(blocksOf(css, '@media (prefers-reduced-motion: reduce)')),
           '.pt-spinner',

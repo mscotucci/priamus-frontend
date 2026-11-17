@@ -12,7 +12,7 @@ export type CreateVehicleRequest = Schemas['CreateVehicleRequest'];
 export type CreatedVehicle = Schemas['CreateVehicleResponse'];
 export type UpdateVehicleRequest = Schemas['UpdateVehicleRequest'];
 export type VehiclePage = Schemas['PagedResponseOfVehicleListItemDto'];
-export type SortColumn = 'licensePlate' | 'description' | 'type' | 'status' | 'lastModifiedAt';
+export type SortColumn = 'licensePlate' | 'description' | 'lastModifiedAt';
 export type SortDirection = NonNullable<Schemas['SortDirection']>;
 
 export const PAGE_SIZE = 20;

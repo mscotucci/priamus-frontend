@@ -2,7 +2,13 @@ import { httpResource } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
-import { ApiError, NoticeContent, noticeOf, toApiError } from '../../../core/api/api-error';
+import {
+  ApiError,
+  isStale,
+  NoticeContent,
+  noticeOf,
+  toApiError,
+} from '../../../core/api/api-error';
 import { Session } from '../../../core/auth/session';
 import { Toast } from '../../../core/toast/toast';
 import {
@@ -67,7 +73,14 @@ export class UsersFacade {
   );
   readonly total = computed(() => (this.list.hasValue() ? this.list.value().totalCount : 0));
   readonly loaded = computed(() => this.list.hasValue());
-  readonly loading = computed(() => this.list.isLoading());
+  /** The list is read for the first time or for a new query: nothing current to show. */
+  readonly loading = computed(
+    () =>
+      this.list.status() === 'loading' ||
+      (this.list.status() === 'reloading' && !this.list.hasValue()),
+  );
+  /** The same list is read again (after a write): the rows on screen stay until the answer. */
+  readonly reloading = computed(() => this.list.status() === 'reloading' && this.list.hasValue());
   readonly failed = computed(() => this.list.status() === 'error');
 
   setSearch(search: string): void {
@@ -139,7 +152,17 @@ export class UsersFacade {
     }
   }
 
-  async disable(id: string, username: string): Promise<DisableOutcome> {
+  /** A write refused with 409 means the list is stale: it is read again, keeping its state. */
+  private refused(error: unknown): ApiError {
+    const apiError = toApiError(error);
+    if (isStale(apiError)) {
+      this.reload();
+    }
+    return apiError;
+  }
+
+  /** Disables `user`, sending the version it was read at. */
+  async disable(user: UserListItem): Promise<DisableOutcome> {
     if (this.disablingState()) {
       return 'ignored';
     }
@@ -147,11 +170,11 @@ export class UsersFacade {
     this.enableNoticeState.set(null);
     try {
       try {
-        await firstValueFrom(this.api.disable(id));
+        await firstValueFrom(this.api.disable(user.id, user.version));
       } catch (error) {
-        return toApiError(error);
+        return this.refused(error);
       }
-      this.toast.success(this.translate.instant('users.disable.done', { username }));
+      this.toast.success(this.translate.instant('users.disable.done', { username: user.username }));
       this.reload();
       return 'disabled';
     } finally {
@@ -159,20 +182,21 @@ export class UsersFacade {
     }
   }
 
-  async enable(id: string, username: string): Promise<void> {
+  /** Enables `user`, sending the version it was read at. */
+  async enable(user: UserListItem): Promise<void> {
     if (this.enablingIdState() !== null) {
       return;
     }
-    this.enablingIdState.set(id);
+    this.enablingIdState.set(user.id);
     this.enableNoticeState.set(null);
     try {
       try {
-        await firstValueFrom(this.api.enable(id));
+        await firstValueFrom(this.api.enable(user.id, user.version));
       } catch (error) {
-        this.enableNoticeState.set(noticeOf(toApiError(error)));
+        this.enableNoticeState.set(noticeOf(this.refused(error)));
         return;
       }
-      this.toast.success(this.translate.instant('users.enable.done', { username }));
+      this.toast.success(this.translate.instant('users.enable.done', { username: user.username }));
       this.reload();
     } finally {
       this.enablingIdState.set(null);

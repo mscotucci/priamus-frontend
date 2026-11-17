@@ -11,7 +11,7 @@ export type UserListItem = Schemas['UserListItemDto'];
 export type CreateUserRequest = Schemas['CreateUserRequest'];
 export type CreatedUser = Schemas['CreateUserResponse'];
 export type UserPage = Schemas['PagedResponseOfUserListItemDto'];
-export type SortColumn = 'username' | 'role' | 'status' | 'createdAt' | 'lastModifiedAt';
+export type SortColumn = 'username' | 'createdAt' | 'lastModifiedAt';
 export type SortDirection = NonNullable<Schemas['SortDirection']>;
 
 export const PAGE_SIZE = 20;
@@ -52,11 +52,11 @@ export class UsersApi {
     return this.http.post<CreatedUser>('/api/identity/users', request);
   }
 
-  disable(id: string): Observable<void> {
-    return this.http.post<void>(`/api/identity/users/${id}/disable`, null);
+  disable(id: string, version: number): Observable<void> {
+    return this.http.post<void>(`/api/identity/users/${id}/disable`, { version });
   }
 
-  enable(id: string): Observable<void> {
-    return this.http.post<void>(`/api/identity/users/${id}/enable`, null);
+  enable(id: string, version: number): Observable<void> {
+    return this.http.post<void>(`/api/identity/users/${id}/enable`, { version });
   }
 }

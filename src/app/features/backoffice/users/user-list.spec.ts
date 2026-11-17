@@ -31,6 +31,7 @@ const answer = (total: number): UserPage => ({
       status: 'Active',
       createdAt: '2026-05-12T12:00:00Z',
       lastModifiedAt: '2026-05-12T12:00:00Z',
+      version: 1,
     },
     {
       id: '2',
@@ -39,6 +40,7 @@ const answer = (total: number): UserPage => ({
       status: 'Active',
       createdAt: '2026-05-14T12:00:00Z',
       lastModifiedAt: '2026-05-14T12:00:00Z',
+      version: 2,
     },
     {
       id: '3',
@@ -47,6 +49,7 @@ const answer = (total: number): UserPage => ({
       status: 'Disabled',
       createdAt: '2026-05-14T12:00:00Z',
       lastModifiedAt: '2026-11-03T12:00:00Z',
+      version: 3,
     },
   ],
   totalCount: total,
@@ -239,20 +242,62 @@ describe('UserList', () => {
     expect(sorts()).toEqual([null, null, null, null, 'descending', null]);
   });
 
-  it('every column but the action one is a sort control', async () => {
+  it('Ruolo and Stato are plain headers without a button or aria-sort, the others are sort controls', async () => {
     const fixture = render();
     await respond(fixture, 3);
     const headers = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('th'));
 
     expect(headers.map((th) => th.querySelector('button') !== null)).toEqual([
       true,
-      true,
-      true,
+      false,
+      false,
       true,
       true,
       false,
     ]);
+    expect(headers.map((th) => th.textContent?.trim())).toEqual([
+      'Nome utente',
+      'Ruolo',
+      'Stato',
+      'Creato il',
+      'Ultima modifica',
+      'Azioni',
+    ]);
+    expect(headers[1].hasAttribute('aria-sort')).toBe(false);
+    expect(headers[2].hasAttribute('aria-sort')).toBe(false);
   });
+
+  it.each([
+    ['Nome utente', 0, 'username', 'Descending'],
+    ['Creato il', 3, 'createdAt', 'Ascending'],
+    ['Ultima modifica', 4, 'lastModifiedAt', 'Ascending'],
+  ])(
+    '%s sorts on the first click and inverts on the second',
+    async (_name, index, column, firstDirection) => {
+      const fixture = render();
+      await respond(fixture, 23);
+      const element = fixture.nativeElement as HTMLElement;
+      const press = async () => {
+        element.querySelectorAll('th')[index].querySelector('button')!.click();
+        TestBed.tick();
+        const request = http.expectOne((r) => r.url === URL);
+        const result = [
+          request.request.params.get('sortColumn'),
+          request.request.params.get('sortDirection'),
+        ];
+        request.flush(answer(23));
+        await fixture.whenStable();
+        fixture.detectChanges();
+        return result;
+      };
+
+      expect(await press()).toEqual([column, firstDirection]);
+      expect(await press()).toEqual([
+        column,
+        firstDirection === 'Ascending' ? 'Descending' : 'Ascending',
+      ]);
+    },
+  );
 
   it('the footer shows the range and the pager, and the next page is asked of the backend', async () => {
     const fixture = render();
@@ -315,7 +360,7 @@ describe('UserList', () => {
       const element = fixture.nativeElement as HTMLElement;
       const facade = TestBed.inject(UsersFacade);
       facade.setRole('Driver');
-      facade.setSort('role', 'Descending');
+      facade.setSort('createdAt', 'Descending');
       TestBed.tick();
       http.expectOne((r) => r.url === URL).flush(answer(50));
       await fixture.whenStable();
@@ -340,7 +385,7 @@ describe('UserList', () => {
       ).toEqual(['Annulla', 'Crea utente']);
       expect([facade.role(), facade.sortColumn(), facade.sortDirection(), facade.page()]).toEqual([
         'Driver',
-        'role',
+        'createdAt',
         'Descending',
         2,
       ]);
@@ -688,6 +733,94 @@ describe('UserList', () => {
       expect(action(fixture, 1)?.textContent?.trim()).toBe('Riattiva');
     });
 
+    it('while the list is read again after a write the table stays, with a small indicator at the end of the filters, and the row keeps its button', async () => {
+      const fixture = renderAs('1');
+      await respond(fixture, 3);
+      const element = fixture.nativeElement as HTMLElement;
+      const opener = action(fixture, 1)!;
+      opener.click();
+      fixture.detectChanges();
+      TestBed.tick();
+
+      element.querySelector<HTMLButtonElement>('app-user-disable-dialog .pt-btn--danger')!.click();
+      await settle(fixture);
+      http
+        .expectOne((r) => r.url === `${URL}/2/disable` && r.method === 'POST')
+        .flush(null, { status: 204, statusText: 'No Content' });
+      await settle(fixture);
+
+      const reload = http.expectOne((r) => r.url === URL && r.method === 'GET');
+      const filters = element.querySelector('main > .pt-card')!;
+      expect(element.querySelector('table')?.getAttribute('aria-busy')).toBe('true');
+      expect(filters.querySelector('.pt-spinner--sm[role="status"]')?.textContent?.trim()).toBe(
+        'Aggiornamento…',
+      );
+      expect(element.contains(opener)).toBe(true);
+
+      const updated = answer(3);
+      updated.data[1].status = 'Disabled';
+      reload.flush(updated);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(element.querySelector('table')?.hasAttribute('aria-busy')).toBe(false);
+      expect(element.querySelector('.pt-spinner')).toBeNull();
+      // the same button now reactivates: the status change does not replace it
+      expect(element.contains(opener)).toBe(true);
+      expect(opener.textContent?.trim()).toBe('Riattiva');
+    });
+
+    it('Disabilita sends the version of its row', async () => {
+      const fixture = renderAs('1');
+      await respond(fixture, 3);
+      const element = fixture.nativeElement as HTMLElement;
+
+      action(fixture, 1)!.click();
+      fixture.detectChanges();
+      TestBed.tick();
+      element.querySelector<HTMLButtonElement>('app-user-disable-dialog .pt-btn--danger')!.click();
+      await settle(fixture);
+      const disable = http.expectOne((r) => r.url === `${URL}/2/disable` && r.method === 'POST');
+      expect(disable.request.body).toEqual({ version: 2 });
+      http.match(() => true);
+    });
+
+    it('Riattiva sends the version of its row', async () => {
+      const fixture = renderAs('1');
+      await respond(fixture, 3);
+
+      action(fixture, 2)!.click();
+      fixture.detectChanges();
+
+      const enable = http.expectOne((r) => r.url === `${URL}/3/enable` && r.method === 'POST');
+      expect(enable.request.body).toEqual({ version: 3 });
+      http.match(() => true);
+    });
+
+    it('a Riattiva refused with 409 shows the message above the table and reloads the list', async () => {
+      const fixture = renderAs('1');
+      await respond(fixture, 3);
+      const element = fixture.nativeElement as HTMLElement;
+      action(fixture, 2)!.click();
+      fixture.detectChanges();
+
+      http
+        .expectOne((r) => r.url === `${URL}/3/enable` && r.method === 'POST')
+        .flush(
+          {
+            errorCode: 'Identity.User.ConcurrentUpdate',
+            detail: 'Utente modificato nel frattempo.',
+          },
+          { status: 409, statusText: 'Conflict' },
+        );
+      await settle(fixture);
+
+      expect(element.querySelector('main > .pt-notice--danger')?.textContent?.trim()).toBe(
+        'Utente modificato nel frattempo.',
+      );
+      http.expectOne((r) => r.url === URL && r.method === 'GET');
+    });
+
     it('"Riattiva" enables at once with no dialog, and while it runs the button is disabled and reads "Riattivazione…"', async () => {
       const fixture = renderAs('1');
       await respond(fixture, 3);
@@ -698,7 +831,9 @@ describe('UserList', () => {
       expect(
         (fixture.nativeElement as HTMLElement).querySelector('app-user-disable-dialog'),
       ).toBeNull();
-      expect(action(fixture, 2)!.disabled).toBe(true);
+      // aria-disabled, not disabled: the button keeps the focus while it runs
+      expect(action(fixture, 2)!.getAttribute('aria-disabled')).toBe('true');
+      expect(action(fixture, 2)!.disabled).toBe(false);
       expect(action(fixture, 2)!.textContent?.trim()).toBe('Riattivazione…');
       http.expectOne((r) => r.url === `${URL}/3/enable` && r.method === 'POST');
     });

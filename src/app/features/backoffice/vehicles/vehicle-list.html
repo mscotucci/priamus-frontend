@@ -52,6 +52,11 @@
           {{ 'vehicles.list.clear' | translate }}
         </button>
       }
+      @if (facade.reloading()) {
+        <span class="pt-spinner pt-spinner--sm ml-auto" role="status"
+          ><span class="sr-only">{{ 'common.refreshing' | translate }}</span></span
+        >
+      }
     </div>
   }
   @if (facade.loading()) {
@@ -77,38 +82,42 @@
     </div>
   } @else {
     <div class="pt-table-wrap">
-      <table class="pt-table">
+      <table class="pt-table" [attr.aria-busy]="facade.reloading() || null">
         <thead>
           <tr>
-            @for (column of columns; track column.key) {
-              @if (column.key === 'status') {
+            @for (column of columns; track column.suffix) {
+              @if (column.suffix === 'status') {
                 <th scope="col">{{ 'vehicles.list.column.trailer' | translate }}</th>
               }
-              <th
-                scope="col"
-                [attr.aria-sort]="
-                  facade.sortColumn() === column.key
-                    ? facade.sortDirection() === 'Ascending'
-                      ? 'ascending'
-                      : 'descending'
-                    : null
-                "
-              >
-                <button
-                  type="button"
-                  class="inline-flex cursor-pointer items-center gap-1 uppercase"
-                  (click)="sortBy(column.key)"
+              @if (column.sortKey === null) {
+                <th scope="col">{{ 'vehicles.list.column.' + column.suffix | translate }}</th>
+              } @else {
+                <th
+                  scope="col"
+                  [attr.aria-sort]="
+                    facade.sortColumn() === column.sortKey
+                      ? facade.sortDirection() === 'Ascending'
+                        ? 'ascending'
+                        : 'descending'
+                      : null
+                  "
                 >
-                  {{ 'vehicles.list.column.' + column.suffix | translate }}
-                  @if (facade.sortColumn() === column.key) {
-                    <app-icon
-                      name="chevron"
-                      size="xs"
-                      [class.rotate-180]="facade.sortDirection() === 'Ascending'"
-                    />
-                  }
-                </button>
-              </th>
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1 uppercase"
+                    (click)="sortBy(column.sortKey)"
+                  >
+                    {{ 'vehicles.list.column.' + column.suffix | translate }}
+                    @if (facade.sortColumn() === column.sortKey) {
+                      <app-icon
+                        name="chevron"
+                        size="xs"
+                        [class.rotate-180]="facade.sortDirection() === 'Ascending'"
+                      />
+                    }
+                  </button>
+                </th>
+              }
             }
             <th scope="col">
               <span class="sr-only">{{ 'vehicles.list.column.actions' | translate }}</span>
@@ -153,29 +162,28 @@
                   >
                     {{ 'vehicles.list.edit' | translate }}
                   </button>
-                  @if (vehicle.status === 'Active') {
-                    <button
-                      type="button"
-                      class="pt-btn pt-btn--outline pt-btn--sm"
-                      (click)="openDecommission(vehicle)"
-                    >
-                      {{ 'vehicles.list.decommission' | translate }}
-                    </button>
-                  } @else {
-                    <button
-                      type="button"
-                      class="pt-btn pt-btn--outline pt-btn--sm"
-                      [disabled]="facade.reactivatingId() !== null"
-                      (click)="facade.reactivate(vehicle)"
-                    >
-                      {{
-                        (facade.reactivatingId() === vehicle.id
+                  <!-- one button for both statuses: it survives the status change, and so does its focus -->
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-disabled]="
+                      (vehicle.status !== 'Active' && facade.reactivatingId() !== null) || null
+                    "
+                    (click)="
+                      vehicle.status === 'Active'
+                        ? openDecommission(vehicle)
+                        : facade.reactivate(vehicle)
+                    "
+                  >
+                    {{
+                      (vehicle.status === 'Active'
+                        ? 'vehicles.list.decommission'
+                        : facade.reactivatingId() === vehicle.id
                           ? 'vehicles.reactivate.pending'
                           : 'vehicles.list.reactivate'
-                        ) | translate
-                      }}
-                    </button>
-                  }
+                      ) | translate
+                    }}
+                  </button>
                 </div>
               </td>
             </tr>

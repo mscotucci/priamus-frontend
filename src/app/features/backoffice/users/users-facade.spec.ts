@@ -10,7 +10,7 @@ import { userWithRole } from '../../../core/testing/dom-testing';
 import { Toast } from '../../../core/toast/toast';
 import { UsersFacade } from './users-facade';
 import { settle } from '../../../core/testing/interaction-testing';
-import type { UserPage } from './users-api';
+import type { UserListItem, UserPage } from './users-api';
 
 const URL = '/api/identity/users';
 
@@ -23,6 +23,7 @@ const page = (total: number): UserPage => ({
       status: 'Active',
       createdAt: '2026-05-12T08:00:00Z',
       lastModifiedAt: '2026-05-12T08:00:00Z',
+      version: 1,
     },
   ],
   totalCount: total,
@@ -32,6 +33,29 @@ const page = (total: number): UserPage => ({
   hasNextPage: false,
   hasPreviousPage: false,
 });
+
+const rossetti: UserListItem = {
+  id: '2',
+  username: 'a.rossetti',
+  role: 'Driver',
+  status: 'Active',
+  createdAt: '2026-05-14T12:00:00Z',
+  lastModifiedAt: '2026-05-14T12:00:00Z',
+  version: 4,
+};
+const esposito: UserListItem = {
+  id: '3',
+  username: 'f.esposito',
+  role: 'BackOffice',
+  status: 'Disabled',
+  createdAt: '2026-05-14T12:00:00Z',
+  lastModifiedAt: '2026-11-03T12:00:00Z',
+  version: 6,
+};
+const staleConflict = {
+  errorCode: 'Identity.User.ConcurrentUpdate',
+  detail: "L'utente è stato modificato da un altro utente nel frattempo.",
+};
 
 describe('UsersFacade', () => {
   let http: HttpTestingController;
@@ -96,6 +120,37 @@ describe('UsersFacade', () => {
     expect(facade.loading()).toBe(false);
   });
 
+  it('reading the same list again keeps its rows: reloading, not loading, until the answer', async () => {
+    lastRequest().flush(page(1));
+    await settle();
+
+    facade.reload();
+    const again = lastRequest();
+    expect(facade.loading()).toBe(false);
+    expect(facade.reloading()).toBe(true);
+    expect(facade.total()).toBe(1);
+
+    again.flush(page(2));
+    await settle();
+
+    expect(facade.reloading()).toBe(false);
+    expect(facade.total()).toBe(2);
+  });
+
+  it('a new search is a load, not a reload', async () => {
+    lastRequest().flush(page(1));
+    await settle();
+
+    facade.setSearch('xyz');
+    const next = lastRequest();
+    expect(facade.loading()).toBe(true);
+    expect(facade.reloading()).toBe(false);
+    next.flush(page(0));
+    await settle();
+
+    expect(facade.loading()).toBe(false);
+  });
+
   it('a failed load is reported as failure and reload asks again', async () => {
     lastRequest().flush(null, { status: 500, statusText: 'Server Error' });
     await settle();
@@ -106,6 +161,9 @@ describe('UsersFacade', () => {
     facade.reload();
     const retry = lastRequest();
     expect(facade.failed()).toBe(false);
+    // nothing was shown before: the retry is a load, so the indicator replaces the notice
+    expect(facade.loading()).toBe(true);
+    expect(facade.reloading()).toBe(false);
     retry.flush(page(2));
     await settle();
 
@@ -186,7 +244,7 @@ describe('UsersFacade', () => {
 
   it('changing the page keeps the other parts of the query', () => {
     lastRequest().flush(page(50));
-    facade.setSort('role', 'Descending');
+    facade.setSort('createdAt', 'Descending');
     lastRequest().flush(page(50));
 
     facade.setPage(2);
@@ -194,7 +252,7 @@ describe('UsersFacade', () => {
     expect(params(lastRequest())).toEqual({
       page: '2',
       pageSize: '20',
-      sortColumn: 'role',
+      sortColumn: 'createdAt',
       sortDirection: 'Descending',
     });
   });
@@ -203,7 +261,7 @@ describe('UsersFacade', () => {
     lastRequest().flush(page(50));
     facade.setSearch('ros');
     facade.setRole('Driver');
-    facade.setSort('status', 'Descending');
+    facade.setSort('lastModifiedAt', 'Descending');
     lastRequest().flush(page(5));
 
     expect(localStorage.length).toBe(0);
@@ -235,7 +293,7 @@ describe('UsersFacade', () => {
       facade.setSearch('ros');
       facade.setRole('Driver');
       lastRequest().flush(page(50));
-      facade.setSort('role', 'Descending');
+      facade.setSort('createdAt', 'Descending');
       lastRequest().flush(page(50));
       facade.setPage(2);
       lastRequest().flush(page(50));
@@ -256,7 +314,7 @@ describe('UsersFacade', () => {
       expect(params(reload)).toEqual({
         page: '2',
         pageSize: '20',
-        sortColumn: 'role',
+        sortColumn: 'createdAt',
         sortDirection: 'Descending',
         usernameContains: 'ros',
         role: 'Driver',
@@ -331,12 +389,12 @@ describe('UsersFacade', () => {
       facade.setSearch('ros');
       facade.setStatus('Active');
       lastRequest().flush(page(50));
-      facade.setSort('role', 'Descending');
+      facade.setSort('createdAt', 'Descending');
       lastRequest().flush(page(50));
       facade.setPage(2);
       lastRequest().flush(page(50));
 
-      const outcome = facade.disable('2', 'a.rossetti');
+      const outcome = facade.disable(rossetti);
       const [request] = post();
       request.flush(null, noContent);
 
@@ -346,7 +404,7 @@ describe('UsersFacade', () => {
       expect(params(lastRequest())).toEqual({
         page: '2',
         pageSize: '20',
-        sortColumn: 'role',
+        sortColumn: 'createdAt',
         sortDirection: 'Descending',
         usernameContains: 'ros',
         status: 'Active',
@@ -354,17 +412,17 @@ describe('UsersFacade', () => {
     });
 
     it('gives the ApiError back on refusal, shows no toast and does not reload', async () => {
-      const outcome = facade.disable('2', 'a.rossetti');
+      const outcome = facade.disable(rossetti);
       post()[0].flush(
-        { errorCode: 'Identity.User.CannotDisableSelf', detail: 'Non puoi disabilitarti.' },
-        { status: 409, statusText: 'Conflict' },
+        { errorCode: 'Identity.User.NotFound', detail: 'Utente non trovato.' },
+        { status: 404, statusText: 'Not Found' },
       );
 
       expect(await outcome).toEqual({
         kind: 'domain',
-        status: 409,
-        errorCode: 'Identity.User.CannotDisableSelf',
-        detail: 'Non puoi disabilitarti.',
+        status: 404,
+        errorCode: 'Identity.User.NotFound',
+        detail: 'Utente non trovato.',
       });
       expect(TestBed.inject(Toast).current()).toBeNull();
       expect(facade.disabling()).toBe(false);
@@ -372,12 +430,54 @@ describe('UsersFacade', () => {
       http.expectNone((r) => r.url === URL && r.method === 'GET');
     });
 
+    it('the request body carries the version of the row', async () => {
+      const outcome = facade.disable(rossetti);
+      const [request] = post();
+      expect(request.request.body).toEqual({ version: 4 });
+      request.flush(null, noContent);
+      await outcome;
+      http.match(() => true);
+    });
+
+    it('a 409 returns the error with no toast and reloads the list keeping its query', async () => {
+      facade.setSearch('ros');
+      lastRequest().flush(page(50));
+      facade.setPage(2);
+      lastRequest().flush(page(50));
+
+      const outcome = facade.disable(rossetti);
+      post()[0].flush(staleConflict, { status: 409, statusText: 'Conflict' });
+
+      expect(await outcome).toEqual({ kind: 'domain', status: 409, ...staleConflict });
+      expect(TestBed.inject(Toast).current()).toBeNull();
+      expect(params(lastRequest())).toEqual({
+        page: '2',
+        pageSize: '20',
+        sortColumn: 'username',
+        sortDirection: 'Ascending',
+        usernameContains: 'ros',
+      });
+    });
+
+    it('a second disable with the same row sends the same stale version', async () => {
+      const first = facade.disable(rossetti);
+      post()[0].flush(staleConflict, { status: 409, statusText: 'Conflict' });
+      await first;
+      http.match(() => true);
+
+      void facade.disable(rossetti);
+      const [again] = post();
+
+      expect(again.request.body).toEqual({ version: 4 });
+      http.match(() => true);
+    });
+
     it('a failure after the 204 is not reported as a refusal and releases the pending flag', async () => {
       vi.spyOn(TestBed.inject(Toast), 'success').mockImplementation(() => {
         throw new Error('toast failed');
       });
 
-      const outcome = facade.disable('2', 'a.rossetti');
+      const outcome = facade.disable(rossetti);
       post()[0].flush(null, noContent);
 
       await expect(outcome).rejects.toThrow('toast failed');
@@ -385,8 +485,8 @@ describe('UsersFacade', () => {
     });
 
     it('is pending while the request runs, and two calls send one request', async () => {
-      const first = facade.disable('2', 'a.rossetti');
-      const second = facade.disable('2', 'a.rossetti');
+      const first = facade.disable(rossetti);
+      const second = facade.disable(rossetti);
 
       expect(facade.disabling()).toBe(true);
       expect(await second).toBe('ignored');
@@ -418,7 +518,7 @@ describe('UsersFacade', () => {
       facade.setPage(2);
       lastRequest().flush(page(50));
 
-      const done = facade.enable('3', 'f.esposito');
+      const done = facade.enable(esposito);
       expect(facade.enablingId()).toBe('3');
       post()[0].flush(null, noContent);
       await done;
@@ -437,7 +537,7 @@ describe('UsersFacade', () => {
     });
 
     it('a refusal with a detail becomes the notice, with no toast and no reload', async () => {
-      const done = facade.enable('3', 'f.esposito');
+      const done = facade.enable(esposito);
       post()[0].flush(
         { errorCode: 'Identity.User.NotFound', detail: 'Utente non trovato.' },
         { status: 404, statusText: 'Not Found' },
@@ -451,8 +551,38 @@ describe('UsersFacade', () => {
       http.expectNone((r) => r.url === URL && r.method === 'GET');
     });
 
+    it('the request body carries the version of the row', async () => {
+      const done = facade.enable(esposito);
+      const [request] = post();
+      expect(request.request.body).toEqual({ version: 6 });
+      request.flush(null, noContent);
+      await done;
+      http.match(() => true);
+    });
+
+    it('a 409 becomes the notice with the backend message and reloads the list keeping its query', async () => {
+      facade.setSearch('ros');
+      lastRequest().flush(page(50));
+      facade.setSort('createdAt', 'Descending');
+      lastRequest().flush(page(50));
+
+      const done = facade.enable(esposito);
+      post()[0].flush(staleConflict, { status: 409, statusText: 'Conflict' });
+      await done;
+
+      expect(facade.enableNotice()).toEqual({ detail: staleConflict.detail });
+      expect(TestBed.inject(Toast).current()).toBeNull();
+      expect(params(lastRequest())).toEqual({
+        page: '1',
+        pageSize: '20',
+        sortColumn: 'createdAt',
+        sortDirection: 'Descending',
+        usernameContains: 'ros',
+      });
+    });
+
     it('a failure without a detail becomes the generic notice', async () => {
-      const done = facade.enable('3', 'f.esposito');
+      const done = facade.enable(esposito);
       post()[0].flush(null, { status: 500, statusText: 'Server Error' });
       await done;
 
@@ -464,12 +594,12 @@ describe('UsersFacade', () => {
       ['a change of role', () => facade.setRole('Driver')],
       ['a change of status', () => facade.setStatus('Disabled')],
       ['clearing the filters', () => facade.clearFilters()],
-      ['a change of sorting', () => facade.setSort('role', 'Ascending')],
+      ['a change of sorting', () => facade.setSort('createdAt', 'Ascending')],
       ['a change of page', () => facade.setPage(2)],
       ['opening a dialog', () => facade.clearEnableNotice()],
-      ['a new enabling', () => void facade.enable('3', 'f.esposito')],
+      ['a new enabling', () => void facade.enable(esposito)],
     ] as [string, () => void][])('the notice disappears at %s', async (_name, action) => {
-      const done = facade.enable('3', 'f.esposito');
+      const done = facade.enable(esposito);
       post()[0].flush(null, { status: 500, statusText: 'Server Error' });
       await done;
       expect(facade.enableNotice()).not.toBeNull();
@@ -481,11 +611,11 @@ describe('UsersFacade', () => {
     });
 
     it('a disabling clears the notice when it starts', async () => {
-      const done = facade.enable('3', 'f.esposito');
+      const done = facade.enable(esposito);
       post()[0].flush(null, { status: 500, statusText: 'Server Error' });
       await done;
 
-      void facade.disable('2', 'a.rossetti');
+      void facade.disable(rossetti);
 
       expect(facade.enableNotice()).toBeNull();
       http.match(() => true);
@@ -496,7 +626,7 @@ describe('UsersFacade', () => {
         throw new Error('toast failed');
       });
 
-      const done = facade.enable('3', 'f.esposito');
+      const done = facade.enable(esposito);
       post()[0].flush(null, noContent);
 
       await expect(done).rejects.toThrow('toast failed');
@@ -504,8 +634,8 @@ describe('UsersFacade', () => {
     });
 
     it('is pending while the request runs, and two calls send one request', async () => {
-      const first = facade.enable('3', 'f.esposito');
-      const second = facade.enable('3', 'f.esposito');
+      const first = facade.enable(esposito);
+      const second = facade.enable(esposito);
 
       expect(facade.enablingId()).toBe('3');
       await second;
