@@ -371,6 +371,10 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* `font: inherit` above comes after .pt-mono and would reset it: a code in a field (a plate) stays mono */
+.pt-input.pt-mono {
+  font-family: var(--font-mono);
+}
 textarea.pt-input {
   height: auto;
   min-height: calc(var(--text-body-line) * 3 + var(--space-2) * 2);

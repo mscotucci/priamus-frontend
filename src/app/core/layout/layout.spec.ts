@@ -17,7 +17,10 @@ function render(user: CurrentUser) {
   TestBed.configureTestingModule({
     providers: [
       provideTestI18n(),
-      provideRouter([{ path: 'users', children: [] }]),
+      provideRouter([
+        { path: 'users', children: [] },
+        { path: 'vehicles', children: [] },
+      ]),
       { provide: Session, useValue: { user: signal(user).asReadonly(), signOut } },
     ],
   });
@@ -36,29 +39,36 @@ describe('Layout', () => {
 
     expect(sidebar.querySelector('.pt-brand__name')?.textContent).toBe('Priamus');
     expect(sidebar.querySelector('.pt-brand__line')?.textContent).toBe('Gestione Viaggi');
-    expect(sidebar.querySelector('.pt-nav__group')?.textContent).toBe('Sistema');
+    expect(sidebar.querySelector('.pt-nav__group')?.textContent).toBe('Anagrafiche');
     const item = sidebar.querySelector('nav a.pt-nav-item')!;
-    expect(item.textContent?.trim()).toBe('Utenti');
+    expect(item.textContent?.trim()).toBe('Mezzi');
     expect(item.querySelector('svg')).not.toBeNull();
     expect(sidebar.querySelector('.pt-avatar')).not.toBeNull();
     expect(sidebar.querySelector('button[aria-label="Esci"]')).not.toBeNull();
   });
 
-  it('an Admin sees "Utenti", pointing to /users, and nothing is shown disabled', () => {
+  it('an Admin sees the group "Anagrafiche" with "Mezzi" before the group "Sistema" with "Utenti", and nothing is shown disabled', () => {
     const { sidebar } = render(admin);
 
+    const groups = [...sidebar.querySelectorAll('.pt-nav__group')].map((g) => g.textContent);
+    expect(groups).toEqual(['Anagrafiche', 'Sistema']);
     const items = sidebar.querySelectorAll('nav a');
-    expect(items).toHaveLength(1);
-    expect(items[0].getAttribute('href')).toBe('/users');
+    expect(items).toHaveLength(2);
+    expect(items[0].getAttribute('href')).toBe('/vehicles');
+    expect(items[1].getAttribute('href')).toBe('/users');
     expect(sidebar.querySelector('[disabled], [aria-disabled="true"]')).toBeNull();
   });
 
-  it('a BackOffice user has no "Utenti" item and no empty group label', () => {
+  it('a BackOffice user sees only "Mezzi" under "Anagrafiche", with no "Utenti" item and no "Sistema" group', () => {
     const { sidebar, drawer } = render(backOffice);
 
-    expect(sidebar.querySelectorAll('nav a')).toHaveLength(0);
-    expect(sidebar.querySelector('.pt-nav__group')).toBeNull();
+    const items = sidebar.querySelectorAll('nav a');
+    expect(items).toHaveLength(1);
+    expect(items[0].getAttribute('href')).toBe('/vehicles');
+    expect(sidebar.querySelectorAll('.pt-nav__group')).toHaveLength(1);
+    expect(sidebar.querySelector('.pt-nav__group')?.textContent).toBe('Anagrafiche');
     expect(drawer.textContent).not.toContain('Utenti');
+    expect(drawer.textContent).not.toContain('Sistema');
   });
 
   it('the item of the open page is marked as the current one', async () => {
@@ -66,7 +76,12 @@ describe('Layout', () => {
     await TestBed.inject(Router).navigateByUrl('/users');
     fixture.detectChanges();
 
-    expect(sidebar.querySelector('nav a')?.getAttribute('aria-current')).toBe('page');
+    expect(sidebar.querySelector('nav a[href="/users"]')?.getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(
+      sidebar.querySelector('nav a[href="/vehicles"]')?.getAttribute('aria-current'),
+    ).toBeNull();
   });
 
   it.each([
@@ -126,7 +141,7 @@ describe('Layout', () => {
     const { drawer } = render(admin);
 
     expect(drawer.open).toBe(false);
-    expect(drawer.querySelector('nav a')?.textContent?.trim()).toBe('Utenti');
+    expect(drawer.querySelector('nav a')?.textContent?.trim()).toBe('Mezzi');
     expect(drawer.querySelector('button[aria-label="Chiudi il menu"]')).not.toBeNull();
     expect(drawer.querySelector('button[aria-label="Esci"]')).not.toBeNull();
   });

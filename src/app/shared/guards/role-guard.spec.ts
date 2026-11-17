@@ -4,17 +4,17 @@ import { Page, guardSetup } from './guard-testing';
 
 const setup = guardSetup([
   { path: 'login', component: Page },
-  { path: 'home', component: Page },
+  { path: 'vehicles', component: Page },
   { path: 'users', component: Page, canActivate: [roleGuard('Admin')] },
 ]);
 
 describe('roleGuard', () => {
-  it('sends a BackOffice user opening an Admin-only route to /home', async () => {
+  it('sends a BackOffice user opening an Admin-only route to /vehicles', async () => {
     const router = setup(userWithRole('BackOffice'));
 
     await router.navigateByUrl('/users');
 
-    expect(router.url).toBe('/home');
+    expect(router.url).toBe('/vehicles');
   });
 
   it('lets an allowed role through', async () => {
@@ -49,6 +49,6 @@ describe('roleGuard', () => {
     release();
     await navigation;
 
-    expect(router.url).toBe('/home');
+    expect(router.url).toBe('/vehicles');
   });
 });

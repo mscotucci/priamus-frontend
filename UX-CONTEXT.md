@@ -41,7 +41,7 @@ Reusable UX conventions. Single-screen details live in the mockups, behaviour in
 - In a filter row the search field and the filter chips have the same height.
 - A row with an open anomaly is highlighted and sorts to the top, with the action that resolves it in the row.
 - Opening a row shows its detail in a drawer over the list, which keeps its state (to confirm).
-- Rich entities (customer, contract, vehicle, driver) are edited on their own page; a single decision or a short form of a few fields in a dialog over the list, which keeps its state. A dialog with typed values closes with its cancel button or Escape, not by clicking outside.
+- Rich entities (customer, contract, driver) are edited on their own page; a vehicle, four fields, is edited in a dialog (decided 2026-11-16); a single decision or a short form of a few fields in a dialog over the list, which keeps its state. A dialog with typed values closes with its cancel button or Escape, not by clicking outside.
 - Destructive actions ask for confirmation in a dialog. An action the user may not perform is not rendered, never shown disabled.
 
 ## Feedback

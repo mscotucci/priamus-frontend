@@ -127,6 +127,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/vehicles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListVehicles"];
+        put?: never;
+        post: operations["CreateVehicle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/vehicles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateVehicle"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/vehicles/{id}/decommission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DecommissionVehicle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/vehicles/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReactivateVehicle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -150,6 +214,53 @@ export interface components {
             status: components["schemas"]["UserStatus"];
             /** @description The normalized username. */
             username: string;
+        };
+        /**
+         * @description Request body for `POST /api/registry/vehicles` (PRD RF-26, RF-27). The description is
+         *     measured once trimmed, as the aggregate stores it, so its length is checked in
+         *     IEnumerable&lt;ValidationResult&gt; CreateVehicleRequest.Validate(ValidationContext validationContext) rather than with a length attribute on the raw text.
+         */
+        CreateVehicleRequest: {
+            description: string;
+            licensePlate: string;
+            requiresTrailer: null | boolean;
+            type: null | components["schemas"]["VehicleType"];
+        };
+        /** @description Response body for a successful `POST /api/registry/vehicles` request. */
+        CreateVehicleResponse: {
+            /** @description The trimmed description. */
+            description: string;
+            /**
+             * Format: uuid
+             * @description The newly created vehicle's identifier.
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description UTC instant of the last change.
+             */
+            lastModifiedAt: string;
+            /** @description The plate in normal form. */
+            licensePlate: string;
+            /** @description Whether a trip led by this vehicle must name a trailer. */
+            requiresTrailer: boolean;
+            /** @description The status (always VehicleStatus.Active on creation). */
+            status: components["schemas"]["VehicleStatus"];
+            /** @description The vehicle type. */
+            type: components["schemas"]["VehicleType"];
+            /**
+             * Format: int32
+             * @description Version the client sends back with its next write on this vehicle.
+             */
+            version: number;
+        };
+        /**
+         * @description Request body for `POST /api/registry/vehicles/{id}/decommission`. `Version` is the version
+         *     the client read; the change is refused when the vehicle has changed since.
+         */
+        DecommissionVehicleRequest: {
+            /** Format: int32 */
+            version: number | null;
         };
         /** @description The signed-in user as the database knows it now. */
         GetCurrentUserResponse: {
@@ -219,6 +330,35 @@ export interface components {
              */
             totalPages?: number;
         };
+        /** @description Response envelope for a paginated query. Immutable record. */
+        PagedResponseOfVehicleListItemDto: {
+            /** @description The items returned in the current page. */
+            data: components["schemas"]["VehicleListItemDto"][];
+            /** @description True when there is a page after this one. */
+            hasNextPage?: boolean;
+            /** @description True when there is a page before this one. */
+            hasPreviousPage?: boolean;
+            /**
+             * Format: int32
+             * @description 1-based page number returned.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description Page size used to compute the result.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description Total number of items across all pages.
+             */
+            totalCount: number;
+            /**
+             * Format: int32
+             * @description Total number of pages, computed as `ceil(TotalCount / PageSize)`.
+             */
+            totalPages?: number;
+        };
         ProblemDetails: {
             detail?: null | string;
             instance?: null | string;
@@ -226,6 +366,14 @@ export interface components {
             status?: number | null;
             title?: null | string;
             type?: null | string;
+        };
+        /**
+         * @description Request body for `POST /api/registry/vehicles/{id}/reactivate`. `Version` is the version
+         *     the client read; the change is refused when the vehicle has changed since.
+         */
+        ReactivateVehicleRequest: {
+            /** Format: int32 */
+            version: number | null;
         };
         /** @description Request body for `POST /api/identity/auth/refresh`. */
         RefreshRequest: {
@@ -254,6 +402,18 @@ export interface components {
         };
         /** @enum {unknown} */
         SortDirection: "Ascending" | "Descending" | null;
+        /**
+         * @description Request body for `PUT /api/registry/vehicles/{id}` (PRD RF-26, RF-27). `Version` is the
+         *     version the client read; the save is refused when the vehicle has changed since.
+         */
+        UpdateVehicleRequest: {
+            description: string;
+            licensePlate: string;
+            requiresTrailer: null | boolean;
+            type: null | components["schemas"]["VehicleType"];
+            /** Format: int32 */
+            version: number | null;
+        };
         /** @description A single item in the paginated list of users. */
         UserListItemDto: {
             /** Format: date-time */
@@ -280,6 +440,44 @@ export interface components {
          * @enum {unknown}
          */
         UserStatus: "Active" | "Disabled";
+        /** @description A single item in the paginated list of vehicles. */
+        VehicleListItemDto: {
+            /** @description The description. */
+            description: string;
+            /**
+             * Format: uuid
+             * @description The vehicle's identifier.
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description UTC instant of the last change.
+             */
+            lastModifiedAt: string;
+            /** @description The plate in normal form. */
+            licensePlate: string;
+            /** @description Whether a trip led by this vehicle must name a trailer. */
+            requiresTrailer: boolean;
+            /** @description The status. */
+            status: components["schemas"]["VehicleStatus"];
+            /** @description The vehicle type. */
+            type: components["schemas"]["VehicleType"];
+            /**
+             * Format: int32
+             * @description Version the client sends back with its next write on this vehicle.
+             */
+            version: number;
+        };
+        /**
+         * @description Whether a Vehicle can be chosen for new trips (PRD §6.6, RF-29).
+         * @enum {unknown}
+         */
+        VehicleStatus: "Active" | "Decommissioned";
+        /**
+         * @description What role a Vehicle can play in a trip (PRD §5.2, RF-26).
+         * @enum {unknown}
+         */
+        VehicleType: "Tractor" | "Trailer" | "StandaloneVehicle";
     };
     responses: never;
     parameters: never;
@@ -788,6 +986,355 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListVehicles: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Text matched, normalised as a plate, against part of the plate, or, ignoring case, against
+                 *     part of the description. When null or whitespace, no search is applied.
+                 */
+                search?: string;
+                /** @description Filter by type. When null, all types are included. */
+                type?: components["schemas"]["VehicleType"];
+                /** @description Filter by status. When null, all statuses are included. */
+                status?: components["schemas"]["VehicleStatus"];
+                /**
+                 * @description 1-based page number. Optional on the wire; values below 1 are coerced to 1
+                 *     on the setter. Read via int PagedRequest.EffectivePage to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPage when null).
+                 */
+                page?: number;
+                /**
+                 * @description Page size between 1 and int PagedRequest.MaxPageSize. Optional on the wire;
+                 *     non-positive values are coerced to int PagedRequest.DefaultPageSize, values
+                 *     greater than int PagedRequest.MaxPageSize are clamped to int PagedRequest.MaxPageSize.
+                 *     Read via int PagedRequest.EffectivePageSize to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPageSize when null).
+                 */
+                pageSize?: number;
+                /**
+                 * @description Name of the column to sort by. Optional; handlers fall back to a default
+                 *     safe column when this is null or not in their whitelist.
+                 */
+                sortColumn?: string;
+                /**
+                 * @description Sort direction. Optional on the wire; readers should use
+                 *     bool PagedRequest.IsAscending which resolves null to
+                 *     SortDirection.Ascending.
+                 */
+                sortDirection?: components["schemas"]["SortDirection"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfVehicleListItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateVehicleRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateVehicleResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVehicleRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DecommissionVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecommissionVehicleRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReactivateVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReactivateVehicleRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

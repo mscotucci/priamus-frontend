@@ -1,0 +1,37 @@
+<app-dialog
+  icon="truck"
+  tone="danger"
+  [title]="'vehicles.decommission.title' | translate: { plate: vehicle().licensePlate }"
+  [line]="vehicle().description"
+  [busy]="facade.decommissioning()"
+  (closeRequested)="close()"
+>
+  @if (notice(); as notice) {
+    <app-notice class="mb-3" [notice]="notice" />
+  }
+  <p>{{ 'vehicles.decommission.text' | translate }}</p>
+  <button
+    actions
+    #cancel
+    type="button"
+    class="pt-btn pt-btn--outline"
+    [disabled]="facade.decommissioning()"
+    (click)="close()"
+  >
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button
+    actions
+    type="button"
+    class="pt-btn pt-btn--danger"
+    [disabled]="facade.decommissioning()"
+    (click)="decommission()"
+  >
+    {{
+      (facade.decommissioning()
+        ? 'vehicles.decommission.submit.pending'
+        : 'vehicles.decommission.submit.idle'
+      ) | translate
+    }}
+  </button>
+</app-dialog>

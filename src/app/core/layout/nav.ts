@@ -17,6 +17,17 @@ export interface NavGroup {
 
 export const NAV: NavGroup[] = [
   {
+    labelKey: 'shell.nav.registry',
+    items: [
+      {
+        labelKey: 'shell.nav.vehicles',
+        icon: 'truck',
+        path: '/vehicles',
+        roles: ['BackOffice', 'Admin'],
+      },
+    ],
+  },
+  {
     labelKey: 'shell.nav.system',
     items: [{ labelKey: 'shell.nav.users', icon: 'user', path: '/users', roles: ['Admin'] }],
   },

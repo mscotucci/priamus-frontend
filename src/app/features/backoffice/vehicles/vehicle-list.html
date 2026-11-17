@@ -1,0 +1,206 @@
+<app-topbar
+  [section]="'shell.nav.registry' | translate"
+  [page]="'shell.nav.vehicles' | translate"
+  [title]="'vehicles.list.title' | translate"
+  [line]="
+    facade.loaded()
+      ? ((facade.total() === 1 ? 'vehicles.list.count.one' : 'vehicles.list.count.other')
+        | translate: { count: facade.total() })
+      : undefined
+  "
+>
+  <button type="button" class="pt-btn pt-btn--primary" (click)="openForm(null)">
+    {{ 'vehicles.list.new' | translate }}
+  </button>
+</app-topbar>
+<main class="flex flex-col gap-4 p-8">
+  @if (facade.reactivateNotice(); as notice) {
+    <app-notice [notice]="notice" />
+  }
+  @if (!registryEmpty()) {
+    <div class="pt-card flex flex-wrap items-center gap-2">
+      <label class="pt-search pt-search--sm">
+        <app-icon name="search" size="sm" />
+        <input
+          #searchField
+          class="w-56"
+          type="search"
+          maxlength="100"
+          [placeholder]="'vehicles.list.search.placeholder' | translate"
+          [attr.aria-label]="'vehicles.list.search.label' | translate"
+          (input)="searchFor(searchField.value)"
+        />
+      </label>
+      <app-filter-menu
+        labelKey="vehicles.list.filter.type"
+        [options]="types"
+        [value]="facade.type()"
+        (valueChange)="facade.setType($event)"
+      />
+      <app-filter-menu
+        labelKey="vehicles.list.filter.status"
+        [options]="statuses"
+        [value]="facade.status()"
+        (valueChange)="facade.setStatus($event)"
+      />
+      @if (filtered()) {
+        <button
+          type="button"
+          class="pt-btn pt-btn--outline pt-btn--sm"
+          (click)="clearFilters(searchField)"
+        >
+          {{ 'vehicles.list.clear' | translate }}
+        </button>
+      }
+    </div>
+  }
+  @if (facade.loading()) {
+    <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'vehicles.list.loading' | translate }}</span>
+    </div>
+  } @else if (facade.failed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="facade.reload()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (facade.total() === 0) {
+    <div class="pt-card pt-empty">
+      @if (filtered()) {
+        <p class="pt-title">{{ 'vehicles.list.nomatch.title' | translate }}</p>
+        <p class="pt-muted">{{ 'vehicles.list.nomatch.hint' | translate }}</p>
+      } @else {
+        <p class="pt-title">{{ 'vehicles.list.empty.title' | translate }}</p>
+        <p class="pt-muted">{{ 'vehicles.list.empty.hint' | translate }}</p>
+      }
+    </div>
+  } @else {
+    <div class="pt-table-wrap">
+      <table class="pt-table">
+        <thead>
+          <tr>
+            @for (column of columns; track column.key) {
+              @if (column.key === 'status') {
+                <th scope="col">{{ 'vehicles.list.column.trailer' | translate }}</th>
+              }
+              <th
+                scope="col"
+                [attr.aria-sort]="
+                  facade.sortColumn() === column.key
+                    ? facade.sortDirection() === 'Ascending'
+                      ? 'ascending'
+                      : 'descending'
+                    : null
+                "
+              >
+                <button
+                  type="button"
+                  class="inline-flex cursor-pointer items-center gap-1 uppercase"
+                  (click)="sortBy(column.key)"
+                >
+                  {{ 'vehicles.list.column.' + column.suffix | translate }}
+                  @if (facade.sortColumn() === column.key) {
+                    <app-icon
+                      name="chevron"
+                      size="xs"
+                      [class.rotate-180]="facade.sortDirection() === 'Ascending'"
+                    />
+                  }
+                </button>
+              </th>
+            }
+            <th scope="col">
+              <span class="sr-only">{{ 'vehicles.list.column.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (vehicle of facade.items(); track vehicle.id) {
+            <tr>
+              <td>
+                <span class="pt-mono">{{ vehicle.licensePlate }}</span>
+              </td>
+              <td>{{ vehicle.description }}</td>
+              <td>{{ 'vehicles.type.' + vehicle.type.toLowerCase() | translate }}</td>
+              @if (vehicle.type === 'Tractor') {
+                <td>
+                  {{
+                    (vehicle.requiresTrailer
+                      ? 'vehicles.trailer.required'
+                      : 'vehicles.trailer.optional'
+                    ) | translate
+                  }}
+                </td>
+              } @else {
+                <td class="pt-muted">{{ 'vehicles.trailer.none' | translate }}</td>
+              }
+              <td>
+                <span
+                  class="pt-pill"
+                  [class.pt-pill--success]="vehicle.status === 'Active'"
+                  [class.pt-pill--danger]="vehicle.status === 'Decommissioned'"
+                  >{{ 'vehicles.status.' + vehicle.status.toLowerCase() | translate }}</span
+                >
+              </td>
+              <td>{{ vehicle.lastModifiedAt | date: 'dd/MM/yyyy' }}</td>
+              <td class="text-right whitespace-nowrap">
+                <div class="inline-flex gap-1">
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    (click)="openForm(vehicle)"
+                  >
+                    {{ 'vehicles.list.edit' | translate }}
+                  </button>
+                  @if (vehicle.status === 'Active') {
+                    <button
+                      type="button"
+                      class="pt-btn pt-btn--outline pt-btn--sm"
+                      (click)="openDecommission(vehicle)"
+                    >
+                      {{ 'vehicles.list.decommission' | translate }}
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="pt-btn pt-btn--outline pt-btn--sm"
+                      [disabled]="facade.reactivatingId() !== null"
+                      (click)="facade.reactivate(vehicle)"
+                    >
+                      {{
+                        (facade.reactivatingId() === vehicle.id
+                          ? 'vehicles.reactivate.pending'
+                          : 'vehicles.list.reactivate'
+                        ) | translate
+                      }}
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td [attr.colspan]="columns.length + 2">
+              <app-paging
+                [page]="facade.page()"
+                [pageSize]="pageSize"
+                [total]="facade.total()"
+                rangeKey="vehicles.list.range"
+                (pageChange)="facade.setPage($event)"
+              />
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  }
+</main>
+@if (formOpen()) {
+  <app-vehicle-form-dialog [vehicle]="formTarget()" (closed)="formOpen.set(false)" />
+}
+@if (decommissionTarget(); as vehicle) {
+  <app-vehicle-decommission-dialog [vehicle]="vehicle" (closed)="decommissionTarget.set(null)" />
+}

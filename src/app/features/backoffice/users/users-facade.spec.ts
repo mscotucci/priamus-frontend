@@ -9,7 +9,7 @@ import { provideTestI18n } from '../../../core/i18n/i18n-testing';
 import { userWithRole } from '../../../core/testing/dom-testing';
 import { Toast } from '../../../core/toast/toast';
 import { UsersFacade } from './users-facade';
-import { settle } from './users-testing';
+import { settle } from '../../../core/testing/interaction-testing';
 import type { UserPage } from './users-api';
 
 const URL = '/api/identity/users';
@@ -272,6 +272,7 @@ describe('UsersFacade', () => {
 
       expect(await outcome).toEqual({
         kind: 'domain',
+        status: 409,
         errorCode: 'Identity.User.UsernameAlreadyTaken',
         detail: 'Già in uso.',
       });
@@ -361,6 +362,7 @@ describe('UsersFacade', () => {
 
       expect(await outcome).toEqual({
         kind: 'domain',
+        status: 409,
         errorCode: 'Identity.User.CannotDisableSelf',
         detail: 'Non puoi disabilitarti.',
       });

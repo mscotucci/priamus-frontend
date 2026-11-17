@@ -7,7 +7,7 @@ import { stubModalDialog } from '../../../core/testing/dom-testing';
 import { Toast } from '../../../core/toast/toast';
 import { UserCreateDialog } from './user-create-dialog';
 import { UsersFacade } from './users-facade';
-import { settle } from './users-testing';
+import { settle } from '../../../core/testing/interaction-testing';
 
 const URL = '/api/identity/users';
 

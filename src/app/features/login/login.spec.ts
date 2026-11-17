@@ -114,6 +114,7 @@ describe('Login', () => {
   it('a refusal shows the backend detail, keeps the user name, empties the password and focuses it', async () => {
     const refusal: ApiError = {
       kind: 'domain',
+      status: 401,
       errorCode: 'Identity.Auth.InvalidCredentials',
       detail: 'Nome utente o password non validi.',
     };

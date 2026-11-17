@@ -122,7 +122,7 @@ describe('App routes', () => {
         provideRouter([
           { path: 'login', component: Stub, canActivate: [guestGuard] },
           { path: 'users', component: Stub },
-          { path: 'home', component: Stub },
+          { path: 'vehicles', component: Stub },
           ...routes,
         ]),
         {
@@ -135,7 +135,7 @@ describe('App routes', () => {
 
   it.each<[CurrentUser['role'], string]>([
     ['Admin', '/users'],
-    ['BackOffice', '/home'],
+    ['BackOffice', '/vehicles'],
   ])('sends a signed-in %s from the root to %s', async (role, landing) => {
     configure({ id: '1', username: 'ada', role, driverId: null });
 
@@ -147,7 +147,7 @@ describe('App routes', () => {
   it.each<[CurrentUser['role'], string, string]>([
     ['Admin', '/foo', '/users'],
     ['Admin', '/users/foo', '/users'],
-    ['BackOffice', '/foo', '/home'],
+    ['BackOffice', '/foo', '/vehicles'],
   ])(
     'sends an unknown address opened by a signed-in %s (%s) to %s',
     async (role, address, landing) => {

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { noticeOf, toApiError } from './api-error';
+import { ApiError, fieldErrors, noticeOf, toApiError } from './api-error';
 
 describe('toApiError', () => {
   it('maps a 401 with an errorCode to a domain error carrying its detail', () => {
@@ -14,6 +14,7 @@ describe('toApiError', () => {
 
     expect(toApiError(response)).toEqual({
       kind: 'domain',
+      status: 401,
       errorCode: 'Identity.RefreshToken.Expired',
       detail: 'Sessione scaduta.',
     });
@@ -58,13 +59,18 @@ describe('toApiError with a value that is not an HttpErrorResponse', () => {
 
 describe('noticeOf', () => {
   it('shows the detail of a domain error that has one', () => {
-    expect(noticeOf({ kind: 'domain', errorCode: 'X', detail: 'Nome già usato.' })).toEqual({
+    expect(
+      noticeOf({ kind: 'domain', status: 409, errorCode: 'X', detail: 'Nome già usato.' }),
+    ).toEqual({
       detail: 'Nome già usato.',
     });
   });
 
   it.each([
-    ['a domain error without detail', { kind: 'domain', errorCode: 'X', detail: null }],
+    [
+      'a domain error without detail',
+      { kind: 'domain', status: 409, errorCode: 'X', detail: null },
+    ],
     ['a validation error', { kind: 'validation', errors: {} }],
     ['a generic error', { kind: 'generic' }],
   ] as const)('shows the generic key for %s', (_name, error) => {
@@ -73,5 +79,28 @@ describe('noticeOf', () => {
 
   it('shows the given fallback key instead of the generic one', () => {
     expect(noticeOf({ kind: 'generic' }, 'session.expired')).toEqual({ key: 'session.expired' });
+  });
+});
+
+describe('fieldErrors', () => {
+  const refusal: ApiError = {
+    kind: 'validation',
+    errors: { LicensePlate: ['Targa non valida.', 'Troppo corta.'], Type: ['Obbligatorio.'] },
+  };
+
+  it('returns the messages of the field, matching the name ignoring case', () => {
+    expect(fieldErrors(refusal, 'licensePlate')).toEqual(['Targa non valida.', 'Troppo corta.']);
+    expect(fieldErrors(refusal, 'type')).toEqual(['Obbligatorio.']);
+  });
+
+  it('returns nothing for a field the refusal does not name', () => {
+    expect(fieldErrors(refusal, 'description')).toEqual([]);
+  });
+
+  it.each([
+    ['a domain error', { kind: 'domain', status: 409, errorCode: 'X', detail: 'x' }],
+    ['a generic error', { kind: 'generic' }],
+  ] as const)('returns nothing for %s', (_name, error) => {
+    expect(fieldErrors(error, 'type')).toEqual([]);
   });
 });

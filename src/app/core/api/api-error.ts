@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
 export type ApiError =
-  | { kind: 'domain'; errorCode: string; detail: string | null }
+  | { kind: 'domain'; status: number; errorCode: string; detail: string | null }
   | { kind: 'validation'; errors: Record<string, string[]> }
   | { kind: 'generic' };
 
@@ -23,6 +23,7 @@ export function toApiError(response: unknown): ApiError {
   if (typeof body['errorCode'] === 'string') {
     return {
       kind: 'domain',
+      status: response.status,
       errorCode: body['errorCode'],
       detail: typeof body['detail'] === 'string' ? body['detail'] : null,
     };
@@ -43,4 +44,14 @@ export function noticeOf(error: ApiError, fallbackKey = 'errors.generic'): Notic
   return error.kind === 'domain' && error.detail !== null
     ? { detail: error.detail }
     : { key: fallbackKey };
+}
+
+/** The backend's messages for one field of a validation refusal, the field name matched ignoring case. */
+export function fieldErrors(error: ApiError, field: string): string[] {
+  if (error.kind !== 'validation') {
+    return [];
+  }
+  return Object.entries(error.errors)
+    .filter(([name]) => name.toLowerCase() === field.toLowerCase())
+    .flatMap(([, messages]) => messages);
 }

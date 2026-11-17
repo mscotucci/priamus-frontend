@@ -24,6 +24,12 @@ class Host {
   closed = 0;
 }
 
+@Component({
+  imports: [Dialog],
+  template: `<app-dialog icon="truck" tone="primary" title="Modifica mezzo" code="CZ334KL" />`,
+})
+class HostWithCode {}
+
 function render() {
   stubModalDialog();
   const fixture = TestBed.createComponent(Host);
@@ -43,7 +49,7 @@ describe('Dialog', () => {
 
     expect(dialog.open).toBe(true);
     expect(dialog.querySelector('.pt-tile--primary svg')).not.toBeNull();
-    expect(dialog.querySelector('.pt-title')?.textContent).toBe('Nuovo utente');
+    expect(dialog.querySelector('.pt-title')?.textContent?.trim()).toBe('Nuovo utente');
     expect(dialog.querySelector('.pt-dialog__head .pt-muted')?.textContent).toBe('Segreteria');
     expect(dialog.querySelector('.body')?.textContent).toBe('Corpo');
     expect(dialog.querySelector('.pt-dialog__actions .action')).not.toBeNull();
@@ -55,6 +61,24 @@ describe('Dialog', () => {
     const title = dialog.querySelector('.pt-title')!;
     expect(dialog.getAttribute('aria-labelledby')).toBe(title.id);
     expect(title.id).not.toBe('');
+  });
+
+  it('has no code in the title unless one is given', () => {
+    const { dialog } = render();
+
+    expect(dialog.querySelector('.pt-title .pt-mono')).toBeNull();
+  });
+
+  it('shows a given code after the title, in mono and inside the label', () => {
+    stubModalDialog();
+    const fixture = TestBed.createComponent(HostWithCode);
+    fixture.detectChanges();
+    const dialog = (fixture.nativeElement as HTMLElement).querySelector('dialog')!;
+
+    const title = dialog.querySelector('.pt-title')!;
+    expect(title.textContent?.replace(/\s+/g, ' ').trim()).toBe('Modifica mezzo CZ334KL');
+    expect(title.querySelector('.pt-mono')?.textContent).toBe('CZ334KL');
+    expect(dialog.getAttribute('aria-labelledby')).toBe(title.id);
   });
 
   it('emits the close request on Escape and leaves the closing to the caller', () => {

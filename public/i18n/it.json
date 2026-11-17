@@ -12,10 +12,6 @@
   "errors": {
     "generic": "Si è verificato un errore. Riprova tra poco."
   },
-  "home": {
-    "title": "Benvenuto",
-    "empty": "Nessuna sezione disponibile per ora"
-  },
   "login": {
     "title": "Accedi",
     "username": {
@@ -50,8 +46,10 @@
     },
     "nav": {
       "label": "Navigazione principale",
+      "registry": "Anagrafiche",
       "system": "Sistema",
-      "users": "Utenti"
+      "users": "Utenti",
+      "vehicles": "Mezzi"
     },
     "signout": "Esci"
   },
@@ -59,6 +57,109 @@
     "previous": "Precedente",
     "next": "Successiva",
     "page": "Pagina {{page}} di {{pages}}"
+  },
+  "vehicles": {
+    "list": {
+      "title": "Mezzi",
+      "new": "Nuovo mezzo",
+      "loading": "Caricamento…",
+      "range": "Mezzi {{from}}–{{to}} di {{total}}",
+      "count": {
+        "one": "{{count}} mezzo",
+        "other": "{{count}} mezzi"
+      },
+      "column": {
+        "plate": "Targa",
+        "description": "Descrizione",
+        "type": "Tipologia",
+        "trailer": "Rimorchio",
+        "status": "Stato",
+        "modified": "Ultima modifica",
+        "actions": "Azioni"
+      },
+      "search": {
+        "label": "Cerca targa o descrizione",
+        "placeholder": "Cerca targa o descrizione…"
+      },
+      "filter": {
+        "type": "Tipologia:",
+        "status": "Stato:"
+      },
+      "clear": "Azzera filtri",
+      "edit": "Modifica",
+      "decommission": "Dismetti",
+      "reactivate": "Riattiva",
+      "empty": {
+        "title": "Nessun mezzo in anagrafica",
+        "hint": "Aggiungi il primo con \"Nuovo mezzo\"."
+      },
+      "nomatch": {
+        "title": "Nessun mezzo trovato",
+        "hint": "Prova a cambiare la ricerca o i filtri."
+      }
+    },
+    "type": {
+      "tractor": "Motrice",
+      "trailer": "Rimorchio",
+      "standalonevehicle": "Autonomo"
+    },
+    "status": {
+      "active": "Attivo",
+      "decommissioned": "Dismesso"
+    },
+    "decommission": {
+      "title": "Dismettere il mezzo {{plate}}?",
+      "text": "Non sarà più selezionabile sui nuovi viaggi. Potrai riattivarlo in qualsiasi momento.",
+      "submit": {
+        "idle": "Dismetti",
+        "pending": "Dismissione…"
+      },
+      "done": "Mezzo {{plate}} dismesso"
+    },
+    "reactivate": {
+      "pending": "Riattivazione…",
+      "done": "Mezzo {{plate}} riattivato"
+    },
+    "trailer": {
+      "required": "Obbligatorio",
+      "optional": "Facoltativo",
+      "none": "—"
+    },
+    "form": {
+      "create": {
+        "title": "Nuovo mezzo",
+        "line": "Sarà subito selezionabile sui nuovi viaggi.",
+        "submit": "Crea mezzo",
+        "done": "Mezzo {{plate}} creato"
+      },
+      "edit": {
+        "title": "Modifica mezzo",
+        "line": "{{status}}. Le modifiche non cambiano i viaggi già registrati.",
+        "submit": "Salva modifiche",
+        "done": "Mezzo {{plate}} modificato"
+      },
+      "pending": "Salvataggio in corso…",
+      "plate": {
+        "label": "Targa",
+        "hint": "Da 2 a 10 lettere e cifre; spazi e trattini vengono tolti.",
+        "invalid": "Usa da 2 a 10 lettere e cifre; spazi e trattini vengono tolti."
+      },
+      "description": {
+        "label": "Descrizione",
+        "placeholder": "Es. Iveco Stralis 480",
+        "hint": "Marca, modello o allestimento. Massimo 100 caratteri.",
+        "invalid": "Inserisci una descrizione di al massimo 100 caratteri."
+      },
+      "type": {
+        "label": "Tipologia",
+        "placeholder": "Scegli una tipologia",
+        "invalid": "Scegli una tipologia."
+      },
+      "requirestrailer": {
+        "label": "Richiede rimorchio",
+        "hint": "I viaggi con questa motrice dovranno indicare il rimorchio agganciato."
+      }
+    }
   },
   "users": {
     "list": {

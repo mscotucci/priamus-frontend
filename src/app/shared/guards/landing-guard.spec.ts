@@ -6,14 +6,14 @@ import { Page, guardSetup } from './guard-testing';
 const setup = guardSetup([
   { path: 'login', component: Page },
   { path: 'users', component: Page },
-  { path: 'home', component: Page },
+  { path: 'vehicles', component: Page },
   { path: '', pathMatch: 'full', canActivate: [landingGuard], children: [] },
 ]);
 
 describe('landingGuard', () => {
   it.each<[CurrentUser['role'], string]>([
     ['Admin', '/users'],
-    ['BackOffice', '/home'],
+    ['BackOffice', '/vehicles'],
   ])('sends a signed-in %s from the root to %s', async (role, landing) => {
     const router = setup(userWithRole(role));
 

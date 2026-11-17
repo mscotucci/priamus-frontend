@@ -18,7 +18,7 @@ import { Layout } from '../../../core/layout/layout';
 import type { UserPage } from './users-api';
 import { UsersFacade } from './users-facade';
 import { UserList } from './user-list';
-import { settle } from './users-testing';
+import { settle } from '../../../core/testing/interaction-testing';
 
 const URL = '/api/identity/users';
 
@@ -810,15 +810,45 @@ describe('UserList', () => {
       expect(element.querySelector('app-layout app-user-list table')).not.toBeNull();
     });
 
-    it('/users opened by a BackOffice user shows /home instead', async () => {
+    it('/users opened by a BackOffice user shows /vehicles instead', async () => {
       const harness = await open('BackOffice');
       harness.detectChanges();
       const element = harness.fixture.nativeElement as HTMLElement;
 
-      expect(TestBed.inject(Router).url).toBe('/home');
-      expect(element.querySelector('app-home')).not.toBeNull();
+      expect(TestBed.inject(Router).url).toBe('/vehicles');
+      expect(element.querySelector('app-vehicle-list')).not.toBeNull();
       expect(element.querySelector('app-user-list')).toBeNull();
       http.expectNone((r) => r.url === URL);
+    });
+
+    it('/vehicles opened by a Driver does not show the vehicle list and ends on the Driver landing', async () => {
+      const user = { id: '1', username: 'u', role: 'Driver', driverId: null } as CurrentUser;
+      TestBed.configureTestingModule({
+        providers: [
+          provideTestI18n(),
+          provideRouter(routes),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          {
+            provide: Session,
+            useValue: {
+              wait: () => Promise.resolve(),
+              user: signal(user).asReadonly(),
+              notice: signal(null).asReadonly(),
+            },
+          },
+        ],
+      });
+      http = TestBed.inject(HttpTestingController);
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl('/vehicles');
+      TestBed.tick();
+      harness.detectChanges();
+      const element = harness.fixture.nativeElement as HTMLElement;
+
+      expect(TestBed.inject(Router).url).toBe('/login');
+      expect(element.querySelector('app-vehicle-list')).toBeNull();
+      http.expectNone((r) => r.url === '/api/registry/vehicles');
     });
   });
 });

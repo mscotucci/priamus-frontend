@@ -44,7 +44,7 @@ function setup(options: {
 describe('LoginFacade', () => {
   it.each<[CurrentUser['role'], string]>([
     ['Admin', '/users'],
-    ['BackOffice', '/home'],
+    ['BackOffice', '/vehicles'],
   ])('after a %s signs in, navigates to %s', async (role, landing) => {
     const { facade, signIn, navigate } = setup({ signIn: () => Promise.resolve(user(role)) });
 
@@ -76,7 +76,7 @@ describe('LoginFacade', () => {
 
       await facade.submit('ada', 'secret');
 
-      expect(navigate).toHaveBeenCalledWith('/home');
+      expect(navigate).toHaveBeenCalledWith('/vehicles');
     },
   );
 
@@ -156,6 +156,7 @@ describe('LoginFacade', () => {
   it('a refusal with an errorCode becomes the backend detail', async () => {
     const error: ApiError = {
       kind: 'domain',
+      status: 401,
       errorCode: 'Identity.Auth.InvalidCredentials',
       detail: 'Nome utente o password non validi.',
     };
@@ -172,7 +173,7 @@ describe('LoginFacade', () => {
   it.each<ApiError>([
     { kind: 'generic' },
     { kind: 'validation', errors: {} },
-    { kind: 'domain', errorCode: 'Identity.Auth.Unknown', detail: null },
+    { kind: 'domain', status: 401, errorCode: 'Identity.Auth.Unknown', detail: null },
   ])('a failure without a usable body ($kind) becomes the generic text', async (error) => {
     const { facade } = setup({ signIn: () => Promise.reject(error) });
 

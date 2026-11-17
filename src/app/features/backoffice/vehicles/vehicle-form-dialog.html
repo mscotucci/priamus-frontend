@@ -1,0 +1,135 @@
+<app-dialog
+  icon="truck"
+  tone="primary"
+  [title]="(vehicle() ? 'vehicles.form.edit.title' : 'vehicles.form.create.title') | translate"
+  [code]="vehicle()?.licensePlate ?? null"
+  [line]="
+    vehicle()
+      ? ('vehicles.form.edit.line'
+        | translate: { status: 'vehicles.status.' + vehicle()!.status.toLowerCase() | translate })
+      : ('vehicles.form.create.line' | translate)
+  "
+  [busy]="facade.saving()"
+  (closeRequested)="close()"
+>
+  <form id="vehicle-form" class="flex flex-col gap-3" novalidate (submit)="onSubmit($event)">
+    @if (notice(); as notice) {
+      <app-notice [notice]="notice" />
+    }
+    <div class="pt-field">
+      <label class="pt-label" for="vehicle-plate">{{
+        'vehicles.form.plate.label' | translate
+      }}</label>
+      <input
+        #plate
+        class="pt-input pt-mono"
+        id="vehicle-plate"
+        autocomplete="off"
+        [formField]="vehicleForm.licensePlate"
+        [attr.aria-invalid]="plateError() ? 'true' : null"
+        aria-describedby="vehicle-plate-note"
+      />
+      @if (plateError(); as error) {
+        <span class="pt-field__error" id="vehicle-plate-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="vehicle-plate-note">{{
+          'vehicles.form.plate.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="vehicle-description">{{
+        'vehicles.form.description.label' | translate
+      }}</label>
+      <input
+        class="pt-input"
+        id="vehicle-description"
+        autocomplete="off"
+        [placeholder]="'vehicles.form.description.placeholder' | translate"
+        [formField]="vehicleForm.description"
+        [attr.aria-invalid]="descriptionError() ? 'true' : null"
+        aria-describedby="vehicle-description-note"
+      />
+      @if (descriptionError(); as error) {
+        <span class="pt-field__error" id="vehicle-description-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="vehicle-description-note">{{
+          'vehicles.form.description.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="vehicle-type">{{
+        'vehicles.form.type.label' | translate
+      }}</label>
+      <select
+        class="pt-input"
+        id="vehicle-type"
+        [formField]="vehicleForm.type"
+        (change)="onTypeChange()"
+        [attr.aria-invalid]="typeError() ? 'true' : null"
+        [attr.aria-describedby]="typeError() ? 'vehicle-type-note' : null"
+      >
+        <option value="">{{ 'vehicles.form.type.placeholder' | translate }}</option>
+        <option value="Tractor">{{ 'vehicles.type.tractor' | translate }}</option>
+        <option value="Trailer">{{ 'vehicles.type.trailer' | translate }}</option>
+        <option value="StandaloneVehicle">
+          {{ 'vehicles.type.standalonevehicle' | translate }}
+        </option>
+      </select>
+      @if (typeError(); as error) {
+        <span class="pt-field__error" id="vehicle-type-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      }
+    </div>
+    @if (isTractor()) {
+      <div class="pt-field">
+        <label class="pt-check"
+          ><input
+            type="checkbox"
+            id="vehicle-requires-trailer"
+            [formField]="vehicleForm.requiresTrailer"
+            aria-describedby="vehicle-requires-trailer-note"
+          />
+          {{ 'vehicles.form.requirestrailer.label' | translate }}</label
+        >
+        @if (requiresTrailerError(); as error) {
+          <span class="pt-field__error" id="vehicle-requires-trailer-note">{{
+            'key' in error ? (error.key | translate) : error.text
+          }}</span>
+        } @else {
+          <span class="pt-field__hint" id="vehicle-requires-trailer-note">{{
+            'vehicles.form.requirestrailer.hint' | translate
+          }}</span>
+        }
+      </div>
+    }
+  </form>
+  <button
+    actions
+    type="button"
+    class="pt-btn pt-btn--outline"
+    [disabled]="facade.saving()"
+    (click)="close()"
+  >
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button
+    actions
+    type="submit"
+    form="vehicle-form"
+    class="pt-btn pt-btn--primary"
+    [disabled]="facade.saving()"
+  >
+    {{
+      facade.saving()
+        ? ('vehicles.form.pending' | translate)
+        : ((vehicle() ? 'vehicles.form.edit.submit' : 'vehicles.form.create.submit') | translate)
+    }}
+  </button>
+</app-dialog>

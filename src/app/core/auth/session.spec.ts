@@ -290,6 +290,7 @@ describe('Session', () => {
 
     await expect(signIn).rejects.toEqual({
       kind: 'domain',
+      status: 401,
       errorCode: 'Identity.Login.InvalidCredentials',
       detail: 'Credenziali non valide.',
     } satisfies ApiError);

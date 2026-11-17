@@ -324,6 +324,7 @@ const checks = [
         ...hasDeclaration(rules, '.pt-field__error', 'color', 'var(--danger)'),
         ...hasDeclaration(rules, ".pt-input[aria-invalid='true']", 'border-color', 'var(--danger)'),
         ...hasDeclaration(rules, '.pt-input:disabled', 'opacity', '0.5'),
+        ...hasDeclaration(rules, '.pt-input.pt-mono', 'font-family', 'var(--font-mono)'),
       ];
     },
   },

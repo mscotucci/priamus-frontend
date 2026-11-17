@@ -32,7 +32,12 @@ let nextId = 0;
           <app-icon [name]="icon()" size="lg" />
         </div>
         <div>
-          <p class="pt-title" [id]="titleId">{{ title() }}</p>
+          <p class="pt-title" [id]="titleId">
+            {{ title() }}
+            @if (code(); as code) {
+              <span class="pt-mono">{{ code }}</span>
+            }
+          </p>
           @if (line(); as line) {
             <p class="pt-muted text-xs">{{ line }}</p>
           }
@@ -47,6 +52,8 @@ export class Dialog {
   readonly icon = input.required<IconName>();
   readonly tone = input.required<'primary' | 'success' | 'warn' | 'danger'>();
   readonly title = input.required<string>();
+  /** A code that ends the title (a plate), shown in mono; it stays part of the dialog's label. */
+  readonly code = input<string | null>(null);
   readonly line = input<string | null>(null);
   readonly busy = input(false);
   readonly closeRequested = output<void>();

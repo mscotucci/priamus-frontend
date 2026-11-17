@@ -8,7 +8,7 @@ import { Toast } from '../../../core/toast/toast';
 import { UserDisableDialog } from './user-disable-dialog';
 import type { UserListItem } from './users-api';
 import { UsersFacade } from './users-facade';
-import { press, settle } from './users-testing';
+import { press, settle } from '../../../core/testing/interaction-testing';
 
 const URL = '/api/identity/users';
 

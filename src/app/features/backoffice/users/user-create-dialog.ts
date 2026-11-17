@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { FormField, disabled, form, validate } from '@angular/forms/signals';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ApiError, noticeOf } from '../../../core/api/api-error';
+import { ApiError, fieldErrors, noticeOf } from '../../../core/api/api-error';
 import { Notice } from '../../../shared/components/notice/notice';
 import { Dialog } from '../../../shared/components/dialog/dialog';
 import { UserRole } from './users-api';
@@ -78,10 +78,7 @@ export class UserCreateDialog {
     if (refusal === null) {
       return null;
     }
-    if (
-      refusal.kind === 'validation' &&
-      FIELDS.some((field) => this.backendTexts(refusal.errors, field).length > 0)
-    ) {
+    if (FIELDS.some((field) => fieldErrors(refusal, field).length > 0)) {
       return null;
     }
     return noticeOf(refusal);
@@ -98,18 +95,9 @@ export class UserCreateDialog {
         return { key: this.createForm[field]().errors()[0].message! };
       }
       const refusal = this.refusal();
-      if (refusal?.kind === 'validation') {
-        const texts = this.backendTexts(refusal.errors, field);
-        return texts.length > 0 ? { text: texts.join(' ') } : null;
-      }
-      return null;
+      const texts = refusal === null ? [] : fieldErrors(refusal, field);
+      return texts.length > 0 ? { text: texts.join(' ') } : null;
     });
-  }
-
-  private backendTexts(errors: Record<string, string[]>, field: Field): string[] {
-    return Object.entries(errors)
-      .filter(([name]) => name.toLowerCase() === field)
-      .flatMap(([, messages]) => messages);
   }
 
   protected async onSubmit(event: Event): Promise<void> {
