@@ -141,7 +141,7 @@ describe('VehicleList', () => {
     await flush(fixture, answer(42));
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('.pt-eyebrow')?.textContent).toBe('Anagrafiche · Mezzi');
+    expect(element.querySelector('.pt-breadcrumb')?.textContent?.trim()).toBe('Anagrafiche');
     expect(element.querySelector('h1')?.textContent).toBe('Mezzi');
     expect(element.querySelector('.pt-topbar__heading .pt-muted')?.textContent).toBe('42 mezzi');
     expect(element.querySelector('.pt-topbar__actions button')?.textContent?.trim()).toBe(

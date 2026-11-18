@@ -1,6 +1,159 @@
 {
   "components": {
     "schemas": {
+      "BillingLevel": {
+        "description": "How finely the rates of a Contract are set, and so which locations a trip must\r\nname (PRD §5.4).",
+        "enum": [
+          "FlatRate",
+          "PerPickupLocation",
+          "PerDeliveryLocation",
+          "PerLocationPair"
+        ]
+      },
+      "ContractDto": {
+        "description": "A contract as the API returns it.",
+        "properties": {
+          "billingLevel": {
+            "$ref": "#/components/schemas/BillingLevel",
+            "description": "The billing level."
+          },
+          "customerId": {
+            "description": "The customer the contract belongs to.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "description": "The contract's identifier.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "nightSurcharge": {
+            "description": "Whether night trips cost more.",
+            "type": "boolean"
+          },
+          "pricingMode": {
+            "$ref": "#/components/schemas/PricingMode",
+            "description": "The pricing mode."
+          },
+          "requiredDocuments": {
+            "description": "The required documents, in canonical order.",
+            "items": {
+              "$ref": "#/components/schemas/RequiredDocument"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ContractStatus",
+            "description": "Where today, in Italian time, falls against the validity; derived, never stored."
+          },
+          "validFrom": {
+            "description": "First day of the validity.",
+            "format": "date",
+            "type": "string"
+          },
+          "validTo": {
+            "description": "Last day of the validity, or `null` when the contract is open.",
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "description": "Version the client sends back with its next write on this contract.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "customerId",
+          "validFrom",
+          "validTo",
+          "status",
+          "billingLevel",
+          "pricingMode",
+          "requiredDocuments",
+          "nightSurcharge",
+          "version"
+        ],
+        "type": "object"
+      },
+      "ContractStatus": {
+        "description": "Where a day falls against the validity of a Contract; derived, never stored\r\n(PRD §5.4).",
+        "enum": [
+          "Current",
+          "Upcoming",
+          "Expired"
+        ]
+      },
+      "CreateContractRequest": {
+        "description": "Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).\r\nEvery member but the end of the validity is required; an empty set of documents is valid and\r\nduplicates collapse.",
+        "properties": {
+          "billingLevel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillingLevel"
+              }
+            ]
+          },
+          "nightSurcharge": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "pricingMode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PricingMode"
+              }
+            ]
+          },
+          "requiredDocuments": {
+            "items": {
+              "$ref": "#/components/schemas/RequiredDocument"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "validFrom": {
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validTo": {
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "validFrom",
+          "validTo",
+          "billingLevel",
+          "pricingMode",
+          "requiredDocuments",
+          "nightSurcharge"
+        ],
+        "type": "object"
+      },
       "CreateCustomerRequest": {
         "description": "Request body for `POST /api/registry/customers` (PRD §4, RF-15). Only the company name is\r\nrequired; an empty VAT number, tax code or address is stored as none. The company name and the\r\naddress are measured once trimmed, as the aggregate stores them, so their length is checked in\r\n`Validate` rather than with a length attribute on the raw text.",
         "properties": {
@@ -654,6 +807,15 @@
         ],
         "type": "object"
       },
+      "PricingMode": {
+        "description": "How the amount of a trip is measured under a Contract (PRD §5.4).",
+        "enum": [
+          "ByHour",
+          "ByWeight",
+          "ByDistance",
+          "ByTrip"
+        ]
+      },
       "ProblemDetails": {
         "properties": {
           "detail": {
@@ -770,6 +932,15 @@
         ],
         "type": "object"
       },
+      "RequiredDocument": {
+        "description": "A document a Contract asks for. The declaration order is the canonical order of\r\na set of required documents (PRD §5.4).",
+        "enum": [
+          "DeliveryNote",
+          "DeliverySlip",
+          "WasteForm",
+          "DailySummary"
+        ]
+      },
       "RevokeRequest": {
         "description": "Request body for `POST /api/identity/auth/revoke` (self-service logout).",
         "properties": {
@@ -788,6 +959,79 @@
           "Descending",
           null
         ]
+      },
+      "UpdateContractRequest": {
+        "description": "Request body for `PUT /api/registry/customers/{customerId}/contracts/{contractId}`\r\n(PRD §5.4, RF-16): the terms of the contract plus the `Version` the client read; the save\r\nis refused when the contract has changed since.",
+        "properties": {
+          "billingLevel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillingLevel"
+              }
+            ]
+          },
+          "nightSurcharge": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "pricingMode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PricingMode"
+              }
+            ]
+          },
+          "requiredDocuments": {
+            "items": {
+              "$ref": "#/components/schemas/RequiredDocument"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "validFrom": {
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validTo": {
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "validFrom",
+          "validTo",
+          "billingLevel",
+          "pricingMode",
+          "requiredDocuments",
+          "nightSurcharge",
+          "version"
+        ],
+        "type": "object"
       },
       "UpdateCustomerRequest": {
         "description": "Request body for `PUT /api/registry/customers/{id}` (PRD §4, RF-15). `Version` is the\r\nversion the client read; the save is refused when the customer has changed since.",
@@ -1843,7 +2087,380 @@
         ]
       }
     },
+    "/api/registry/customers/{customerId}/contracts": {
+      "get": {
+        "operationId": "ListContracts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ContractDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Registry.Contracts"
+        ]
+      },
+      "post": {
+        "operationId": "CreateContract",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContractRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractDto"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Contracts"
+        ]
+      }
+    },
+    "/api/registry/customers/{customerId}/contracts/{contractId}": {
+      "get": {
+        "operationId": "GetContract",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contractId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Registry.Contracts"
+        ]
+      },
+      "put": {
+        "operationId": "UpdateContract",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contractId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContractRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Contracts"
+        ]
+      }
+    },
     "/api/registry/customers/{id}": {
+      "get": {
+        "operationId": "GetCustomer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerListItemDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Registry.Customers"
+        ]
+      },
       "put": {
         "operationId": "UpdateCustomer",
         "parameters": [
@@ -2552,6 +3169,9 @@
     },
     {
       "name": "Registry.Customers"
+    },
+    {
+      "name": "Registry.Contracts"
     }
   ]
 }

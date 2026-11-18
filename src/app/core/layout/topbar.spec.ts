@@ -1,27 +1,33 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { provideTestI18n } from '../i18n/i18n-testing';
 import { Layout } from './layout';
-import { Topbar } from './topbar';
+import { Crumb, Topbar } from './topbar';
 
 @Component({
   imports: [Topbar],
   template: `
-    <app-topbar section="Sistema" [page]="page" title="Utenti" [line]="line">
+    <app-topbar [crumbs]="crumbs" title="Utenti" [line]="line">
+      <span titleAside id="aside">Attivo</span>
       <button type="button" id="action">Nuovo utente</button>
     </app-topbar>
   `,
 })
 class Host {
-  page: string | undefined = 'Utenti';
+  crumbs: Crumb[] = [{ label: 'Sistema' }];
   line: string | undefined = '23 utenti';
 }
 
 function render(setup: (host: Host) => void = () => undefined) {
   const openDrawer = vi.fn();
   TestBed.configureTestingModule({
-    providers: [provideTestI18n(), { provide: Layout, useValue: { openDrawer } }],
+    providers: [
+      provideTestI18n(),
+      provideRouter([]),
+      { provide: Layout, useValue: { openDrawer } },
+    ],
   });
   TestBed.inject(TranslateService).use('it');
   const fixture = TestBed.createComponent(Host);
@@ -31,23 +37,46 @@ function render(setup: (host: Host) => void = () => undefined) {
 }
 
 describe('Topbar', () => {
-  it('shows the section and page, the title, the line beside it and the page actions', () => {
+  it('shows the breadcrumb, the title, the line beside it and the page actions', () => {
     const { element } = render();
 
-    expect(element.querySelector('.pt-eyebrow')?.textContent).toBe('Sistema · Utenti');
+    const nav = element.querySelector('nav[aria-label="Percorso"]')!;
+    expect(nav.querySelector('ol.pt-breadcrumb')?.textContent?.trim()).toBe('Sistema');
     expect(element.querySelector('h1')?.textContent).toBe('Utenti');
     expect(element.querySelector('h1')?.nextElementSibling?.textContent).toBe('23 utenti');
     expect(element.querySelector('.pt-topbar__actions #action')?.textContent).toBe('Nuovo utente');
   });
 
-  it('with no page and no line the eyebrow is the section alone and there is no line', () => {
-    const { element } = render((host) => {
-      host.page = undefined;
-      host.line = undefined;
-    });
+  it('with no line there is none', () => {
+    const { element } = render((host) => (host.line = undefined));
 
-    expect(element.querySelector('.pt-eyebrow')?.textContent).toBe('Sistema');
     expect(element.querySelector('.pt-muted')).toBeNull();
+  });
+
+  it('each level is an item, a level with a link is a link to it, and a level with no label is not shown', () => {
+    const { element } = render(
+      (host) =>
+        (host.crumbs = [
+          { label: 'Anagrafiche' },
+          { label: 'Clienti', link: '/customers' },
+          { label: '', link: '/customers/c1' },
+        ]),
+    );
+
+    const items = Array.from(element.querySelectorAll('.pt-breadcrumb li'));
+    expect(items.map((li) => li.textContent?.trim())).toEqual(['Anagrafiche', 'Clienti']);
+    expect(items[0].querySelector('a')).toBeNull();
+    expect(items[1].querySelector('a')?.getAttribute('href')).toBe('/customers');
+  });
+
+  it('the title aside is shown after the title and its line, and the action stays in the actions', () => {
+    const { element } = render();
+
+    expect(element.querySelector('.pt-topbar__heading .pt-muted')?.nextElementSibling?.id).toBe(
+      'aside',
+    );
+    expect(element.querySelector('.pt-topbar__actions #aside')).toBeNull();
+    expect(element.querySelector('.pt-topbar__actions #action')).not.toBeNull();
   });
 
   it('the top bar sticks to the top of the scrolling page column', () => {

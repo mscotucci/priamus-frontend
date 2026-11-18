@@ -1,0 +1,284 @@
+@let customer = facade.customer;
+@let contract = facade.contract;
+<app-topbar
+  [crumbs]="[
+    { label: 'shell.nav.registry' | translate },
+    { label: 'shell.nav.customers' | translate, link: '/customers' },
+    {
+      label: customer.hasValue() ? customer.value().companyName : '',
+      link: '/customers/' + customerId(),
+    },
+  ]"
+  [title]="(isNew() ? 'contracts.form.heading.new' : 'contracts.form.heading.edit') | translate"
+>
+  @if (!isNew() && contract.hasValue()) {
+    <span titleAside class="pt-pill" [class]="statusPill[contract.value().status]">{{
+      'customers.contracts.status.' + contract.value().status.toLowerCase() | translate
+    }}</span>
+  }
+  @if (saving()) {
+    <button type="button" class="pt-btn pt-btn--outline" disabled>
+      {{ 'common.actions.cancel' | translate }}
+    </button>
+  } @else {
+    <a class="pt-btn pt-btn--outline" [routerLink]="['/customers', customerId()]">{{
+      'common.actions.cancel' | translate
+    }}</a>
+  }
+  <button
+    type="button"
+    class="pt-btn pt-btn--primary"
+    [disabled]="!canSave() || saving()"
+    (click)="save()"
+  >
+    {{ (saving() ? 'contracts.form.saving' : 'contracts.form.save') | translate }}
+  </button>
+</app-topbar>
+<main class="mx-auto flex w-full max-w-4xl flex-col gap-4 p-8">
+  @if (notFound()) {
+    <div class="pt-card pt-empty">
+      <p class="pt-title">
+        {{
+          (facade.customerNotFound()
+            ? 'customers.page.notfound.title'
+            : 'contracts.form.notfound.title'
+          ) | translate
+        }}
+      </p>
+      <p class="pt-muted">
+        {{
+          (facade.customerNotFound()
+            ? 'customers.page.notfound.hint'
+            : 'contracts.form.notfound.hint'
+          ) | translate
+        }}
+      </p>
+    </div>
+  } @else if (loadFailed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="retry()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (deactivated()) {
+    <div class="pt-notice pt-notice--info">
+      {{ 'customers.contracts.deactivated' | translate }}
+    </div>
+  } @else if (ready()) {
+    @if (notice(); as notice) {
+      <app-notice [notice]="notice">
+        @if (stale()) {
+          <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="reload()">
+            {{ 'contracts.form.reload' | translate }}
+          </button>
+        }
+      </app-notice>
+    }
+    <div>
+      <h2 class="pt-title">{{ 'contracts.form.title' | translate }}</h2>
+      <p class="pt-muted">{{ 'contracts.form.intro' | translate }}</p>
+    </div>
+
+    @let v = validity();
+    @let validityAnswer =
+      !v
+        ? null
+        : v.to
+          ? ('contracts.form.q1.answer.range'
+            | translate: { from: (v.from | date: 'dd/MM/yyyy'), to: (v.to | date: 'dd/MM/yyyy') })
+          : ('contracts.form.q1.answer.open' | translate: { from: (v.from | date: 'dd/MM/yyyy') });
+    <app-contract-question
+      [number]="1"
+      [title]="'contracts.form.q1.title' | translate"
+      [hint]="'contracts.form.q1.hint' | translate"
+      [open]="open(1)"
+      [current]="current(1)"
+      [answer]="validityAnswer"
+      [busy]="saving()"
+      (modify)="edit(1)"
+    >
+      @if (closing(); as closing) {
+        <div note class="pt-notice pt-notice--warn">
+          {{
+            'contracts.form.q1.closing'
+              | translate
+                : {
+                    from: (closing.from | date: 'dd/MM/yyyy'),
+                    closedOn: (closing.closedOn | date: 'dd/MM/yyyy'),
+                  }
+          }}
+        </div>
+      }
+      <div class="grid max-w-md grid-cols-2 gap-3">
+        <div class="pt-field">
+          <label class="pt-label" for="contract-from">{{
+            'contracts.form.q1.from.label' | translate
+          }}</label>
+          <input
+            class="pt-input"
+            id="contract-from"
+            type="date"
+            [value]="fromDraft()"
+            [attr.aria-invalid]="validityErrors().from || fromRefusal().length > 0 ? 'true' : null"
+            [attr.aria-describedby]="
+              validityErrors().from || fromRefusal().length > 0 ? 'contract-from-error' : null
+            "
+            (input)="fromDraft.set($any($event.target).value)"
+          />
+          @if (validityErrors().from; as error) {
+            <span class="pt-field__error" id="contract-from-error">{{ error | translate }}</span>
+          } @else if (fromRefusal().length > 0) {
+            <span class="pt-field__error" id="contract-from-error">{{
+              fromRefusal().join(' ')
+            }}</span>
+          }
+        </div>
+        <div class="pt-field">
+          <label class="pt-label" for="contract-to">{{
+            'contracts.form.q1.to.label' | translate
+          }}</label>
+          <input
+            class="pt-input"
+            id="contract-to"
+            type="date"
+            [value]="toDraft()"
+            [attr.aria-invalid]="validityErrors().to || toRefusal().length > 0 ? 'true' : null"
+            [attr.aria-describedby]="
+              validityErrors().to || toRefusal().length > 0 ? 'contract-to-error' : null
+            "
+            (input)="toDraft.set($any($event.target).value)"
+          />
+          @if (validityErrors().to; as error) {
+            <span class="pt-field__error" id="contract-to-error">{{ error | translate }}</span>
+          } @else if (toRefusal().length > 0) {
+            <span class="pt-field__error" id="contract-to-error">{{ toRefusal().join(' ') }}</span>
+          }
+        </div>
+      </div>
+      <div>
+        <button type="button" class="pt-btn pt-btn--primary pt-btn--sm" (click)="confirmValidity()">
+          {{ 'contracts.form.q1.confirm' | translate }}
+        </button>
+      </div>
+    </app-contract-question>
+
+    @for (question of radioQuestions; track question.id) {
+      @if (visible(question.number)) {
+        @let key = answerKey(question);
+        <app-contract-question
+          [number]="question.number"
+          [title]="'contracts.form.' + question.id + '.title' | translate"
+          [hint]="'contracts.form.' + question.id + '.hint' | translate"
+          [open]="open(question.number)"
+          [current]="current(question.number)"
+          [answer]="key ? (key | translate) : null"
+          [busy]="saving()"
+          (modify)="edit(question.number)"
+        >
+          <fieldset class="grid min-w-0 gap-3" [class]="question.grid">
+            <legend class="sr-only">
+              {{ 'contracts.form.' + question.id + '.title' | translate }}
+            </legend>
+            @for (choice of question.choices; track choice.value) {
+              <label class="pt-choice">
+                <input
+                  type="radio"
+                  [name]="question.id"
+                  [checked]="radio()[question.id] === choice.value"
+                  (click)="pick(question, choice)"
+                />
+                <span>
+                  <strong>{{ 'contracts.form.' + choice.key + '.title' | translate }}</strong>
+                  <span class="pt-choice__hint">{{
+                    'contracts.form.' + choice.key + '.hint' | translate
+                  }}</span>
+                </span>
+              </label>
+            }
+          </fieldset>
+        </app-contract-question>
+      }
+    }
+
+    @if (visible(6)) {
+      <app-contract-question
+        [number]="6"
+        [title]="'contracts.form.documents.title' | translate"
+        [hint]="'contracts.form.documents.hint' | translate"
+        [open]="open(6)"
+        [current]="current(6)"
+        [answer]="documentsAnswer()"
+        [busy]="saving()"
+        (modify)="edit(6)"
+      >
+        <fieldset class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
+          <legend class="sr-only">{{ 'contracts.form.documents.title' | translate }}</legend>
+          @for (document of documentChoices; track document) {
+            <label class="pt-choice">
+              <input
+                type="checkbox"
+                [checked]="documentsDraft().includes(document)"
+                (change)="toggleDocument(document, $any($event.target).checked)"
+              />
+              <span>
+                <strong>{{
+                  'contracts.form.document.' + document.toLowerCase() + '.title' | translate
+                }}</strong>
+                <span class="pt-choice__hint">{{
+                  'contracts.form.document.' + document.toLowerCase() + '.hint' | translate
+                }}</span>
+              </span>
+            </label>
+          }
+        </fieldset>
+        <div>
+          <button
+            type="button"
+            class="pt-btn pt-btn--primary pt-btn--sm"
+            (click)="confirmDocuments()"
+          >
+            {{ 'contracts.form.documents.confirm' | translate }}
+          </button>
+        </div>
+      </app-contract-question>
+    }
+
+    @if (complete()) {
+      <section class="pt-card flex items-center justify-between gap-3">
+        <div>
+          <p class="pt-title">{{ 'contracts.form.done.title' | translate }}</p>
+          <p class="pt-muted">{{ 'contracts.form.done.hint' | translate }}</p>
+        </div>
+        <button
+          type="button"
+          class="pt-btn pt-btn--primary"
+          [disabled]="!canSave() || saving()"
+          (click)="save()"
+        >
+          {{ (saving() ? 'contracts.form.saving' : 'contracts.form.save') | translate }}
+        </button>
+      </section>
+    }
+  } @else {
+    <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'customers.page.loading' | translate }}</span>
+    </div>
+  }
+</main>
+@if (leaveDecision(); as decide) {
+  <app-dialog
+    icon="alert"
+    tone="warn"
+    [title]="'contracts.form.leave.title' | translate"
+    (closeRequested)="decide(false)"
+  >
+    <p>{{ 'contracts.form.leave.text' | translate }}</p>
+    <button actions #stay type="button" class="pt-btn pt-btn--outline" (click)="decide(false)">
+      {{ 'contracts.form.leave.stay' | translate }}
+    </button>
+    <button actions type="button" class="pt-btn pt-btn--danger" (click)="decide(true)">
+      {{ 'contracts.form.leave.discard' | translate }}
+    </button>
+  </app-dialog>
+}

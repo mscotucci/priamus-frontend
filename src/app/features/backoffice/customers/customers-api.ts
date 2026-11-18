@@ -10,7 +10,7 @@ export type CustomerListItem = Schemas['CustomerListItemDto'];
 export type CreateCustomerRequest = Schemas['CreateCustomerRequest'];
 export type CreatedCustomer = Schemas['CreateCustomerResponse'];
 export type UpdateCustomerRequest = Schemas['UpdateCustomerRequest'];
-export type CustomerPage = Schemas['PagedResponseOfCustomerListItemDto'];
+export type CustomerListPage = Schemas['PagedResponseOfCustomerListItemDto'];
 export type SortColumn = 'companyName' | 'lastModifiedAt';
 export type SortDirection = NonNullable<Schemas['SortDirection']>;
 
@@ -29,6 +29,10 @@ const URL = '/api/registry/customers';
 @Injectable({ providedIn: 'root' })
 export class CustomersApi {
   private readonly http = inject(HttpClient);
+
+  get(id: string): HttpResourceRequest {
+    return { url: `${URL}/${id}` };
+  }
 
   list(query: CustomersQuery): HttpResourceRequest {
     const params: Record<string, string | number> = {

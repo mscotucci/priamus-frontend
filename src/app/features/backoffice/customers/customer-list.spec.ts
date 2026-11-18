@@ -1,19 +1,20 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { provideTestI18n } from '../../../core/i18n/i18n-testing';
 import { Layout } from '../../../core/layout/layout';
 import { stubModalDialog, stubPopover } from '../../../core/testing/dom-testing';
 import { settle } from '../../../core/testing/interaction-testing';
 import { Toast } from '../../../core/toast/toast';
-import type { CustomerPage } from './customers-api';
+import type { CustomerListPage } from './customers-api';
 import { CustomerList } from './customer-list';
 import { CustomersFacade } from './customers-facade';
 
 const URL = '/api/registry/customers';
 
-const answer = (total: number): CustomerPage => ({
+const answer = (total: number): CustomerListPage => ({
   data: [
     {
       id: '1',
@@ -64,7 +65,7 @@ const answer = (total: number): CustomerPage => ({
   hasPreviousPage: false,
 });
 
-const none: CustomerPage = { ...answer(0), data: [] };
+const none: CustomerListPage = { ...answer(0), data: [] };
 
 describe('CustomerList', () => {
   let http: HttpTestingController;
@@ -80,6 +81,7 @@ describe('CustomerList', () => {
         CustomersFacade,
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: Layout, useValue: { openDrawer: () => undefined } },
       ],
     });
@@ -91,7 +93,7 @@ describe('CustomerList', () => {
     return fixture;
   };
 
-  const flush = async (fixture: ReturnType<typeof render>, body: CustomerPage) => {
+  const flush = async (fixture: ReturnType<typeof render>, body: CustomerListPage) => {
     http.expectOne((r) => r.url === URL).flush(body);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -126,7 +128,7 @@ describe('CustomerList', () => {
     await flush(fixture, answer(17));
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('.pt-eyebrow')?.textContent).toBe('Anagrafiche · Clienti');
+    expect(element.querySelector('.pt-breadcrumb')?.textContent?.trim()).toBe('Anagrafiche');
     expect(element.querySelector('h1')?.textContent).toBe('Clienti');
     expect(element.querySelector('.pt-topbar__heading .pt-muted')?.textContent).toBe('17 clienti');
     expect(element.querySelector('.pt-topbar__actions button')?.textContent?.trim()).toBe(
@@ -195,18 +197,30 @@ describe('CustomerList', () => {
     expect(pill(3).classList.contains('pt-pill--success')).toBe(false);
   });
 
-  it('every row has Modifica, an active customer has Disattiva and a deactivated one Riattiva', async () => {
+  it('every row has Apri, an active customer has Disattiva and a deactivated one Riattiva', async () => {
     const fixture = render();
     await flush(fixture, answer(4));
     const element = fixture.nativeElement as HTMLElement;
     const actions = (row: number) =>
-      Array.from(rowCells(element, row)[5].querySelectorAll('button')).map((b) =>
+      Array.from(rowCells(element, row)[5].querySelectorAll('a, button')).map((b) =>
         b.textContent?.trim(),
       );
 
-    expect(actions(0)).toEqual(['Modifica', 'Disattiva']);
-    expect(actions(2)).toEqual(['Modifica', 'Disattiva']);
-    expect(actions(3)).toEqual(['Modifica', 'Riattiva']);
+    expect(actions(0)).toEqual(['Apri', 'Disattiva']);
+    expect(actions(2)).toEqual(['Apri', 'Disattiva']);
+    expect(actions(3)).toEqual(['Apri', 'Riattiva']);
+  });
+
+  it('"Apri" of a row links to the page of that customer, and the company name stays plain text', async () => {
+    const fixture = render();
+    await flush(fixture, answer(4));
+    const element = fixture.nativeElement as HTMLElement;
+
+    const links = Array.from(element.querySelectorAll('tbody tr')).map((row) =>
+      row.querySelector('a')?.getAttribute('href'),
+    );
+    expect(links).toEqual(['/1', '/2', '/3', '/4']);
+    expect(rowCells(element, 0)[0].querySelector('a')).toBeNull();
   });
 
   it('every row button is described by the company name of its row', async () => {
@@ -214,7 +228,7 @@ describe('CustomerList', () => {
     await flush(fixture, answer(4));
     const element = fixture.nativeElement as HTMLElement;
     const descriptions = (row: number) =>
-      Array.from(rowCells(element, row)[5].querySelectorAll('button')).map((b) =>
+      Array.from(rowCells(element, row)[5].querySelectorAll('a, button')).map((b) =>
         element.querySelector(`[id="${b.getAttribute('aria-describedby')}"]`)?.textContent?.trim(),
       );
 
@@ -512,33 +526,6 @@ describe('CustomerList', () => {
       expect(element.querySelector('table')).not.toBeNull();
       http.expectNone((r) => r.url === URL);
     });
-
-    it('the "Modifica" of a row opens the dialog prefilled with that customer, and Annulla then a new open starts empty', async () => {
-      const fixture = render();
-      await flush(fixture, answer(4));
-      const element = fixture.nativeElement as HTMLElement;
-
-      Array.from(element.querySelectorAll('tbody tr'))[3]
-        .querySelector<HTMLButtonElement>('button')!
-        .click();
-      fixture.detectChanges();
-      TestBed.tick();
-
-      expect(text(element.querySelector('app-customer-form-dialog .pt-title'))).toBe(
-        'Modifica cliente',
-      );
-      expect(element.querySelector<HTMLInputElement>('#customer-name')!.value).toBe(
-        'Cantine Vestine S.r.l.',
-      );
-
-      element.querySelector<HTMLButtonElement>('.pt-dialog__actions button')!.click();
-      fixture.detectChanges();
-      expect(element.querySelector('app-customer-form-dialog')).toBeNull();
-
-      element.querySelector<HTMLButtonElement>('.pt-topbar__actions button')!.click();
-      fixture.detectChanges();
-      expect(element.querySelector<HTMLInputElement>('#customer-name')!.value).toBe('');
-    });
   });
 
   describe('deactivate and reactivate', () => {
@@ -603,7 +590,7 @@ describe('CustomerList', () => {
       await fixture.whenStable();
       fixture.detectChanges();
       expect(text(rowCells(element, 0)[3])).toBe('Disattivato');
-      expect(text(rowCells(element, 0)[5].querySelectorAll('button')[1])).toBe('Riattiva');
+      expect(text(rowCells(element, 0)[5].querySelectorAll('button')[0])).toBe('Riattiva');
     });
 
     it('"Riattiva" sends at once the version of the row, with no confirmation, and reads Riattivazione… while it runs', async () => {
@@ -618,7 +605,7 @@ describe('CustomerList', () => {
       expect(post.request.url).toBe(`${URL}/4/reactivate`);
       expect(post.request.body).toEqual({ version: 3 });
       expect(element.querySelector('dialog')).toBeNull();
-      const running = rowCells(element, 3)[5].querySelectorAll('button')[1];
+      const running = rowCells(element, 3)[5].querySelectorAll('button')[0];
       expect(running.textContent?.trim()).toBe('Riattivazione…');
       expect(running.getAttribute('aria-disabled')).toBe('true');
       http.match(() => true);
@@ -640,7 +627,7 @@ describe('CustomerList', () => {
       await fixture.whenStable();
       fixture.detectChanges();
       expect(text(rowCells(element, 3)[3])).toBe('Attivo');
-      expect(text(rowCells(element, 3)[5].querySelectorAll('button')[1])).toBe('Disattiva');
+      expect(text(rowCells(element, 3)[5].querySelectorAll('button')[0])).toBe('Disattiva');
     });
 
     it('a refused "Riattiva" shows the detail in a notice above the table, the list reloads, and the next action on the list removes the notice', async () => {

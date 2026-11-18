@@ -1,5 +1,6 @@
-import { httpResource } from '@angular/common/http';
+import { HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -10,10 +11,11 @@ import {
   toApiError,
 } from '../../../core/api/api-error';
 import { Toast } from '../../../core/toast/toast';
+import { Contract, ContractsApi, CreateContractRequest } from './contracts-api';
 import {
   CreateCustomerRequest,
   CustomerListItem,
-  CustomerPage,
+  CustomerListPage,
   CustomerStatus,
   CustomersApi,
   CustomersQuery,
@@ -23,11 +25,19 @@ import {
 
 export type SaveOutcome = 'saved' | 'ignored' | ApiError;
 export type DeactivateOutcome = 'deactivated' | 'ignored' | ApiError;
+export type SaveContractOutcome = 'created' | 'updated' | 'ignored' | ApiError;
+
+const NOT_FOUND = 404;
+
+const isNotFound = (error: unknown) =>
+  error instanceof HttpErrorResponse && error.status === NOT_FOUND;
 
 @Injectable()
 export class CustomersFacade {
   private readonly api = inject(CustomersApi);
+  private readonly contractsApi = inject(ContractsApi);
   private readonly toast = inject(Toast);
+  private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
 
   private readonly searchState = signal('');
@@ -59,7 +69,7 @@ export class CustomersFacade {
   private readonly reactivateNoticeState = signal<NoticeContent | null>(null);
   readonly reactivateNotice = this.reactivateNoticeState.asReadonly();
 
-  private readonly list = httpResource<CustomerPage>(() => this.api.list(this.query()));
+  private readonly list = httpResource<CustomerListPage>(() => this.api.list(this.query()));
 
   readonly items = computed<CustomerListItem[]>(() =>
     this.list.hasValue() ? this.list.value().data : [],
@@ -110,6 +120,7 @@ export class CustomersFacade {
 
   reload(): void {
     this.list.reload();
+    this.customerResource.reload();
   }
 
   /** A write refused with 409 means the list is stale: it is read again, keeping its state. */
@@ -198,6 +209,114 @@ export class CustomersFacade {
       this.reload();
     } finally {
       this.reactivatingIdState.set(null);
+    }
+  }
+
+  // --- Customer page and contracts ---
+
+  private readonly customerIdState = signal<string | null>(null);
+  private readonly contractIdState = signal<string | null>(null);
+  private readonly savingContractState = signal(false);
+  readonly savingContract = this.savingContractState.asReadonly();
+
+  private readonly customerResource = httpResource<CustomerListItem>(() => {
+    const id = this.customerIdState();
+    return id === null ? undefined : this.api.get(id);
+  });
+  private readonly contractsResource = httpResource<Contract[]>(() => {
+    const id = this.customerIdState();
+    return id === null ? undefined : this.contractsApi.list(id);
+  });
+  private readonly contractResource = httpResource<Contract>(() => {
+    const customerId = this.customerIdState();
+    const contractId = this.contractIdState();
+    return customerId === null || contractId === null
+      ? undefined
+      : this.contractsApi.get(customerId, contractId);
+  });
+
+  readonly customer = this.customerResource.asReadonly();
+  readonly contracts = this.contractsResource.asReadonly();
+  readonly contract = this.contractResource.asReadonly();
+  readonly customerNotFound = computed(() => isNotFound(this.customerResource.error()));
+  readonly contractNotFound = computed(() => isNotFound(this.contractResource.error()));
+
+  /** Opening a customer always reads it fresh, also when it is the one already held. */
+  openCustomer(id: string): void {
+    if (id === this.customerIdState()) {
+      this.reloadCustomer();
+    } else {
+      this.customerIdState.set(id);
+      this.contractIdState.set(null);
+    }
+  }
+
+  /** Reads the customer and its contracts again: a page that failed to load failed on both. */
+  reloadCustomer(): void {
+    this.customerResource.reload();
+    this.contractsResource.reload();
+  }
+
+  /** Reads the contract to edit; `null` is the page that creates one. */
+  openContract(id: string | null): void {
+    if (id !== null && id === this.contractIdState()) {
+      this.contractResource.reload();
+    } else {
+      this.contractIdState.set(id);
+    }
+  }
+
+  reloadContracts(): void {
+    this.contractsResource.reload();
+  }
+
+  reloadContract(): void {
+    this.contractResource.reload();
+  }
+
+  /** A write refused with 409 means what is on screen is stale: the contracts are read again. */
+  private refusedContract(error: unknown): ApiError {
+    const apiError = toApiError(error);
+    if (isStale(apiError)) {
+      this.contractsResource.reload();
+      this.contractResource.reload();
+    }
+    return apiError;
+  }
+
+  /**
+   * Creates the contract, or updates `contract` when given, sending the version it was read at;
+   * a saved contract shows the toast and returns to the customer page.
+   */
+  async saveContract(
+    customerId: string,
+    contract: Contract | null,
+    values: CreateContractRequest,
+  ): Promise<SaveContractOutcome> {
+    if (this.savingContractState()) {
+      return 'ignored';
+    }
+    this.savingContractState.set(true);
+    try {
+      try {
+        if (contract === null) {
+          await firstValueFrom(this.contractsApi.create(customerId, values));
+        } else {
+          await firstValueFrom(
+            this.contractsApi.update(customerId, contract.id, {
+              ...values,
+              version: contract.version,
+            }),
+          );
+        }
+      } catch (error) {
+        return this.refusedContract(error);
+      }
+      this.toast.success(this.translate.instant('contracts.form.saved'));
+      void this.router.navigate(['/customers', customerId]);
+      return contract === null ? 'created' : 'updated';
+    } finally {
+      this.savingContractState.set(false);
     }
   }
 }

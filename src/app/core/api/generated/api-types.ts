@@ -143,6 +143,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/customers/{customerId}/contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListContracts"];
+        put?: never;
+        post: operations["CreateContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/customers/{customerId}/contracts/{contractId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetContract"];
+        put: operations["UpdateContract"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/registry/customers/{id}": {
         parameters: {
             query?: never;
@@ -150,7 +182,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["GetCustomer"];
         put: operations["UpdateCustomer"];
         post?: never;
         delete?: never;
@@ -259,6 +291,71 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description How finely the rates of a Contract are set, and so which locations a trip must
+         *     name (PRD §5.4).
+         * @enum {unknown}
+         */
+        BillingLevel: "FlatRate" | "PerPickupLocation" | "PerDeliveryLocation" | "PerLocationPair";
+        /** @description A contract as the API returns it. */
+        ContractDto: {
+            /** @description The billing level. */
+            billingLevel: components["schemas"]["BillingLevel"];
+            /**
+             * Format: uuid
+             * @description The customer the contract belongs to.
+             */
+            customerId: string;
+            /**
+             * Format: uuid
+             * @description The contract's identifier.
+             */
+            id: string;
+            /** @description Whether night trips cost more. */
+            nightSurcharge: boolean;
+            /** @description The pricing mode. */
+            pricingMode: components["schemas"]["PricingMode"];
+            /** @description The required documents, in canonical order. */
+            requiredDocuments: components["schemas"]["RequiredDocument"][];
+            /** @description Where today, in Italian time, falls against the validity; derived, never stored. */
+            status: components["schemas"]["ContractStatus"];
+            /**
+             * Format: date
+             * @description First day of the validity.
+             */
+            validFrom: string;
+            /**
+             * Format: date
+             * @description Last day of the validity, or `null` when the contract is open.
+             */
+            validTo: null | string;
+            /**
+             * Format: int32
+             * @description Version the client sends back with its next write on this contract.
+             */
+            version: number;
+        };
+        /**
+         * @description Where a day falls against the validity of a Contract; derived, never stored
+         *     (PRD §5.4).
+         * @enum {unknown}
+         */
+        ContractStatus: "Current" | "Upcoming" | "Expired";
+        /**
+         * @description Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).
+         *     Every member but the end of the validity is required; an empty set of documents is valid and
+         *     duplicates collapse.
+         */
+        CreateContractRequest: {
+            billingLevel: null | components["schemas"]["BillingLevel"];
+            nightSurcharge: null | boolean;
+            pricingMode: null | components["schemas"]["PricingMode"];
+            requiredDocuments: null | components["schemas"]["RequiredDocument"][];
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+        };
         /**
          * @description Request body for `POST /api/registry/customers` (PRD §4, RF-15). Only the company name is
          *     required; an empty VAT number, tax code or address is stored as none. The company name and the
@@ -549,6 +646,11 @@ export interface components {
              */
             totalPages?: number;
         };
+        /**
+         * @description How the amount of a trip is measured under a Contract (PRD §5.4).
+         * @enum {unknown}
+         */
+        PricingMode: "ByHour" | "ByWeight" | "ByDistance" | "ByTrip";
         ProblemDetails: {
             detail?: null | string;
             instance?: null | string;
@@ -594,12 +696,35 @@ export interface components {
              */
             refreshTokenExpiresAt: string;
         };
+        /**
+         * @description A document a Contract asks for. The declaration order is the canonical order of
+         *     a set of required documents (PRD §5.4).
+         * @enum {unknown}
+         */
+        RequiredDocument: "DeliveryNote" | "DeliverySlip" | "WasteForm" | "DailySummary";
         /** @description Request body for `POST /api/identity/auth/revoke` (self-service logout). */
         RevokeRequest: {
             refreshToken: string;
         };
         /** @enum {unknown} */
         SortDirection: "Ascending" | "Descending" | null;
+        /**
+         * @description Request body for `PUT /api/registry/customers/{customerId}/contracts/{contractId}`
+         *     (PRD §5.4, RF-16): the terms of the contract plus the `Version` the client read; the save
+         *     is refused when the contract has changed since.
+         */
+        UpdateContractRequest: {
+            billingLevel: null | components["schemas"]["BillingLevel"];
+            nightSurcharge: null | boolean;
+            pricingMode: null | components["schemas"]["PricingMode"];
+            requiredDocuments: null | components["schemas"]["RequiredDocument"][];
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+            /** Format: int32 */
+            version: number | null;
+        };
         /**
          * @description Request body for `PUT /api/registry/customers/{id}` (PRD §4, RF-15). `Version` is the
          *     version the client read; the save is refused when the customer has changed since.
@@ -1374,6 +1499,295 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListContracts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDto"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateContractRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customerId: string;
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customerId: string;
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateContractRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerListItemDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

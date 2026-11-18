@@ -96,7 +96,7 @@ describe('UserList', () => {
     await respond(fixture, 23);
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('.pt-eyebrow')?.textContent).toBe('Sistema · Utenti');
+    expect(element.querySelector('.pt-breadcrumb')?.textContent?.trim()).toBe('Sistema');
     expect(element.querySelector('h1')?.textContent).toBe('Utenti');
     expect(element.querySelector('.pt-topbar__heading .pt-muted')?.textContent).toBe('23 utenti');
     expect(element.querySelector('.pt-topbar__actions button')?.textContent?.trim()).toBe(

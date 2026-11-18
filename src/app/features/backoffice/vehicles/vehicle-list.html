@@ -1,6 +1,5 @@
 <app-topbar
-  [section]="'shell.nav.registry' | translate"
-  [page]="'shell.nav.vehicles' | translate"
+  [crumbs]="[{ label: 'shell.nav.registry' | translate }]"
   [title]="'vehicles.list.title' | translate"
   [line]="
     facade.loaded()

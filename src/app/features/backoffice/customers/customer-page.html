@@ -1,0 +1,237 @@
+@let customer = facade.customer;
+<app-topbar
+  [crumbs]="[
+    { label: 'shell.nav.registry' | translate },
+    { label: 'shell.nav.customers' | translate, link: '/customers' },
+  ]"
+  [title]="
+    facade.customerNotFound()
+      ? ('customers.page.notfound.title' | translate)
+      : customer.hasValue()
+        ? customer.value().companyName
+        : ''
+  "
+>
+  @if (customer.hasValue()) {
+    <span
+      titleAside
+      class="pt-pill"
+      [class.pt-pill--success]="customer.value().status === 'Active'"
+      [class.pt-pill--danger]="customer.value().status === 'Deactivated'"
+      >{{ 'customers.status.' + customer.value().status.toLowerCase() | translate }}</span
+    >
+  }
+  @if (customer.hasValue()) {
+    <button type="button" class="pt-btn pt-btn--outline" (click)="formTarget.set(customer.value())">
+      {{ 'customers.page.edit' | translate }}
+    </button>
+    <!-- one button for both statuses: it survives the status change, and so does its focus -->
+    <button
+      type="button"
+      class="pt-btn pt-btn--outline"
+      [attr.aria-disabled]="
+        (customer.value().status !== 'Active' && facade.reactivatingId() !== null) || null
+      "
+      (click)="
+        customer.value().status === 'Active'
+          ? deactivateTarget.set(customer.value())
+          : facade.reactivate(customer.value())
+      "
+    >
+      {{
+        (customer.value().status === 'Active'
+          ? 'customers.list.deactivate'
+          : facade.reactivatingId() === customer.value().id
+            ? 'customers.reactivate.pending'
+            : 'customers.list.reactivate'
+        ) | translate
+      }}
+    </button>
+  }
+</app-topbar>
+<main class="flex flex-col gap-4 p-8">
+  @if (facade.reactivateNotice(); as notice) {
+    <app-notice [notice]="notice" />
+  }
+  @if (facade.customerNotFound()) {
+    <div class="pt-card pt-empty">
+      <p class="pt-title">{{ 'customers.page.notfound.title' | translate }}</p>
+      <p class="pt-muted">{{ 'customers.page.notfound.hint' | translate }}</p>
+    </div>
+  } @else if (customer.hasValue()) {
+    @let current = customer.value();
+    <section class="pt-card grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div>
+        <p class="pt-label">{{ 'customers.list.column.vatnumber' | translate }}</p>
+        @if (current.vatNumber) {
+          <p class="pt-mono">{{ current.vatNumber }}</p>
+        } @else {
+          <p class="pt-muted">—</p>
+        }
+      </div>
+      <div>
+        <p class="pt-label">{{ 'customers.form.taxcode.label' | translate }}</p>
+        @if (current.taxCode) {
+          <p class="pt-mono">{{ current.taxCode }}</p>
+        } @else {
+          <p class="pt-muted">—</p>
+        }
+      </div>
+      <div>
+        <p class="pt-label">{{ 'customers.list.column.address' | translate }}</p>
+        @if (current.address) {
+          <p>{{ current.address }}</p>
+        } @else {
+          <p class="pt-muted">—</p>
+        }
+      </div>
+    </section>
+
+    @if (current.status === 'Deactivated') {
+      <div class="pt-notice pt-notice--info">
+        {{ 'customers.contracts.deactivated' | translate }}
+      </div>
+    }
+    <section class="flex flex-col gap-2">
+      @let contracts = facade.contracts;
+      @let refreshing = contracts.isLoading() && contracts.hasValue();
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <h2 class="pt-title">{{ 'customers.contracts.title' | translate }}</h2>
+          @if (refreshing) {
+            <span class="pt-spinner pt-spinner--sm" role="status"
+              ><span class="sr-only">{{ 'common.refreshing' | translate }}</span></span
+            >
+          }
+        </div>
+        @if (current.status === 'Active') {
+          <a class="pt-btn pt-btn--primary" routerLink="contracts/new">{{
+            'customers.contracts.new' | translate
+          }}</a>
+        }
+      </div>
+      @if (contracts.hasValue()) {
+        @if (contracts.value().length === 0) {
+          <div class="pt-card pt-empty">
+            <p class="pt-title">{{ 'customers.contracts.empty.title' | translate }}</p>
+            <p class="pt-muted">{{ 'customers.contracts.empty.hint' | translate }}</p>
+          </div>
+        } @else {
+          <div class="pt-table-wrap">
+            <table class="pt-table" [attr.aria-busy]="refreshing || null">
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'customers.contracts.column.validity' | translate }}</th>
+                  <th scope="col">{{ 'customers.contracts.column.status' | translate }}</th>
+                  <th scope="col">{{ 'customers.contracts.column.billing' | translate }}</th>
+                  <th scope="col">{{ 'customers.contracts.column.pricing' | translate }}</th>
+                  <th scope="col">{{ 'customers.contracts.column.night' | translate }}</th>
+                  <th scope="col">{{ 'customers.contracts.column.documents' | translate }}</th>
+                  <th scope="col">
+                    <span class="sr-only">{{ 'customers.list.column.actions' | translate }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (contract of contracts.value(); track contract.id) {
+                  <tr>
+                    <td [id]="'contract-' + contract.id">
+                      @if (contract.validTo) {
+                        {{
+                          'customers.contracts.validity.range'
+                            | translate
+                              : {
+                                  from: (contract.validFrom | date: 'dd/MM/yyyy'),
+                                  to: (contract.validTo | date: 'dd/MM/yyyy'),
+                                }
+                        }}
+                      } @else {
+                        {{
+                          'customers.contracts.validity.open'
+                            | translate: { from: (contract.validFrom | date: 'dd/MM/yyyy') }
+                        }}
+                      }
+                    </td>
+                    <td>
+                      <span class="pt-pill" [class]="statusPill[contract.status]">{{
+                        'customers.contracts.status.' + contract.status.toLowerCase() | translate
+                      }}</span>
+                    </td>
+                    <td>
+                      {{
+                        'customers.contracts.billing.' + contract.billingLevel.toLowerCase()
+                          | translate
+                      }}
+                    </td>
+                    <td>
+                      {{
+                        'customers.contracts.pricing.' + contract.pricingMode.toLowerCase()
+                          | translate
+                      }}
+                    </td>
+                    <td>
+                      {{
+                        (contract.nightSurcharge
+                          ? 'customers.contracts.night.yes'
+                          : 'customers.contracts.night.no'
+                        ) | translate
+                      }}
+                    </td>
+                    <td class="pt-text" [class.pt-muted]="contract.requiredDocuments.length === 0">
+                      {{ documents(contract) }}
+                    </td>
+                    <td class="text-right whitespace-nowrap">
+                      <a
+                        class="pt-btn pt-btn--outline pt-btn--sm"
+                        [attr.aria-describedby]="'contract-' + contract.id"
+                        [routerLink]="['contracts', contract.id]"
+                      >
+                        {{ 'customers.contracts.edit' | translate }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      } @else if (contracts.error()) {
+        <app-notice [notice]="{ key: 'errors.generic' }">
+          <button
+            type="button"
+            class="pt-btn pt-btn--outline pt-btn--sm"
+            (click)="facade.reloadContracts()"
+          >
+            {{ 'common.actions.retry' | translate }}
+          </button>
+        </app-notice>
+      } @else {
+        <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+          <span class="pt-spinner"></span
+          ><span class="pt-muted">{{ 'customers.page.loading' | translate }}</span>
+        </div>
+      }
+    </section>
+  } @else if (customer.error()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button
+        type="button"
+        class="pt-btn pt-btn--outline pt-btn--sm"
+        (click)="facade.reloadCustomer()"
+      >
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else {
+    <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'customers.page.loading' | translate }}</span>
+    </div>
+  }
+</main>
+@if (formTarget(); as target) {
+  <app-customer-form-dialog [customer]="target" (closed)="formTarget.set(null)" />
+}
+@if (deactivateTarget(); as target) {
+  <app-customer-deactivate-dialog [customer]="target" (closed)="deactivateTarget.set(null)" />
+}

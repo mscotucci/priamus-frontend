@@ -12,18 +12,42 @@
   <section class="flex flex-col gap-3" aria-labelledby="g-icons">
     <h2 id="g-icons" class="pt-label">Icone</h2>
     <div class="flex flex-wrap gap-4">
-      <div class="flex flex-col items-center gap-1"><app-icon name="truck" size="lg" /><span class="pt-muted">truck</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="building" size="lg" /><span class="pt-muted">building</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="user" size="lg" /><span class="pt-muted">user</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="user-plus" size="lg" /><span class="pt-muted">user-plus</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="user-x" size="lg" /><span class="pt-muted">user-x</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="sign-out" size="lg" /><span class="pt-muted">sign-out</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="menu" size="lg" /><span class="pt-muted">menu</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="close" size="lg" /><span class="pt-muted">close</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="search" size="lg" /><span class="pt-muted">search</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="chevron" size="lg" /><span class="pt-muted">chevron</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="check" size="lg" /><span class="pt-muted">check</span></div>
-      <div class="flex flex-col items-center gap-1"><app-icon name="alert" size="lg" /><span class="pt-muted">alert</span></div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="truck" size="lg" /><span class="pt-muted">truck</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="building" size="lg" /><span class="pt-muted">building</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="user" size="lg" /><span class="pt-muted">user</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="user-plus" size="lg" /><span class="pt-muted">user-plus</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="user-x" size="lg" /><span class="pt-muted">user-x</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="sign-out" size="lg" /><span class="pt-muted">sign-out</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="menu" size="lg" /><span class="pt-muted">menu</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="close" size="lg" /><span class="pt-muted">close</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="search" size="lg" /><span class="pt-muted">search</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="chevron" size="lg" /><span class="pt-muted">chevron</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="check" size="lg" /><span class="pt-muted">check</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="alert" size="lg" /><span class="pt-muted">alert</span>
+      </div>
     </div>
     <div class="flex flex-wrap items-center gap-4">
       <app-icon name="truck" size="xs" />
@@ -46,10 +70,16 @@
       <span class="pt-muted w-10">sm</span>
       <button type="button" class="pt-btn pt-btn--primary pt-btn--sm">Pulsante</button>
       <button type="button" class="pt-btn pt-btn--outline pt-btn--sm">Pulsante</button>
-      <button type="button" class="pt-btn pt-btn--icon pt-btn--sm" aria-label="Chiudi"><app-icon name="close" size="sm" /></button>
+      <button type="button" class="pt-btn pt-btn--icon pt-btn--sm" aria-label="Chiudi">
+        <app-icon name="close" size="sm" />
+      </button>
       <input class="pt-input pt-input--sm w-40!" value="Campo" aria-label="Campo" />
-      <select class="pt-input pt-input--sm w-40!" aria-label="Select"><option>Select</option></select>
-      <label class="pt-search pt-search--sm"><app-icon name="search" size="sm" /><input placeholder="Cerca…" aria-label="Cerca" /></label>
+      <select class="pt-input pt-input--sm w-40!" aria-label="Select">
+        <option>Select</option>
+      </select>
+      <label class="pt-search pt-search--sm"
+        ><app-icon name="search" size="sm" /><input placeholder="Cerca…" aria-label="Cerca"
+      /></label>
       <button type="button" class="pt-filter__button">
         <span class="pt-muted">Filtro:</span> tutti <app-icon name="chevron" size="xs" />
       </button>
@@ -58,19 +88,31 @@
       <span class="pt-muted w-10">md</span>
       <button type="button" class="pt-btn pt-btn--primary">Pulsante</button>
       <button type="button" class="pt-btn pt-btn--outline">Pulsante</button>
-      <button type="button" class="pt-btn pt-btn--icon" aria-label="Chiudi"><app-icon name="close" /></button>
+      <button type="button" class="pt-btn pt-btn--icon" aria-label="Chiudi">
+        <app-icon name="close" />
+      </button>
       <input class="pt-input w-40!" value="Campo" aria-label="Campo" />
-      <select class="pt-input w-40!" aria-label="Select"><option>Select</option></select>
-      <label class="pt-search"><app-icon name="search" /><input placeholder="Cerca…" aria-label="Cerca" /></label>
+      <select class="pt-input w-40!" aria-label="Select">
+        <option>Select</option>
+      </select>
+      <label class="pt-search"
+        ><app-icon name="search" /><input placeholder="Cerca…" aria-label="Cerca"
+      /></label>
     </div>
     <div class="flex flex-wrap items-center gap-2">
       <span class="pt-muted w-10">lg</span>
       <button type="button" class="pt-btn pt-btn--primary pt-btn--lg">Pulsante</button>
       <button type="button" class="pt-btn pt-btn--outline pt-btn--lg">Pulsante</button>
-      <button type="button" class="pt-btn pt-btn--icon pt-btn--lg" aria-label="Chiudi"><app-icon name="close" size="lg" /></button>
+      <button type="button" class="pt-btn pt-btn--icon pt-btn--lg" aria-label="Chiudi">
+        <app-icon name="close" size="lg" />
+      </button>
       <input class="pt-input pt-input--lg w-40!" value="Campo" aria-label="Campo" />
-      <select class="pt-input pt-input--lg w-40!" aria-label="Select"><option>Select</option></select>
-      <label class="pt-search pt-search--lg"><app-icon name="search" size="lg" /><input placeholder="Cerca…" aria-label="Cerca" /></label>
+      <select class="pt-input pt-input--lg w-40!" aria-label="Select">
+        <option>Select</option>
+      </select>
+      <label class="pt-search pt-search--lg"
+        ><app-icon name="search" size="lg" /><input placeholder="Cerca…" aria-label="Cerca"
+      /></label>
     </div>
   </section>
 
@@ -82,8 +124,16 @@
       <button type="button" class="pt-btn pt-btn--primary">Primario</button>
       <button type="button" class="pt-btn pt-btn--warn">Attenzione</button>
       <button type="button" class="pt-btn pt-btn--danger">Pericolo</button>
-      <button type="button" class="pt-btn pt-btn--icon pt-btn--primary" aria-label="Aggiungi utente"><app-icon name="user-plus" /></button>
-      <button type="button" class="pt-btn pt-btn--icon pt-btn--danger" aria-label="Chiudi"><app-icon name="close" /></button>
+      <button
+        type="button"
+        class="pt-btn pt-btn--icon pt-btn--primary"
+        aria-label="Aggiungi utente"
+      >
+        <app-icon name="user-plus" />
+      </button>
+      <button type="button" class="pt-btn pt-btn--icon pt-btn--danger" aria-label="Chiudi">
+        <app-icon name="close" />
+      </button>
       <button type="button" class="pt-btn pt-btn--primary" disabled>Disabilitato</button>
     </div>
   </section>
@@ -151,8 +201,15 @@
     <div class="grid max-w-3xl gap-4 sm:grid-cols-2">
       <div class="pt-field">
         <label class="pt-label" for="g-username">Nome utente</label>
-        <input class="pt-input" id="g-username" value="m.rossi" aria-describedby="g-username-hint" />
-        <span class="pt-field__hint" id="g-username-hint">Da 3 a 64 caratteri: lettere minuscole, cifre, punto, trattino.</span>
+        <input
+          class="pt-input"
+          id="g-username"
+          value="m.rossi"
+          aria-describedby="g-username-hint"
+        />
+        <span class="pt-field__hint" id="g-username-hint"
+          >Da 3 a 64 caratteri: lettere minuscole, cifre, punto, trattino.</span
+        >
       </div>
       <div class="pt-field">
         <label class="pt-label" for="g-password">Password</label>
@@ -186,7 +243,8 @@
       </div>
       <div class="pt-field sm:col-span-2">
         <label class="pt-label" for="g-notes">Note</label>
-        <textarea class="pt-input" id="g-notes">Consegna al cancello 2, chiedere del capocantiere.</textarea>
+        <textarea class="pt-input" id="g-notes">
+Consegna al cancello 2, chiedere del capocantiere.</textarea>
       </div>
     </div>
   </section>
@@ -197,6 +255,55 @@
       <label class="pt-check"><input type="checkbox" checked /> Selezionata</label>
       <label class="pt-check"><input type="checkbox" /> Non selezionata</label>
       <label class="pt-check"><input type="checkbox" disabled /> Disabilitata</label>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-question">
+    <h2 id="g-question" class="pt-label">Domanda e scelta</h2>
+    <div class="pt-question" aria-current="step">
+      <span class="pt-question__number">2</span>
+      <div class="flex flex-col gap-3 grow">
+        <p>Domanda attiva</p>
+        <label class="pt-choice"
+          ><input type="radio" name="g-choice-radio" checked /><span
+            >Scelta selezionata<span class="pt-choice__hint"
+              >Il suggerimento della scelta</span
+            ></span
+          ></label
+        >
+        <label class="pt-choice"
+          ><input type="radio" name="g-choice-radio" /><span
+            >Scelta non selezionata<span class="pt-choice__hint"
+              >Il suggerimento della scelta</span
+            ></span
+          ></label
+        >
+        <label class="pt-choice"
+          ><input type="checkbox" checked /><span
+            >Casella selezionata<span class="pt-choice__hint"
+              >Il suggerimento della scelta</span
+            ></span
+          ></label
+        >
+        <label class="pt-choice"
+          ><input type="checkbox" /><span
+            >Casella non selezionata<span class="pt-choice__hint"
+              >Il suggerimento della scelta</span
+            ></span
+          ></label
+        >
+      </div>
+    </div>
+    <div class="pt-question pt-question--answered">
+      <span class="pt-question__number"><app-icon name="check" size="sm" /></span>
+      <div>
+        <p>Domanda risposta</p>
+        <span class="pt-pill pt-pill--success">Risposta</span>
+      </div>
+    </div>
+    <div class="pt-question">
+      <span class="pt-question__number">4</span>
+      <p>Domanda non ancora raggiunta</p>
     </div>
   </section>
 
@@ -219,7 +326,7 @@
           <tr>
             <td class="pt-code">T-2026-0412</td>
             <td>24/04</td>
-            <td>Ecorecuperi Adriatica</td>
+            <td class="pt-text">Ecorecuperi Adriatica</td>
             <td class="pt-code">FX 482 KL</td>
             <td><span class="pt-pill pt-pill--success">A peso</span></td>
             <td class="pt-num">18.420 kg</td>
@@ -228,7 +335,7 @@
           <tr class="pt-row--anomaly">
             <td class="pt-code">T-2026-0411</td>
             <td>24/04</td>
-            <td>Inerti Val Vibrata</td>
+            <td class="pt-text">Inerti Val Vibrata</td>
             <td class="pt-code">GA 117 ZT</td>
             <td><span class="pt-pill pt-pill--warn">Tariffa mancante</span></td>
             <td class="pt-num">12.300 kg</td>
@@ -239,7 +346,7 @@
           <tr>
             <td class="pt-code">T-2026-0410</td>
             <td>23/04</td>
-            <td>Cementi del Tronto</td>
+            <td class="pt-text">Cementi del Tronto</td>
             <td class="pt-code">FX 482 KL</td>
             <td><span class="pt-pill pt-pill--info">Oraria</span></td>
             <td class="pt-num">6,5 h</td>
@@ -274,9 +381,13 @@
   </section>
 
   <section class="flex flex-col gap-3" aria-labelledby="g-toast">
-    <h2 id="g-toast" class="pt-label">Messaggio a scomparsa — in basso a destra, 4 secondi, uno alla volta</h2>
+    <h2 id="g-toast" class="pt-label">
+      Messaggio a scomparsa — in basso a destra, 4 secondi, uno alla volta
+    </h2>
     <div class="flex">
-      <div class="pt-toast" role="status"><app-icon name="check" />Utente a.rossetti disabilitato</div>
+      <div class="pt-toast" role="status">
+        <app-icon name="check" />Utente a.rossetti disabilitato
+      </div>
     </div>
   </section>
 
@@ -288,7 +399,9 @@
     <h3 class="pt-label">Aggiornamento — il contenuto resta, piccolo in fondo ai filtri</h3>
     <div class="pt-card flex max-w-3xl items-center gap-2">
       <span class="pt-muted">Filtri…</span>
-      <span class="pt-spinner pt-spinner--sm ml-auto" role="status"><span class="sr-only">Aggiornamento…</span></span>
+      <span class="pt-spinner pt-spinner--sm ml-auto" role="status"
+        ><span class="sr-only">Aggiornamento…</span></span
+      >
     </div>
   </section>
 
@@ -344,7 +457,9 @@
               <span class="pt-paging">
                 <button type="button" class="pt-btn pt-btn--outline pt-btn--sm">Precedente</button>
                 <span class="pt-muted">Pagina 2 di 2</span>
-                <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" disabled>Successiva</button>
+                <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" disabled>
+                  Successiva
+                </button>
               </span>
             </td>
           </tr>
@@ -356,7 +471,9 @@
   <section class="flex flex-col gap-3" aria-labelledby="g-shell">
     <h2 id="g-shell" class="pt-label">Barra superiore e navigazione</h2>
     <div class="flex h-80 overflow-hidden border border-[var(--border)]">
-      <aside class="flex w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
+      <aside
+        class="flex w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]"
+      >
         <div class="border-b border-[var(--border)] p-5">
           <div class="pt-brand">
             <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
@@ -368,7 +485,9 @@
         </div>
         <nav class="flex flex-1 flex-col gap-1 p-3" aria-label="Navigazione di esempio">
           <p class="pt-nav__group">Sistema</p>
-          <a class="pt-nav-item" aria-current="page" href="#"><app-icon name="user" size="lg" />Utenti</a>
+          <a class="pt-nav-item" aria-current="page" href="#"
+            ><app-icon name="user" size="lg" />Utenti</a
+          >
           <a class="pt-nav-item" href="#"><app-icon name="truck" size="lg" />Viaggi</a>
         </nav>
         <div class="flex items-center gap-3 border-t border-[var(--border)] p-4">
@@ -385,11 +504,16 @@
       <div class="flex min-w-0 flex-1 flex-col">
         <header class="pt-topbar">
           <div class="pt-topbar__heading">
-            <p class="pt-eyebrow">Sistema · Utenti</p>
-            <p class="pt-topbar__title">Utenti</p>
+            <nav aria-label="Percorso">
+              <ol class="pt-breadcrumb">
+                <li>Anagrafiche</li>
+                <li><a href="/customers">Clienti</a></li>
+              </ol>
+            </nav>
+            <p class="pt-topbar__title">Cantieri Edili Pescara S.r.l.</p>
           </div>
           <div class="pt-topbar__actions">
-            <button type="button" class="pt-btn pt-btn--primary">Nuovo utente</button>
+            <button type="button" class="pt-btn pt-btn--outline">Modifica</button>
           </div>
         </header>
       </div>
@@ -398,8 +522,13 @@
 
   <section class="flex flex-col gap-3" aria-labelledby="g-nav">
     <h2 id="g-nav" class="pt-label">Elemento di navigazione — normale, corrente, con contatore</h2>
-    <nav class="flex w-64 flex-col gap-1 border border-[var(--border)] p-3" aria-label="Stati della navigazione">
-      <a class="pt-nav-item" aria-current="page" href="#"><app-icon name="user" size="lg" />Utenti</a>
+    <nav
+      class="flex w-64 flex-col gap-1 border border-[var(--border)] p-3"
+      aria-label="Stati della navigazione"
+    >
+      <a class="pt-nav-item" aria-current="page" href="#"
+        ><app-icon name="user" size="lg" />Utenti</a
+      >
       <a class="pt-nav-item" href="#"><app-icon name="truck" size="lg" />Viaggi</a>
       <a class="pt-nav-item" href="#">
         <app-icon name="menu" size="lg" />Anomalie <span class="pt-count pt-count--warn">5</span>
@@ -414,15 +543,23 @@
         <span class="pt-muted">Ruolo:</span> Segreteria <app-icon name="chevron" size="xs" />
       </button>
       <div class="pt-menu mt-1" role="listbox" aria-label="Ruolo">
-        <button type="button" class="pt-menu__item" role="option" aria-selected="false">Tutti</button>
-        <button type="button" class="pt-menu__item" role="option" aria-selected="true">Segreteria</button>
-        <button type="button" class="pt-menu__item" role="option" aria-selected="false">Autista</button>
+        <button type="button" class="pt-menu__item" role="option" aria-selected="false">
+          Tutti
+        </button>
+        <button type="button" class="pt-menu__item" role="option" aria-selected="true">
+          Segreteria
+        </button>
+        <button type="button" class="pt-menu__item" role="option" aria-selected="false">
+          Autista
+        </button>
       </div>
     </div>
   </section>
 
   <section class="flex flex-col gap-3" aria-labelledby="g-dialog">
-    <h2 id="g-dialog" class="pt-label">Finestra di dialogo — riquadro primario e pericolo, sul velo</h2>
+    <h2 id="g-dialog" class="pt-label">
+      Finestra di dialogo — riquadro primario e pericolo, sul velo
+    </h2>
     <div class="pt-scrim flex flex-wrap justify-center gap-6 p-8">
       <div class="pt-dialog" role="dialog" aria-labelledby="g-dialog-t1">
         <div class="pt-dialog__head">
@@ -464,7 +601,9 @@
             <p class="pt-eyebrow">Viaggio T-2026-0411</p>
             <p class="pt-title" id="g-drawer-t">Risolvi anomalia tariffa</p>
           </div>
-          <button type="button" class="pt-btn pt-btn--icon" aria-label="Chiudi"><app-icon name="close" /></button>
+          <button type="button" class="pt-btn pt-btn--icon" aria-label="Chiudi">
+            <app-icon name="close" />
+          </button>
         </div>
         <div class="pt-drawer__body">
           <div class="pt-field">
@@ -472,20 +611,36 @@
             <input class="pt-input pt-mono" id="g-drawer-rate" value="18,50" />
           </div>
           <div class="pt-calc">
-            <div class="pt-calc__row"><span class="pt-muted">Quantità</span><span class="pt-mono">12.300 kg</span></div>
-            <div class="pt-calc__row"><span class="pt-muted">Tariffa</span><span class="pt-mono">18,50 € / t</span></div>
+            <div class="pt-calc__row">
+              <span class="pt-muted">Quantità</span><span class="pt-mono">12.300 kg</span>
+            </div>
+            <div class="pt-calc__row">
+              <span class="pt-muted">Tariffa</span><span class="pt-mono">18,50 € / t</span>
+            </div>
             <div class="pt-calc__rule"></div>
-            <div class="pt-calc__row"><span class="pt-label">Importo</span><span class="pt-amount">227,55 €</span></div>
+            <div class="pt-calc__row">
+              <span class="pt-label">Importo</span><span class="pt-amount">227,55 €</span>
+            </div>
           </div>
-          <div class="pt-strip"><span>Importo calcolato</span><span class="pt-amount">227,55 €</span></div>
+          <div class="pt-strip">
+            <span>Importo calcolato</span><span class="pt-amount">227,55 €</span>
+          </div>
           <ul class="pt-timeline">
             <li class="pt-timeline__item">
               <span class="pt-timeline__dot"><app-icon name="check" size="sm" /></span>
-              <div><p>Viaggio registrato</p><p class="pt-timeline__meta">24/04 · 08:12</p></div>
+              <div>
+                <p>Viaggio registrato</p>
+                <p class="pt-timeline__meta">24/04 · 08:12</p>
+              </div>
             </li>
             <li class="pt-timeline__item">
-              <span class="pt-timeline__dot pt-timeline__dot--warn"><app-icon name="alert" size="sm" /></span>
-              <div><p>Tariffa mancante</p><p class="pt-timeline__meta">24/04 · 08:13</p></div>
+              <span class="pt-timeline__dot pt-timeline__dot--warn"
+                ><app-icon name="alert" size="sm"
+              /></span>
+              <div>
+                <p>Tariffa mancante</p>
+                <p class="pt-timeline__meta">24/04 · 08:13</p>
+              </div>
             </li>
           </ul>
         </div>
@@ -498,9 +653,13 @@
   </section>
 
   <section class="flex flex-col gap-3" aria-labelledby="g-toast-region">
-    <h2 id="g-toast-region" class="pt-label">Area dei messaggi — in produzione fissa in basso a destra, qui in linea</h2>
+    <h2 id="g-toast-region" class="pt-label">
+      Area dei messaggi — in produzione fissa in basso a destra, qui in linea
+    </h2>
     <div class="pt-toast-region" style="position: static">
-      <div class="pt-toast" role="status"><app-icon name="check" />Utente a.rossetti riattivato</div>
+      <div class="pt-toast" role="status">
+        <app-icon name="check" />Utente a.rossetti riattivato
+      </div>
     </div>
   </section>
 </main>

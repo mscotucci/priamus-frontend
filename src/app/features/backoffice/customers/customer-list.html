@@ -1,6 +1,5 @@
 <app-topbar
-  [section]="'shell.nav.registry' | translate"
-  [page]="'shell.nav.customers' | translate"
+  [crumbs]="[{ label: 'shell.nav.registry' | translate }]"
   [title]="'customers.list.title' | translate"
   [line]="
     facade.loaded()
@@ -9,7 +8,7 @@
       : undefined
   "
 >
-  <button type="button" class="pt-btn pt-btn--primary" (click)="openForm(null)">
+  <button type="button" class="pt-btn pt-btn--primary" (click)="openForm()">
     {{ 'customers.list.new' | translate }}
   </button>
 </app-topbar>
@@ -142,14 +141,13 @@
               <td>{{ customer.lastModifiedAt | date: 'dd/MM/yyyy' }}</td>
               <td class="text-right whitespace-nowrap">
                 <div class="inline-flex gap-1">
-                  <button
-                    type="button"
+                  <a
                     class="pt-btn pt-btn--outline pt-btn--sm"
                     [attr.aria-describedby]="'customer-' + customer.id"
-                    (click)="openForm(customer)"
+                    [routerLink]="[customer.id]"
                   >
-                    {{ 'customers.list.edit' | translate }}
-                  </button>
+                    {{ 'customers.list.open' | translate }}
+                  </a>
                   <!-- one button for both statuses: it survives the status change, and so does its focus -->
                   <button
                     type="button"
@@ -196,7 +194,7 @@
   }
 </main>
 @if (formOpen()) {
-  <app-customer-form-dialog [customer]="formTarget()" (closed)="formOpen.set(false)" />
+  <app-customer-form-dialog (closed)="formOpen.set(false)" />
 }
 @if (deactivateTarget(); as customer) {
   <app-customer-deactivate-dialog [customer]="customer" (closed)="deactivateTarget.set(null)" />

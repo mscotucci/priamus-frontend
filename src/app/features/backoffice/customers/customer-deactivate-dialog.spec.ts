@@ -6,7 +6,7 @@ import { provideTestI18n } from '../../../core/i18n/i18n-testing';
 import { stubModalDialog } from '../../../core/testing/dom-testing';
 import { Toast } from '../../../core/toast/toast';
 import { press, settle } from '../../../core/testing/interaction-testing';
-import type { CustomerListItem, CustomerPage } from './customers-api';
+import type { CustomerListItem, CustomerListPage } from './customers-api';
 import { CustomerDeactivateDialog } from './customer-deactivate-dialog';
 import { CustomersFacade } from './customers-facade';
 
@@ -23,7 +23,7 @@ const CUSTOMER: CustomerListItem = {
   version: 5,
 };
 
-const EMPTY: CustomerPage = {
+const EMPTY: CustomerListPage = {
   data: [],
   totalCount: 0,
   page: 1,

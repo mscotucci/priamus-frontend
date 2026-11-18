@@ -1,11 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { provideTestI18n } from '../../../core/i18n/i18n-testing';
 import { Toast } from '../../../core/toast/toast';
 import { CustomersFacade } from './customers-facade';
-import type { CustomerPage } from './customers-api';
+import type { Contract, CreateContractRequest } from './contracts-api';
+import type { CustomerListPage } from './customers-api';
 
 const URL = '/api/registry/customers';
 
@@ -14,7 +16,7 @@ const settle = async () => {
   TestBed.tick();
 };
 
-const page = (total: number): CustomerPage => ({
+const page = (total: number): CustomerListPage => ({
   data: [
     {
       id: '1',
@@ -38,6 +40,7 @@ const page = (total: number): CustomerPage => ({
 describe('CustomersFacade', () => {
   let http: HttpTestingController;
   let facade: CustomersFacade;
+  let navigate: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -51,6 +54,7 @@ describe('CustomersFacade', () => {
     TestBed.inject(TranslateService).use('it');
     http = TestBed.inject(HttpTestingController);
     facade = TestBed.inject(CustomersFacade);
+    navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   });
 
   const lastRequest = () => {
@@ -469,6 +473,231 @@ describe('CustomersFacade', () => {
 
       expect(facade.reactivateNotice()).toBeNull();
       http.match(() => true);
+    });
+  });
+
+  describe('customer page and contracts', () => {
+    const CONTRACTS = `${URL}/c1/contracts`;
+    const at = (url: string) => {
+      TestBed.tick();
+      return http.expectOne((request) => request.url === url);
+    };
+    const contract: Contract = {
+      id: 'k1',
+      customerId: 'c1',
+      validFrom: '2026-04-01',
+      validTo: null,
+      status: 'Current',
+      billingLevel: 'FlatRate',
+      pricingMode: 'ByTrip',
+      requiredDocuments: ['DeliveryNote'],
+      nightSurcharge: false,
+      version: 4,
+    };
+    const values: CreateContractRequest = {
+      validFrom: '2026-04-01',
+      validTo: null,
+      billingLevel: 'FlatRate',
+      pricingMode: 'ByTrip',
+      requiredDocuments: ['DeliveryNote'],
+      nightSurcharge: false,
+    };
+
+    beforeEach(() => {
+      http.match((request) => request.url === URL);
+    });
+
+    it('reads nothing until a customer is opened, then the customer and its contracts', async () => {
+      TestBed.tick();
+      http.expectNone((request) => request.url.startsWith(`${URL}/`));
+
+      facade.openCustomer('c1');
+
+      at(`${URL}/c1`).flush({ ...page(1).data[0], id: 'c1' });
+      at(CONTRACTS).flush([contract]);
+      await settle();
+      expect(facade.customer.value()?.id).toBe('c1');
+      expect(facade.contracts.value()).toEqual([contract]);
+      http.expectNone((request) => request.url.endsWith('/k1'));
+    });
+
+    it('a customer answered 404 is not found, and any other failure is not', async () => {
+      facade.openCustomer('c1');
+      at(`${URL}/c1`).flush(null, { status: 404, statusText: 'Not Found' });
+      at(CONTRACTS).flush([]);
+      await settle();
+      expect(facade.customerNotFound()).toBe(true);
+
+      facade.openCustomer('c2');
+      at(`${URL}/c2`).flush(null, { status: 500, statusText: 'Server Error' });
+      at(`${URL}/c2/contracts`).flush([]);
+      await settle();
+      expect(facade.customerNotFound()).toBe(false);
+    });
+
+    it('reads the contract to edit only once its id is set, and a missing one is not found', async () => {
+      facade.openCustomer('c1');
+      at(`${URL}/c1`).flush(null);
+      at(CONTRACTS).flush([]);
+      facade.openContract('k1');
+
+      at(`${CONTRACTS}/k1`).flush(null, { status: 404, statusText: 'Not Found' });
+      await settle();
+
+      expect(facade.contractNotFound()).toBe(true);
+    });
+
+    it('creates a contract with a POST and leaves the contracts to the customer page that opens next', async () => {
+      facade.openCustomer('c1');
+      at(`${URL}/c1`).flush(null);
+      at(CONTRACTS).flush([]);
+      await settle();
+
+      const outcome = facade.saveContract('c1', null, values);
+      const post = http.expectOne(
+        (request) => request.url === CONTRACTS && request.method === 'POST',
+      );
+      expect(post.request.body).toEqual(values);
+      post.flush(contract, { status: 201, statusText: 'Created' });
+
+      expect(await outcome).toBe('created');
+      expect(TestBed.inject(Toast).current()).toBe('Contratto salvato');
+      expect(navigate).toHaveBeenCalledWith(['/customers', 'c1']);
+      expect(facade.savingContract()).toBe(false);
+      TestBed.tick();
+      http.expectNone((request) => request.url === CONTRACTS && request.method === 'GET');
+    });
+
+    it('updates a contract with a PUT carrying the version it was read at', async () => {
+      const outcome = facade.saveContract('c1', contract, values);
+      const put = http.expectOne((request) => request.method === 'PUT');
+
+      expect(put.request.url).toBe(`${CONTRACTS}/k1`);
+      expect(put.request.body).toEqual({ ...values, version: 4 });
+      put.flush(null, { status: 204, statusText: 'No Content' });
+
+      expect(await outcome).toBe('updated');
+      expect(TestBed.inject(Toast).current()).toBe('Contratto salvato');
+      expect(navigate).toHaveBeenCalledWith(['/customers', 'c1']);
+    });
+
+    it('a second save while one runs is ignored', async () => {
+      const first = facade.saveContract('c1', null, values);
+      const second = await facade.saveContract('c1', null, values);
+
+      expect(second).toBe('ignored');
+      http
+        .expectOne((request) => request.method === 'POST')
+        .flush(contract, { status: 201, statusText: 'Created' });
+      await first;
+    });
+
+    it('opening the customer already held reads the customer and its contracts again', async () => {
+      facade.openCustomer('c1');
+      at(`${URL}/c1`).flush(null);
+      at(CONTRACTS).flush([]);
+      await settle();
+
+      facade.openCustomer('c1');
+
+      at(`${URL}/c1`).flush(null);
+      at(CONTRACTS).flush([]);
+    });
+
+    it('opening another customer drops the open contract and does not read it under the new customer', async () => {
+      facade.openCustomer('c1');
+      at(`${URL}/c1`).flush(null);
+      at(CONTRACTS).flush([]);
+      facade.openContract('k1');
+      at(`${CONTRACTS}/k1`).flush(contract);
+      await settle();
+
+      facade.openCustomer('c2');
+
+      at(`${URL}/c2`).flush(null);
+      at(`${URL}/c2/contracts`).flush([]);
+      http.expectNone((request) => request.url === `${URL}/c2/contracts/k1`);
+      expect(facade.contract.value()).toBeUndefined();
+    });
+
+    it('opening the contract already held reads it again', async () => {
+      facade.openCustomer('c1');
+      at(`${URL}/c1`).flush(null);
+      at(CONTRACTS).flush([]);
+      facade.openContract('k1');
+      at(`${CONTRACTS}/k1`).flush(contract);
+      await settle();
+
+      facade.openContract('k1');
+
+      at(`${CONTRACTS}/k1`).flush({ ...contract, version: 5 });
+      await settle();
+      expect(facade.contract.value()?.version).toBe(5);
+    });
+
+    it('a save refused with 409 returns the domain error and reads the contracts and the open contract again', async () => {
+      facade.openCustomer('c1');
+      at(`${URL}/c1`).flush(null);
+      at(CONTRACTS).flush([]);
+      facade.openContract('k1');
+      at(`${CONTRACTS}/k1`).flush(contract);
+      await settle();
+      const conflict = {
+        errorCode: 'Registry.Contract.ConcurrentUpdate',
+        detail: 'Modificato da un altro utente.',
+      };
+
+      const outcome = facade.saveContract('c1', contract, values);
+      http
+        .expectOne((request) => request.method === 'PUT')
+        .flush(conflict, { status: 409, statusText: 'Conflict' });
+
+      expect(await outcome).toEqual({
+        kind: 'domain',
+        status: 409,
+        errorCode: conflict.errorCode,
+        detail: conflict.detail,
+      });
+      TestBed.tick();
+      http.expectOne((request) => request.url === CONTRACTS && request.method === 'GET');
+      http.expectOne((request) => request.url === `${CONTRACTS}/k1` && request.method === 'GET');
+    });
+
+    it('a save refused with 400 returns the validation errors and reads nothing again', async () => {
+      const outcome = facade.saveContract('c1', null, values);
+      http
+        .expectOne((request) => request.method === 'POST')
+        .flush(
+          { errors: { ValidTo: ['End before start.'] } },
+          { status: 400, statusText: 'Bad Request' },
+        );
+
+      expect(await outcome).toEqual({
+        kind: 'validation',
+        errors: { ValidTo: ['End before start.'] },
+      });
+      http.expectNone((request) => request.method === 'GET');
+      expect(navigate).not.toHaveBeenCalled();
+      expect(TestBed.inject(Toast).current()).toBeNull();
+    });
+
+    it('a customer save reloads the customer detail too', async () => {
+      facade.openCustomer('c1');
+      at(`${URL}/c1`).flush({ ...page(1).data[0], id: 'c1' });
+      at(CONTRACTS).flush([]);
+      await settle();
+
+      const outcome = facade.save(
+        { ...page(1).data[0], id: 'c1' },
+        { companyName: 'Comune di Penne', vatNumber: null, taxCode: null, address: null },
+      );
+      http
+        .expectOne((request) => request.method === 'PUT')
+        .flush(null, { status: 204, statusText: 'No Content' });
+      await outcome;
+
+      TestBed.tick();
+      http.expectOne((request) => request.url === `${URL}/c1` && request.method === 'GET');
     });
   });
 });

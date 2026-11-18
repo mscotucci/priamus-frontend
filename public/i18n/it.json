@@ -53,7 +53,8 @@
       "users": "Utenti",
       "vehicles": "Mezzi"
     },
-    "signout": "Esci"
+    "signout": "Esci",
+    "breadcrumb": "Percorso"
   },
   "paging": {
     "previous": "Precedente",
@@ -86,7 +87,7 @@
         "status": "Stato:"
       },
       "clear": "Azzera filtri",
-      "edit": "Modifica",
+      "open": "Apri",
       "deactivate": "Disattiva",
       "reactivate": "Riattiva",
       "empty": {
@@ -154,6 +155,205 @@
         "placeholder": "Es. Via Tiburtina Valeria 210, 65129 Pescara (PE)",
         "hint": "Indirizzo su una riga. Massimo 200 caratteri.",
         "toolong": "La sede può avere al massimo 200 caratteri."
+      }
+    },
+    "page": {
+      "loading": "Caricamento…",
+      "edit": "Modifica",
+      "notfound": {
+        "title": "Cliente non trovato",
+        "hint": "Il cliente non esiste o è stato rimosso."
+      }
+    },
+    "contracts": {
+      "title": "Contratti",
+      "new": "Nuovo contratto",
+      "edit": "Modifica",
+      "deactivated": "Il cliente è disattivato: non si possono aggiungere contratti. Riattivalo per aggiungerne uno.",
+      "empty": {
+        "title": "Nessun contratto",
+        "hint": "Aggiungi il primo con \"Nuovo contratto\"."
+      },
+      "column": {
+        "validity": "Validità",
+        "status": "Stato",
+        "billing": "Livello di fatturazione",
+        "pricing": "Modalità",
+        "night": "Notturno",
+        "documents": "Documenti obbligatori"
+      },
+      "validity": {
+        "range": "{{from}} – {{to}}",
+        "open": "dal {{from}}"
+      },
+      "status": {
+        "current": "In vigore",
+        "upcoming": "Futuro",
+        "expired": "Scaduto"
+      },
+      "billing": {
+        "flatrate": "Forfettario",
+        "perpickuplocation": "Per luogo di partenza",
+        "perdeliverylocation": "Per luogo di consegna",
+        "perlocationpair": "Per coppia di luoghi"
+      },
+      "pricing": {
+        "byhour": "A ore",
+        "byweight": "A peso",
+        "bydistance": "A km",
+        "bytrip": "A viaggio"
+      },
+      "night": {
+        "yes": "Sì",
+        "no": "No"
+      },
+      "document": {
+        "none": "Nessuno",
+        "deliverynote": "DDT",
+        "deliveryslip": "bolla",
+        "wasteform": "formulario rifiuti",
+        "dailysummary": "riepilogo di fine giornata"
+      }
+    }
+  },
+  "contracts": {
+    "form": {
+      "save": "Salva contratto",
+      "saving": "Salvataggio in corso…",
+      "saved": "Contratto salvato",
+      "reload": "Ricarica",
+      "leave": {
+        "title": "Uscire senza salvare?",
+        "text": "Le modifiche a questo contratto andranno perse.",
+        "stay": "Resta sulla pagina",
+        "discard": "Esci senza salvare"
+      },
+      "modify": "Modifica",
+      "title": "Configurazione contratto",
+      "intro": "Rispondi alle domande seguenti per configurare il contratto. Le opzioni successive verranno mostrate in base alle tue risposte.",
+      "notfound": {
+        "title": "Contratto non trovato",
+        "hint": "Il contratto non esiste o appartiene a un altro cliente."
+      },
+      "q1": {
+        "title": "Da quando vale il contratto?",
+        "hint": "Lascia vuota la fine se il contratto non ha scadenza.",
+        "from": {
+          "label": "Dal",
+          "required": "Inserisci la data di inizio."
+        },
+        "to": {
+          "label": "Al (facoltativo)",
+          "beforefrom": "La data di fine non può essere precedente alla data di inizio."
+        },
+        "confirm": "Conferma",
+        "closing": "Il contratto dal {{from}}, senza scadenza, sarà chiuso al {{closedOn}}.",
+        "answer": {
+          "range": "dal {{from}} al {{to}}",
+          "open": "dal {{from}}, senza scadenza"
+        }
+      },
+      "locations": {
+        "title": "La fatturazione prevede luoghi obbligatori?",
+        "hint": "Se le tariffe variano in base a partenza o consegna, dovrai specificarli per ogni viaggio.",
+        "no": {
+          "title": "No",
+          "hint": "Tariffa unica",
+          "answer": "Nessun luogo obbligatorio"
+        },
+        "yes": {
+          "title": "Sì",
+          "hint": "Tariffe per luogo",
+          "answer": "Luoghi obbligatori"
+        }
+      },
+      "which": {
+        "title": "Quali luoghi sono obbligatori?",
+        "hint": "Specifica se le tariffe dipendono dal luogo di partenza, di consegna, o da entrambi.",
+        "pickup": {
+          "title": "Solo partenza",
+          "hint": "Tariffe per luogo di partenza",
+          "answer": "Solo il luogo di partenza"
+        },
+        "delivery": {
+          "title": "Solo consegna",
+          "hint": "Tariffe per luogo di consegna",
+          "answer": "Solo il luogo di consegna"
+        },
+        "both": {
+          "title": "Entrambi",
+          "hint": "Tariffe per coppia di luoghi",
+          "answer": "Entrambi i luoghi"
+        }
+      },
+      "mode": {
+        "title": "Modalità di pagamento",
+        "hint": "Come si calcola l'importo dei viaggi per questo cliente? Questa scelta determina i campi richiesti all'autista e l'unità di misura delle tariffe.",
+        "byhour": {
+          "title": "A ore",
+          "hint": "€/h",
+          "answer": "Pagamento a ore"
+        },
+        "byweight": {
+          "title": "A peso",
+          "hint": "€/ton",
+          "answer": "Pagamento a peso"
+        },
+        "bydistance": {
+          "title": "A km",
+          "hint": "€/km",
+          "answer": "Pagamento a km"
+        },
+        "bytrip": {
+          "title": "A viaggio",
+          "hint": "€ a viaggio",
+          "answer": "Pagamento a viaggio"
+        }
+      },
+      "night": {
+        "title": "Vuoi differenziare la tariffa diurna da quella notturna?",
+        "hint": "I viaggi notturni possono avere una tariffa maggiorata e un prezzo di chiamata aggiuntivo, da configurare con le tariffe.",
+        "no": {
+          "title": "No",
+          "hint": "Stessa tariffa",
+          "answer": "Nessuna maggiorazione notturna"
+        },
+        "yes": {
+          "title": "Sì",
+          "hint": "Maggiorazione notturna",
+          "answer": "Maggiorazione notturna"
+        }
+      },
+      "documents": {
+        "title": "Quali documenti sono obbligatori?",
+        "hint": "Seleziona i documenti che l'autista dovrà allegare. Se non ne serve nessuno, conferma senza selezionare.",
+        "confirm": "Conferma selezione"
+      },
+      "document": {
+        "deliverynote": {
+          "title": "DDT (Documento di Trasporto)",
+          "hint": "Obbligatorio per viaggio"
+        },
+        "deliveryslip": {
+          "title": "Bolla di consegna",
+          "hint": "Firma destinatario"
+        },
+        "wasteform": {
+          "title": "Formulario rifiuti (FIR)",
+          "hint": "Obbligatorio per viaggio"
+        },
+        "dailysummary": {
+          "title": "Riepilogo fine giornata",
+          "hint": "Compilazione a fine turno"
+        }
+      },
+      "done": {
+        "title": "Configurazione completata",
+        "hint": "Verifica le impostazioni e salva il contratto."
+      },
+      "heading": {
+        "new": "Nuovo contratto",
+        "edit": "Contratto"
       }
     }
   },

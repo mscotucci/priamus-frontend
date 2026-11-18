@@ -17,6 +17,7 @@ Reusable UX conventions. Single-screen details live in the mockups, behaviour in
 - Icons: line icons on a 24px grid, stroke 1.8, as SVG through one shared icon component; no icon font, no emoji.
 - The page ground is `bg`; content sits on `surface` cards with a 1px `border`. No shadows except under a floating menu.
 - A label above a value is small, uppercase and muted (`pt-label`); the page title is large and in sentence case.
+- Above the page title the top bar shows the breadcrumb (`pt-breadcrumb`): the levels above the page, from the section, in sentence case and separated by "›"; a level that is a page is a link in the primary colour, the section is plain text; the page itself is the title, never a level. It departs from the reference mockups, whose uppercase eyebrow read as part of the title (decided by Michele 2026-11-18).
 
 ## Design system grammar
 
@@ -44,6 +45,8 @@ Reusable UX conventions. Single-screen details live in the mockups, behaviour in
 - A row with an open anomaly is highlighted and sorts to the top, with the action that resolves it in the row.
 - Opening a row shows its detail in a drawer over the list, which keeps its state (to confirm).
 - Rich entities (contract, driver) are edited on their own page; a vehicle, four fields, is edited in a dialog (decided 2026-11-16); a customer's own data are edited in a dialog, and its page, when contracts arrive, exists to hold its contracts (decided 2026-11-18); a single decision or a short form of a few fields in a dialog over the list, which keeps its state. A dialog with typed values closes with its cancel button or Escape, not by clicking outside.
+- A configuration made of choices (a contract) is a guided page, as in the reference mockup `contratto_progressive_v5.html`: one numbered question card per question (`pt-question`), the next appearing when the previous is answered, an answered one showing its answer in a green pill with "Modifica"; the answers are choice cards (`pt-choice`: radio or checkbox, title, hint). Changing an answer clears only the answers that no longer apply (decided 2026-11-18).
+- A page that edits an entity guards against leaving with unsaved changes: a dialog "Uscire senza salvare?" for in-app navigation, the browser's own prompt for reload or close. Not after a save, not after a deliberate discard, not on session expiry (decided 2026-11-18). Dialogs need no guard: they close only through their cancel button or Escape.
 - Destructive actions ask for confirmation in a dialog. An action the user may not perform is not rendered, never shown disabled.
 
 ## Feedback

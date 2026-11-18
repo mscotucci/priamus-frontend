@@ -7,6 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Topbar } from '../../../core/layout/topbar';
 import { FilterMenu, FilterOption } from '../../../shared/components/filter-menu/filter-menu';
@@ -25,6 +26,7 @@ const SEARCH_DELAY_MS = 300;
   imports: [
     Topbar,
     DatePipe,
+    RouterLink,
     TranslatePipe,
     Icon,
     Paging,
@@ -40,7 +42,6 @@ const SEARCH_DELAY_MS = 300;
 export class CustomerList {
   protected readonly facade = inject(CustomersFacade);
   protected readonly formOpen = signal(false);
-  protected readonly formTarget = signal<CustomerListItem | null>(null);
   protected readonly deactivateTarget = signal<CustomerListItem | null>(null);
   private readonly destroyRef = inject(DestroyRef);
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -77,9 +78,8 @@ export class CustomerList {
     this.deactivateTarget.set(customer);
   }
 
-  protected openForm(customer: CustomerListItem | null): void {
+  protected openForm(): void {
     this.facade.clearReactivateNotice();
-    this.formTarget.set(customer);
     this.formOpen.set(true);
   }
 
