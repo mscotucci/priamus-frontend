@@ -127,7 +127,7 @@
         <tbody>
           @for (vehicle of facade.items(); track vehicle.id) {
             <tr>
-              <td>
+              <td [id]="'vehicle-' + vehicle.id">
                 <span class="pt-mono">{{ vehicle.licensePlate }}</span>
               </td>
               <td>{{ vehicle.description }}</td>
@@ -158,6 +158,7 @@
                   <button
                     type="button"
                     class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-describedby]="'vehicle-' + vehicle.id"
                     (click)="openForm(vehicle)"
                   >
                     {{ 'vehicles.list.edit' | translate }}
@@ -166,6 +167,7 @@
                   <button
                     type="button"
                     class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-describedby]="'vehicle-' + vehicle.id"
                     [attr.aria-disabled]="
                       (vehicle.status !== 'Active' && facade.reactivatingId() !== null) || null
                     "

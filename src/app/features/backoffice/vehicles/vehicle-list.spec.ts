@@ -227,6 +227,20 @@ describe('VehicleList', () => {
     expect(actions(4)).toEqual(['Modifica', 'Riattiva']);
   });
 
+  it('every row button is described by the plate of its row', async () => {
+    const fixture = render();
+    await flush(fixture, answer(5));
+    const element = fixture.nativeElement as HTMLElement;
+    const descriptions = (row: number) =>
+      Array.from(rowCells(element, row)[6].querySelectorAll('button')).map((b) =>
+        element.querySelector(`[id="${b.getAttribute('aria-describedby')}"]`)?.textContent?.trim(),
+      );
+
+    expect(descriptions(0)).toEqual(['AB456CD', 'AB456CD']);
+    expect(descriptions(4)).toEqual([text(rowCells(element, 4)[0]), text(rowCells(element, 4)[0])]);
+    expect(text(rowCells(element, 4)[0])).not.toBe('AB456CD');
+  });
+
   it('with no vehicle and no search or filter, "Nessun mezzo in anagrafica" with the hint replaces the table', async () => {
     const fixture = render();
     await flush(fixture, none);

@@ -122,6 +122,7 @@ describe('App routes', () => {
         provideRouter([
           { path: 'login', component: Stub, canActivate: [guestGuard] },
           { path: 'users', component: Stub },
+          { path: 'customers', component: Stub },
           { path: 'vehicles', component: Stub },
           ...routes,
         ]),
@@ -135,7 +136,7 @@ describe('App routes', () => {
 
   it.each<[CurrentUser['role'], string]>([
     ['Admin', '/users'],
-    ['BackOffice', '/vehicles'],
+    ['BackOffice', '/customers'],
   ])('sends a signed-in %s from the root to %s', async (role, landing) => {
     configure({ id: '1', username: 'ada', role, driverId: null });
 
@@ -147,13 +148,49 @@ describe('App routes', () => {
   it.each<[CurrentUser['role'], string, string]>([
     ['Admin', '/foo', '/users'],
     ['Admin', '/users/foo', '/users'],
-    ['BackOffice', '/foo', '/vehicles'],
+    ['BackOffice', '/foo', '/customers'],
   ])(
     'sends an unknown address opened by a signed-in %s (%s) to %s',
     async (role, address, landing) => {
       configure({ id: '1', username: 'ada', role, driverId: null });
 
       await RouterTestingHarness.create(address);
+
+      expect(TestBed.inject(Router).url).toBe(landing);
+    },
+  );
+
+  it.each<[CurrentUser['role'], string]>([
+    ['Driver', '/login'],
+    ['BackOffice', '/customers'],
+    ['Admin', '/customers'],
+  ])(
+    'the customers route admits BackOffice and Admin only: a %s opening it ends on %s',
+    async (role, landing) => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([{ path: 'login', component: Stub }, ...routes]),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideTestI18n(),
+          {
+            provide: Session,
+            useValue: {
+              wait: () => Promise.resolve(),
+              user: signal<CurrentUser | null>({
+                id: '1',
+                username: 'ada',
+                role,
+                driverId: null,
+              }).asReadonly(),
+              signOut: vi.fn(),
+            },
+          },
+        ],
+      });
+      TestBed.inject(TranslateService).use('it');
+
+      await RouterTestingHarness.create('/customers');
 
       expect(TestBed.inject(Router).url).toBe(landing);
     },

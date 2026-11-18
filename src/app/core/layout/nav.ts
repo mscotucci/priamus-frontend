@@ -20,6 +20,12 @@ export const NAV: NavGroup[] = [
     labelKey: 'shell.nav.registry',
     items: [
       {
+        labelKey: 'shell.nav.customers',
+        icon: 'building',
+        path: '/customers',
+        roles: ['BackOffice', 'Admin'],
+      },
+      {
         labelKey: 'shell.nav.vehicles',
         icon: 'truck',
         path: '/vehicles',

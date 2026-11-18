@@ -1,6 +1,103 @@
 {
   "components": {
     "schemas": {
+      "CreateCustomerRequest": {
+        "description": "Request body for `POST /api/registry/customers` (PRD §4, RF-15). Only the company name is\r\nrequired; an empty VAT number, tax code or address is stored as none. The company name and the\r\naddress are measured once trimmed, as the aggregate stores them, so their length is checked in\r\n`Validate` rather than with a length attribute on the raw text.",
+        "properties": {
+          "address": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "taxCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vatNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "companyName",
+          "vatNumber",
+          "taxCode",
+          "address"
+        ],
+        "type": "object"
+      },
+      "CreateCustomerResponse": {
+        "description": "Response body for a successful `POST /api/registry/customers` request.",
+        "properties": {
+          "address": {
+            "description": "The trimmed address, or `null`.",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "companyName": {
+            "description": "The trimmed company name.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The newly created customer's identifier.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastModifiedAt": {
+            "description": "UTC instant of the last change.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CustomerStatus",
+            "description": "The status (always CustomerStatus.Active on creation)."
+          },
+          "taxCode": {
+            "description": "The tax code in normal form, or `null`.",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vatNumber": {
+            "description": "The VAT number in normal form, or `null`.",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "description": "Version the client sends back with its next write on this customer.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "companyName",
+          "vatNumber",
+          "taxCode",
+          "address",
+          "status",
+          "lastModifiedAt",
+          "version"
+        ],
+        "type": "object"
+      },
       "CreateUserRequest": {
         "description": "Request body for `POST /api/identity/users`.",
         "properties": {
@@ -58,7 +155,7 @@
         "type": "object"
       },
       "CreateVehicleRequest": {
-        "description": "Request body for `POST /api/registry/vehicles` (PRD RF-26, RF-27). The description is\r\nmeasured once trimmed, as the aggregate stores it, so its length is checked in\r\nIEnumerable&lt;ValidationResult&gt; CreateVehicleRequest.Validate(ValidationContext validationContext) rather than with a length attribute on the raw text.",
+        "description": "Request body for `POST /api/registry/vehicles` (PRD RF-26, RF-27). The description is\r\nmeasured once trimmed, as the aggregate stores it, so its length is checked in\r\n`Validate` rather than with a length attribute on the raw text.",
         "properties": {
           "description": {
             "type": "string"
@@ -142,6 +239,95 @@
           "requiresTrailer",
           "status",
           "lastModifiedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "CustomerListItemDto": {
+        "description": "A single item in the paginated list of customers.",
+        "properties": {
+          "address": {
+            "description": "The address, or `null`.",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "companyName": {
+            "description": "The company name.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The customer's identifier.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastModifiedAt": {
+            "description": "UTC instant of the last change.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CustomerStatus",
+            "description": "The status."
+          },
+          "taxCode": {
+            "description": "The tax code in normal form, or `null`.",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vatNumber": {
+            "description": "The VAT number in normal form, or `null`.",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "description": "Version the client sends back with its next write on this customer.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "companyName",
+          "vatNumber",
+          "taxCode",
+          "address",
+          "status",
+          "lastModifiedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "CustomerStatus": {
+        "description": "Whether a Customer can be chosen for new trips and contracts (PRD §4, RF-15).",
+        "enum": [
+          "Active",
+          "Deactivated"
+        ]
+      },
+      "DeactivateCustomerRequest": {
+        "description": "Request body for `POST /api/registry/customers/{id}/deactivate`. `Version` is the version\r\nthe client read; the change is refused when the customer has changed since.",
+        "properties": {
+          "version": {
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
           "version"
         ],
         "type": "object"
@@ -276,6 +462,69 @@
           "refreshToken",
           "accessTokenExpiresAt",
           "refreshTokenExpiresAt"
+        ],
+        "type": "object"
+      },
+      "PagedResponseOfCustomerListItemDto": {
+        "description": "Response envelope for a paginated query. Immutable record.",
+        "properties": {
+          "data": {
+            "description": "The items returned in the current page.",
+            "items": {
+              "$ref": "#/components/schemas/CustomerListItemDto"
+            },
+            "type": "array"
+          },
+          "hasNextPage": {
+            "description": "True when there is a page after this one.",
+            "type": "boolean"
+          },
+          "hasPreviousPage": {
+            "description": "True when there is a page before this one.",
+            "type": "boolean"
+          },
+          "page": {
+            "description": "1-based page number returned.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "pageSize": {
+            "description": "Page size used to compute the result.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "totalCount": {
+            "description": "Total number of items across all pages.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "totalPages": {
+            "description": "Total number of pages, computed as `ceil(TotalCount / PageSize)`.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "totalCount",
+          "page",
+          "pageSize"
         ],
         "type": "object"
       },
@@ -443,6 +692,24 @@
         },
         "type": "object"
       },
+      "ReactivateCustomerRequest": {
+        "description": "Request body for `POST /api/registry/customers/{id}/reactivate`. `Version` is the version\r\nthe client read; the change is refused when the customer has changed since.",
+        "properties": {
+          "version": {
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "type": "object"
+      },
       "ReactivateVehicleRequest": {
         "description": "Request body for `POST /api/registry/vehicles/{id}/reactivate`. `Version` is the version\r\nthe client read; the change is refused when the vehicle has changed since.",
         "properties": {
@@ -521,6 +788,49 @@
           "Descending",
           null
         ]
+      },
+      "UpdateCustomerRequest": {
+        "description": "Request body for `PUT /api/registry/customers/{id}` (PRD §4, RF-15). `Version` is the\r\nversion the client read; the save is refused when the customer has changed since.",
+        "properties": {
+          "address": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "taxCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vatNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "companyName",
+          "vatNumber",
+          "taxCode",
+          "address",
+          "version"
+        ],
+        "type": "object"
       },
       "UpdateVehicleRequest": {
         "description": "Request body for `PUT /api/registry/vehicles/{id}` (PRD RF-26, RF-27). `Version` is the\r\nversion the client read; the save is refused when the vehicle has changed since.",
@@ -1354,6 +1664,437 @@
         ]
       }
     },
+    "/api/registry/customers": {
+      "get": {
+        "operationId": "ListCustomers",
+        "parameters": [
+          {
+            "description": "Text matched, ignoring case, against part of the company name; normalised as a VAT number,\r\nagainst part of the VAT number; normalised as a tax code, against part of the tax code. When\r\nnull or whitespace, no search is applied.",
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by status. When null, all statuses are included.",
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "$ref": "#/components/schemas/CustomerStatus"
+            }
+          },
+          {
+            "description": "1-based page number. Optional on the wire; values below 1 are coerced to 1\r\non the setter. Read via int PagedRequest.EffectivePage to get the resolved value\r\n(defaulting to int PagedRequest.DefaultPage when null).",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "format": "int32",
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ]
+            }
+          },
+          {
+            "description": "Page size between 1 and int PagedRequest.MaxPageSize. Optional on the wire;\r\nnon-positive values are coerced to int PagedRequest.DefaultPageSize, values\r\ngreater than int PagedRequest.MaxPageSize are clamped to int PagedRequest.MaxPageSize.\r\nRead via int PagedRequest.EffectivePageSize to get the resolved value\r\n(defaulting to int PagedRequest.DefaultPageSize when null).",
+            "in": "query",
+            "name": "pageSize",
+            "schema": {
+              "format": "int32",
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ]
+            }
+          },
+          {
+            "description": "Name of the column to sort by. Optional; handlers fall back to a default\r\nsafe column when this is null or not in their whitelist.",
+            "in": "query",
+            "name": "sortColumn",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort direction. Optional on the wire; readers should use\r\nbool PagedRequest.IsAscending which resolves null to\r\nSortDirection.Ascending.",
+            "in": "query",
+            "name": "sortDirection",
+            "schema": {
+              "$ref": "#/components/schemas/SortDirection"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfCustomerListItemDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "tags": [
+          "Registry.Customers"
+        ]
+      },
+      "post": {
+        "operationId": "CreateCustomer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCustomerResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Customers"
+        ]
+      }
+    },
+    "/api/registry/customers/{id}": {
+      "put": {
+        "operationId": "UpdateCustomer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Customers"
+        ]
+      }
+    },
+    "/api/registry/customers/{id}/deactivate": {
+      "post": {
+        "operationId": "DeactivateCustomer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeactivateCustomerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Customers"
+        ]
+      }
+    },
+    "/api/registry/customers/{id}/reactivate": {
+      "post": {
+        "operationId": "ReactivateCustomer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactivateCustomerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Customers"
+        ]
+      }
+    },
     "/api/registry/vehicles": {
       "get": {
         "operationId": "ListVehicles",
@@ -1808,6 +2549,9 @@
     },
     {
       "name": "Registry.Vehicles"
+    },
+    {
+      "name": "Registry.Customers"
     }
   ]
 }

@@ -127,6 +127,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListCustomers"];
+        put?: never;
+        post: operations["CreateCustomer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/customers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateCustomer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/customers/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DeactivateCustomer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/customers/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReactivateCustomer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/registry/vehicles": {
         parameters: {
             query?: never;
@@ -195,6 +259,46 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Request body for `POST /api/registry/customers` (PRD §4, RF-15). Only the company name is
+         *     required; an empty VAT number, tax code or address is stored as none. The company name and the
+         *     address are measured once trimmed, as the aggregate stores them, so their length is checked in
+         *     `Validate` rather than with a length attribute on the raw text.
+         */
+        CreateCustomerRequest: {
+            address: null | string;
+            companyName: string;
+            taxCode: null | string;
+            vatNumber: null | string;
+        };
+        /** @description Response body for a successful `POST /api/registry/customers` request. */
+        CreateCustomerResponse: {
+            /** @description The trimmed address, or `null`. */
+            address: null | string;
+            /** @description The trimmed company name. */
+            companyName: string;
+            /**
+             * Format: uuid
+             * @description The newly created customer's identifier.
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description UTC instant of the last change.
+             */
+            lastModifiedAt: string;
+            /** @description The status (always CustomerStatus.Active on creation). */
+            status: components["schemas"]["CustomerStatus"];
+            /** @description The tax code in normal form, or `null`. */
+            taxCode: null | string;
+            /** @description The VAT number in normal form, or `null`. */
+            vatNumber: null | string;
+            /**
+             * Format: int32
+             * @description Version the client sends back with its next write on this customer.
+             */
+            version: number;
+        };
         /** @description Request body for `POST /api/identity/users`. */
         CreateUserRequest: {
             password: string;
@@ -218,7 +322,7 @@ export interface components {
         /**
          * @description Request body for `POST /api/registry/vehicles` (PRD RF-26, RF-27). The description is
          *     measured once trimmed, as the aggregate stores it, so its length is checked in
-         *     IEnumerable&lt;ValidationResult&gt; CreateVehicleRequest.Validate(ValidationContext validationContext) rather than with a length attribute on the raw text.
+         *     `Validate` rather than with a length attribute on the raw text.
          */
         CreateVehicleRequest: {
             description: string;
@@ -253,6 +357,47 @@ export interface components {
              * @description Version the client sends back with its next write on this vehicle.
              */
             version: number;
+        };
+        /** @description A single item in the paginated list of customers. */
+        CustomerListItemDto: {
+            /** @description The address, or `null`. */
+            address: null | string;
+            /** @description The company name. */
+            companyName: string;
+            /**
+             * Format: uuid
+             * @description The customer's identifier.
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description UTC instant of the last change.
+             */
+            lastModifiedAt: string;
+            /** @description The status. */
+            status: components["schemas"]["CustomerStatus"];
+            /** @description The tax code in normal form, or `null`. */
+            taxCode: null | string;
+            /** @description The VAT number in normal form, or `null`. */
+            vatNumber: null | string;
+            /**
+             * Format: int32
+             * @description Version the client sends back with its next write on this customer.
+             */
+            version: number;
+        };
+        /**
+         * @description Whether a Customer can be chosen for new trips and contracts (PRD §4, RF-15).
+         * @enum {unknown}
+         */
+        CustomerStatus: "Active" | "Deactivated";
+        /**
+         * @description Request body for `POST /api/registry/customers/{id}/deactivate`. `Version` is the version
+         *     the client read; the change is refused when the customer has changed since.
+         */
+        DeactivateCustomerRequest: {
+            /** Format: int32 */
+            version: number | null;
         };
         /**
          * @description Request body for `POST /api/registry/vehicles/{id}/decommission`. `Version` is the version
@@ -316,6 +461,35 @@ export interface components {
              * @description UTC expiry of the refresh token.
              */
             refreshTokenExpiresAt: string;
+        };
+        /** @description Response envelope for a paginated query. Immutable record. */
+        PagedResponseOfCustomerListItemDto: {
+            /** @description The items returned in the current page. */
+            data: components["schemas"]["CustomerListItemDto"][];
+            /** @description True when there is a page after this one. */
+            hasNextPage?: boolean;
+            /** @description True when there is a page before this one. */
+            hasPreviousPage?: boolean;
+            /**
+             * Format: int32
+             * @description 1-based page number returned.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description Page size used to compute the result.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description Total number of items across all pages.
+             */
+            totalCount: number;
+            /**
+             * Format: int32
+             * @description Total number of pages, computed as `ceil(TotalCount / PageSize)`.
+             */
+            totalPages?: number;
         };
         /** @description Response envelope for a paginated query. Immutable record. */
         PagedResponseOfUserListItemDto: {
@@ -384,6 +558,14 @@ export interface components {
             type?: null | string;
         };
         /**
+         * @description Request body for `POST /api/registry/customers/{id}/reactivate`. `Version` is the version
+         *     the client read; the change is refused when the customer has changed since.
+         */
+        ReactivateCustomerRequest: {
+            /** Format: int32 */
+            version: number | null;
+        };
+        /**
          * @description Request body for `POST /api/registry/vehicles/{id}/reactivate`. `Version` is the version
          *     the client read; the change is refused when the vehicle has changed since.
          */
@@ -418,6 +600,18 @@ export interface components {
         };
         /** @enum {unknown} */
         SortDirection: "Ascending" | "Descending" | null;
+        /**
+         * @description Request body for `PUT /api/registry/customers/{id}` (PRD §4, RF-15). `Version` is the
+         *     version the client read; the save is refused when the customer has changed since.
+         */
+        UpdateCustomerRequest: {
+            address: null | string;
+            companyName: string;
+            taxCode: null | string;
+            vatNumber: null | string;
+            /** Format: int32 */
+            version: number | null;
+        };
         /**
          * @description Request body for `PUT /api/registry/vehicles/{id}` (PRD RF-26, RF-27). `Version` is the
          *     version the client read; the save is refused when the vehicle has changed since.
@@ -991,6 +1185,354 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["EnableUserRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListCustomers: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Text matched, ignoring case, against part of the company name; normalised as a VAT number,
+                 *     against part of the VAT number; normalised as a tax code, against part of the tax code. When
+                 *     null or whitespace, no search is applied.
+                 */
+                search?: string;
+                /** @description Filter by status. When null, all statuses are included. */
+                status?: components["schemas"]["CustomerStatus"];
+                /**
+                 * @description 1-based page number. Optional on the wire; values below 1 are coerced to 1
+                 *     on the setter. Read via int PagedRequest.EffectivePage to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPage when null).
+                 */
+                page?: number;
+                /**
+                 * @description Page size between 1 and int PagedRequest.MaxPageSize. Optional on the wire;
+                 *     non-positive values are coerced to int PagedRequest.DefaultPageSize, values
+                 *     greater than int PagedRequest.MaxPageSize are clamped to int PagedRequest.MaxPageSize.
+                 *     Read via int PagedRequest.EffectivePageSize to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPageSize when null).
+                 */
+                pageSize?: number;
+                /**
+                 * @description Name of the column to sort by. Optional; handlers fall back to a default
+                 *     safe column when this is null or not in their whitelist.
+                 */
+                sortColumn?: string;
+                /**
+                 * @description Sort direction. Optional on the wire; readers should use
+                 *     bool PagedRequest.IsAscending which resolves null to
+                 *     SortDirection.Ascending.
+                 */
+                sortDirection?: components["schemas"]["SortDirection"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfCustomerListItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCustomerRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateCustomerResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCustomerRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeactivateCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeactivateCustomerRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReactivateCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReactivateCustomerRequest"];
             };
         };
         responses: {

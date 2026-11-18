@@ -40,9 +40,10 @@ Reusable UX conventions. Single-screen details live in the mockups, behaviour in
 - Lists that can grow are paged by the server.
 - A column that has a filter is not sorted: its header is plain text, with no sort control.
 - In a filter row the search field and the filter chips have the same height.
+- A row's action buttons keep their short visible label ("Modifica") and are described by the element that names the row, its name alone (`aria-describedby` to its id), so a screen reader tells one row's "Modifica" from another's.
 - A row with an open anomaly is highlighted and sorts to the top, with the action that resolves it in the row.
 - Opening a row shows its detail in a drawer over the list, which keeps its state (to confirm).
-- Rich entities (customer, contract, driver) are edited on their own page; a vehicle, four fields, is edited in a dialog (decided 2026-11-16); a single decision or a short form of a few fields in a dialog over the list, which keeps its state. A dialog with typed values closes with its cancel button or Escape, not by clicking outside.
+- Rich entities (contract, driver) are edited on their own page; a vehicle, four fields, is edited in a dialog (decided 2026-11-16); a customer's own data are edited in a dialog, and its page, when contracts arrive, exists to hold its contracts (decided 2026-11-18); a single decision or a short form of a few fields in a dialog over the list, which keeps its state. A dialog with typed values closes with its cancel button or Escape, not by clicking outside.
 - Destructive actions ask for confirmation in a dialog. An action the user may not perform is not rendered, never shown disabled.
 
 ## Feedback

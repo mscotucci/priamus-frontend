@@ -3,7 +3,7 @@ import { landingPath } from './landing';
 describe('landingPath', () => {
   it.each([
     ['Admin', '/users'],
-    ['BackOffice', '/vehicles'],
+    ['BackOffice', '/customers'],
     ['Driver', '/login'],
     ['Unknown', '/login'],
   ])('sends the role %s to %s', (role, path) => {

@@ -49,6 +49,7 @@
       "label": "Navigazione principale",
       "registry": "Anagrafiche",
       "system": "Sistema",
+      "customers": "Clienti",
       "users": "Utenti",
       "vehicles": "Mezzi"
     },
@@ -58,6 +59,103 @@
     "previous": "Precedente",
     "next": "Successiva",
     "page": "Pagina {{page}} di {{pages}}"
+  },
+  "customers": {
+    "list": {
+      "title": "Clienti",
+      "new": "Nuovo cliente",
+      "loading": "Caricamento…",
+      "range": "Clienti {{from}}–{{to}} di {{total}}",
+      "count": {
+        "one": "{{count}} cliente",
+        "other": "{{count}} clienti"
+      },
+      "column": {
+        "companyname": "Ragione sociale",
+        "vatnumber": "Partita IVA",
+        "address": "Sede",
+        "status": "Stato",
+        "modified": "Ultima modifica",
+        "actions": "Azioni"
+      },
+      "search": {
+        "label": "Cerca ragione sociale, partita IVA o codice fiscale",
+        "placeholder": "Cerca nome, partita IVA o codice fiscale…"
+      },
+      "filter": {
+        "status": "Stato:"
+      },
+      "clear": "Azzera filtri",
+      "edit": "Modifica",
+      "deactivate": "Disattiva",
+      "reactivate": "Riattiva",
+      "empty": {
+        "title": "Nessun cliente in anagrafica",
+        "hint": "Aggiungi il primo con \"Nuovo cliente\"."
+      },
+      "nomatch": {
+        "title": "Nessun cliente trovato",
+        "hint": "Prova a cambiare la ricerca o i filtri."
+      }
+    },
+    "status": {
+      "active": "Attivo",
+      "deactivated": "Disattivato"
+    },
+    "deactivate": {
+      "title": "Disattivare il cliente {{companyName}}?",
+      "text": "Non sarà più selezionabile sui nuovi viaggi. Potrai riattivarlo in qualsiasi momento.",
+      "submit": {
+        "idle": "Disattiva",
+        "pending": "Disattivazione…"
+      },
+      "done": "Cliente {{companyName}} disattivato"
+    },
+    "reactivate": {
+      "pending": "Riattivazione…",
+      "done": "Cliente {{companyName}} riattivato"
+    },
+    "form": {
+      "create": {
+        "title": "Nuovo cliente",
+        "line": "Solo la ragione sociale è obbligatoria.",
+        "submit": "Crea cliente",
+        "done": "Cliente {{companyName}} creato"
+      },
+      "edit": {
+        "title": "Modifica cliente",
+        "line": {
+          "active": "Attivo: selezionabile sui nuovi viaggi.",
+          "deactivated": "Disattivato: non selezionabile sui nuovi viaggi."
+        },
+        "submit": "Salva modifiche",
+        "done": "Cliente {{companyName}} modificato"
+      },
+      "pending": "Salvataggio in corso…",
+      "companyname": {
+        "label": "Ragione sociale",
+        "placeholder": "Es. Edilcave SpA",
+        "hint": "Come compare sui documenti del cliente. Massimo 150 caratteri.",
+        "required": "Inserisci la ragione sociale.",
+        "toolong": "La ragione sociale può avere al massimo 150 caratteri."
+      },
+      "vatnumber": {
+        "label": "Partita IVA",
+        "hint": "11 cifre; spazi e prefisso IT vengono tolti. Vuota per i clienti esteri.",
+        "invalid": "Partita IVA non valida: controlla le 11 cifre."
+      },
+      "taxcode": {
+        "label": "Codice fiscale",
+        "hint": "16 caratteri per una persona, 11 cifre per un'azienda o un ente.",
+        "invalid": "Codice fiscale non valido: 16 lettere e cifre oppure 11 cifre."
+      },
+      "address": {
+        "label": "Sede",
+        "placeholder": "Es. Via Tiburtina Valeria 210, 65129 Pescara (PE)",
+        "hint": "Indirizzo su una riga. Massimo 200 caratteri.",
+        "toolong": "La sede può avere al massimo 200 caratteri."
+      }
+    }
   },
   "vehicles": {
     "list": {

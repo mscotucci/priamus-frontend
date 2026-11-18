@@ -44,7 +44,7 @@ function setup(options: {
 describe('LoginFacade', () => {
   it.each<[CurrentUser['role'], string]>([
     ['Admin', '/users'],
-    ['BackOffice', '/vehicles'],
+    ['BackOffice', '/customers'],
   ])('after a %s signs in, navigates to %s', async (role, landing) => {
     const { facade, signIn, navigate } = setup({ signIn: () => Promise.resolve(user(role)) });
 
@@ -76,7 +76,7 @@ describe('LoginFacade', () => {
 
       await facade.submit('ada', 'secret');
 
-      expect(navigate).toHaveBeenCalledWith('/vehicles');
+      expect(navigate).toHaveBeenCalledWith('/customers');
     },
   );
 

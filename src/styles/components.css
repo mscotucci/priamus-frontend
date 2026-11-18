@@ -719,6 +719,8 @@ select.pt-input option:checked {
 
 /* Data table */
 .pt-table-wrap {
+  /* contains absolutely positioned cell content (sr-only labels), so the wrap clips it instead of the page */
+  position: relative;
   overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--border);

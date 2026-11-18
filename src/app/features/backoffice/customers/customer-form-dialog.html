@@ -1,0 +1,133 @@
+<app-dialog
+  icon="building"
+  tone="primary"
+  [title]="(customer() ? 'customers.form.edit.title' : 'customers.form.create.title') | translate"
+  [line]="
+    (customer()
+      ? 'customers.form.edit.line.' + customer()!.status.toLowerCase()
+      : 'customers.form.create.line'
+    ) | translate
+  "
+  [busy]="facade.saving()"
+  (closeRequested)="close()"
+>
+  <form id="customer-form" class="flex flex-col gap-3" novalidate (submit)="onSubmit($event)">
+    @if (notice(); as notice) {
+      <app-notice [notice]="notice" />
+    }
+    <div class="pt-field">
+      <label class="pt-label" for="customer-name">{{
+        'customers.form.companyname.label' | translate
+      }}</label>
+      <input
+        #name
+        class="pt-input"
+        id="customer-name"
+        autocomplete="off"
+        [placeholder]="'customers.form.companyname.placeholder' | translate"
+        [formField]="customerForm.companyName"
+        [attr.aria-invalid]="companyNameError() ? 'true' : null"
+        aria-describedby="customer-name-note"
+      />
+      @if (companyNameError(); as error) {
+        <span class="pt-field__error" id="customer-name-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="customer-name-note">{{
+          'customers.form.companyname.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="customer-vat">{{
+        'customers.form.vatnumber.label' | translate
+      }}</label>
+      <input
+        class="pt-input pt-mono"
+        id="customer-vat"
+        autocomplete="off"
+        inputmode="numeric"
+        [formField]="customerForm.vatNumber"
+        [attr.aria-invalid]="vatNumberError() ? 'true' : null"
+        aria-describedby="customer-vat-note"
+      />
+      @if (vatNumberError(); as error) {
+        <span class="pt-field__error" id="customer-vat-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="customer-vat-note">{{
+          'customers.form.vatnumber.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="customer-tax">{{
+        'customers.form.taxcode.label' | translate
+      }}</label>
+      <input
+        class="pt-input pt-mono"
+        id="customer-tax"
+        autocomplete="off"
+        [formField]="customerForm.taxCode"
+        [attr.aria-invalid]="taxCodeError() ? 'true' : null"
+        aria-describedby="customer-tax-note"
+      />
+      @if (taxCodeError(); as error) {
+        <span class="pt-field__error" id="customer-tax-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="customer-tax-note">{{
+          'customers.form.taxcode.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="customer-address">{{
+        'customers.form.address.label' | translate
+      }}</label>
+      <input
+        class="pt-input"
+        id="customer-address"
+        autocomplete="off"
+        [placeholder]="'customers.form.address.placeholder' | translate"
+        [formField]="customerForm.address"
+        [attr.aria-invalid]="addressError() ? 'true' : null"
+        aria-describedby="customer-address-note"
+      />
+      @if (addressError(); as error) {
+        <span class="pt-field__error" id="customer-address-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="customer-address-note">{{
+          'customers.form.address.hint' | translate
+        }}</span>
+      }
+    </div>
+  </form>
+  <button
+    actions
+    type="button"
+    class="pt-btn pt-btn--outline"
+    [disabled]="facade.saving()"
+    (click)="close()"
+  >
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button
+    actions
+    type="submit"
+    form="customer-form"
+    class="pt-btn pt-btn--primary"
+    [disabled]="facade.saving()"
+  >
+    {{
+      facade.saving()
+        ? ('customers.form.pending' | translate)
+        : ((customer() ? 'customers.form.edit.submit' : 'customers.form.create.submit') | translate)
+    }}
+  </button>
+</app-dialog>

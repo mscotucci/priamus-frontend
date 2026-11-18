@@ -136,6 +136,21 @@ describe('UserList', () => {
     expect(cells[4]).toBe('03/11/2026');
   });
 
+  it('a row button is described by the user name of its row', async () => {
+    const fixture = render();
+    await respond(fixture, 3);
+    const element = fixture.nativeElement as HTMLElement;
+    const description = (row: number) => {
+      const button = element.querySelector(`tbody tr:nth-child(${row}) td:last-child button`)!;
+      return element
+        .querySelector(`[id="${button.getAttribute('aria-describedby')}"]`)
+        ?.textContent?.trim();
+    };
+
+    expect(description(2)).toBe('a.rossetti');
+    expect(description(3)).toBe('f.esposito');
+  });
+
   it('shows roles and statuses with their Italian names', async () => {
     const fixture = render();
     await respond(fixture, 3);
@@ -945,13 +960,13 @@ describe('UserList', () => {
       expect(element.querySelector('app-layout app-user-list table')).not.toBeNull();
     });
 
-    it('/users opened by a BackOffice user shows /vehicles instead', async () => {
+    it('/users opened by a BackOffice user shows /customers instead', async () => {
       const harness = await open('BackOffice');
       harness.detectChanges();
       const element = harness.fixture.nativeElement as HTMLElement;
 
-      expect(TestBed.inject(Router).url).toBe('/vehicles');
-      expect(element.querySelector('app-vehicle-list')).not.toBeNull();
+      expect(TestBed.inject(Router).url).toBe('/customers');
+      expect(element.querySelector('app-customer-list')).not.toBeNull();
       expect(element.querySelector('app-user-list')).toBeNull();
       http.expectNone((r) => r.url === URL);
     });
@@ -984,6 +999,36 @@ describe('UserList', () => {
       expect(TestBed.inject(Router).url).toBe('/login');
       expect(element.querySelector('app-vehicle-list')).toBeNull();
       http.expectNone((r) => r.url === '/api/registry/vehicles');
+    });
+
+    it('/customers opened by a Driver does not show the customer list and ends on the Driver landing', async () => {
+      const user = { id: '1', username: 'u', role: 'Driver', driverId: null } as CurrentUser;
+      TestBed.configureTestingModule({
+        providers: [
+          provideTestI18n(),
+          provideRouter(routes),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          {
+            provide: Session,
+            useValue: {
+              wait: () => Promise.resolve(),
+              user: signal(user).asReadonly(),
+              notice: signal(null).asReadonly(),
+            },
+          },
+        ],
+      });
+      http = TestBed.inject(HttpTestingController);
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl('/customers');
+      TestBed.tick();
+      harness.detectChanges();
+      const element = harness.fixture.nativeElement as HTMLElement;
+
+      expect(TestBed.inject(Router).url).toBe('/login');
+      expect(element.querySelector('app-customer-list')).toBeNull();
+      http.expectNone((r) => r.url === '/api/registry/customers');
     });
   });
 });

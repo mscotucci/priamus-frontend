@@ -119,7 +119,7 @@
           @for (user of facade.items(); track user.id) {
             <tr>
               <td>
-                <strong>{{ user.username }}</strong>
+                <strong [id]="'user-' + user.id">{{ user.username }}</strong>
                 @if (user.id === facade.currentUserId()) {
                   <span class="pt-muted ml-1 text-xs">{{ 'users.list.you' | translate }}</span>
                 }
@@ -141,6 +141,7 @@
                   <button
                     type="button"
                     class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-describedby]="'user-' + user.id"
                     [attr.aria-disabled]="
                       (user.status === 'Disabled' && facade.enablingId() !== null) || null
                     "

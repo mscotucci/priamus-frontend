@@ -1,0 +1,36 @@
+<app-dialog
+  icon="building"
+  tone="danger"
+  [title]="'customers.deactivate.title' | translate: { companyName: customer().companyName }"
+  [busy]="facade.deactivating()"
+  (closeRequested)="close()"
+>
+  @if (notice(); as notice) {
+    <app-notice class="mb-3" [notice]="notice" />
+  }
+  <p>{{ 'customers.deactivate.text' | translate }}</p>
+  <button
+    actions
+    #cancel
+    type="button"
+    class="pt-btn pt-btn--outline"
+    [disabled]="facade.deactivating()"
+    (click)="close()"
+  >
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button
+    actions
+    type="button"
+    class="pt-btn pt-btn--danger"
+    [disabled]="facade.deactivating()"
+    (click)="deactivate()"
+  >
+    {{
+      (facade.deactivating()
+        ? 'customers.deactivate.submit.pending'
+        : 'customers.deactivate.submit.idle'
+      ) | translate
+    }}
+  </button>
+</app-dialog>

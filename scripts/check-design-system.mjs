@@ -330,6 +330,16 @@ const checks = [
     },
   },
   {
+    name: 'a table scrolls inside its wrap and keeps hidden labels in it, never widening the page',
+    async run() {
+      const rules = await componentRules();
+      return [
+        ...hasDeclaration(rules, '.pt-table-wrap', 'overflow-x', 'auto'),
+        ...hasDeclaration(rules, '.pt-table-wrap', 'position', 'relative'),
+      ];
+    },
+  },
+  {
     name: 'the select has the box of an input in every size',
     async run() {
       const rules = await componentRules();

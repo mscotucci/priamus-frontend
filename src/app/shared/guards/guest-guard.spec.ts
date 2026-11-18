@@ -6,13 +6,13 @@ import { Page, guardSetup } from './guard-testing';
 const setup = guardSetup([
   { path: 'login', component: Page, canActivate: [guestGuard] },
   { path: 'users', component: Page },
-  { path: 'vehicles', component: Page },
+  { path: 'customers', component: Page },
 ]);
 
 describe('guestGuard', () => {
   it.each<[CurrentUser['role'], string]>([
     ['Admin', '/users'],
-    ['BackOffice', '/vehicles'],
+    ['BackOffice', '/customers'],
   ])('sends a signed-in %s opening the login to %s', async (role, landing) => {
     const router = setup(userWithRole(role));
 

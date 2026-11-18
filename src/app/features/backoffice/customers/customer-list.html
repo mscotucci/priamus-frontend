@@ -1,0 +1,203 @@
+<app-topbar
+  [section]="'shell.nav.registry' | translate"
+  [page]="'shell.nav.customers' | translate"
+  [title]="'customers.list.title' | translate"
+  [line]="
+    facade.loaded()
+      ? ((facade.total() === 1 ? 'customers.list.count.one' : 'customers.list.count.other')
+        | translate: { count: facade.total() })
+      : undefined
+  "
+>
+  <button type="button" class="pt-btn pt-btn--primary" (click)="openForm(null)">
+    {{ 'customers.list.new' | translate }}
+  </button>
+</app-topbar>
+<main class="flex flex-col gap-4 p-8">
+  @if (facade.reactivateNotice(); as notice) {
+    <app-notice [notice]="notice" />
+  }
+  @if (!registryEmpty()) {
+    <div class="pt-card flex flex-wrap items-center gap-2">
+      <label class="pt-search pt-search--sm max-w-full">
+        <app-icon name="search" size="sm" />
+        <input
+          #searchField
+          class="w-80 min-w-0"
+          type="search"
+          maxlength="100"
+          [placeholder]="'customers.list.search.placeholder' | translate"
+          [attr.aria-label]="'customers.list.search.label' | translate"
+          (input)="searchFor(searchField.value)"
+        />
+      </label>
+      <app-filter-menu
+        labelKey="customers.list.filter.status"
+        [options]="statuses"
+        [value]="facade.status()"
+        (valueChange)="facade.setStatus($event)"
+      />
+      @if (filtered()) {
+        <button
+          type="button"
+          class="pt-btn pt-btn--outline pt-btn--sm"
+          (click)="clearFilters(searchField)"
+        >
+          {{ 'customers.list.clear' | translate }}
+        </button>
+      }
+      @if (facade.reloading()) {
+        <span class="pt-spinner pt-spinner--sm ml-auto" role="status"
+          ><span class="sr-only">{{ 'common.refreshing' | translate }}</span></span
+        >
+      }
+    </div>
+  }
+  @if (facade.loading()) {
+    <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'customers.list.loading' | translate }}</span>
+    </div>
+  } @else if (facade.failed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="facade.reload()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (facade.total() === 0) {
+    <div class="pt-card pt-empty">
+      @if (filtered()) {
+        <p class="pt-title">{{ 'customers.list.nomatch.title' | translate }}</p>
+        <p class="pt-muted">{{ 'customers.list.nomatch.hint' | translate }}</p>
+      } @else {
+        <p class="pt-title">{{ 'customers.list.empty.title' | translate }}</p>
+        <p class="pt-muted">{{ 'customers.list.empty.hint' | translate }}</p>
+      }
+    </div>
+  } @else {
+    <div class="pt-table-wrap">
+      <table class="pt-table" [attr.aria-busy]="facade.reloading() || null">
+        <thead>
+          <tr>
+            @for (column of columns; track column.suffix) {
+              @if (column.sortKey === null) {
+                <th scope="col">{{ 'customers.list.column.' + column.suffix | translate }}</th>
+              } @else {
+                <th
+                  scope="col"
+                  [attr.aria-sort]="
+                    facade.sortColumn() === column.sortKey
+                      ? facade.sortDirection() === 'Ascending'
+                        ? 'ascending'
+                        : 'descending'
+                      : null
+                  "
+                >
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1 uppercase"
+                    (click)="sortBy(column.sortKey)"
+                  >
+                    {{ 'customers.list.column.' + column.suffix | translate }}
+                    @if (facade.sortColumn() === column.sortKey) {
+                      <app-icon
+                        name="chevron"
+                        size="xs"
+                        [class.rotate-180]="facade.sortDirection() === 'Ascending'"
+                      />
+                    }
+                  </button>
+                </th>
+              }
+            }
+            <th scope="col">
+              <span class="sr-only">{{ 'customers.list.column.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (customer of facade.items(); track customer.id) {
+            <tr>
+              <td [id]="'customer-' + customer.id">{{ customer.companyName }}</td>
+              @if (customer.vatNumber) {
+                <td>
+                  <span class="pt-mono">{{ customer.vatNumber }}</span>
+                </td>
+              } @else {
+                <td class="pt-muted">—</td>
+              }
+              @if (customer.address) {
+                <td>{{ customer.address }}</td>
+              } @else {
+                <td class="pt-muted">—</td>
+              }
+              <td>
+                <span
+                  class="pt-pill"
+                  [class.pt-pill--success]="customer.status === 'Active'"
+                  [class.pt-pill--danger]="customer.status === 'Deactivated'"
+                  >{{ 'customers.status.' + customer.status.toLowerCase() | translate }}</span
+                >
+              </td>
+              <td>{{ customer.lastModifiedAt | date: 'dd/MM/yyyy' }}</td>
+              <td class="text-right whitespace-nowrap">
+                <div class="inline-flex gap-1">
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-describedby]="'customer-' + customer.id"
+                    (click)="openForm(customer)"
+                  >
+                    {{ 'customers.list.edit' | translate }}
+                  </button>
+                  <!-- one button for both statuses: it survives the status change, and so does its focus -->
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-describedby]="'customer-' + customer.id"
+                    [attr.aria-disabled]="
+                      (customer.status !== 'Active' && facade.reactivatingId() !== null) || null
+                    "
+                    (click)="
+                      customer.status === 'Active'
+                        ? openDeactivate(customer)
+                        : facade.reactivate(customer)
+                    "
+                  >
+                    {{
+                      (customer.status === 'Active'
+                        ? 'customers.list.deactivate'
+                        : facade.reactivatingId() === customer.id
+                          ? 'customers.reactivate.pending'
+                          : 'customers.list.reactivate'
+                      ) | translate
+                    }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td [attr.colspan]="columns.length + 1">
+              <app-paging
+                [page]="facade.page()"
+                [pageSize]="pageSize"
+                [total]="facade.total()"
+                rangeKey="customers.list.range"
+                (pageChange)="facade.setPage($event)"
+              />
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  }
+</main>
+@if (formOpen()) {
+  <app-customer-form-dialog [customer]="formTarget()" (closed)="formOpen.set(false)" />
+}
+@if (deactivateTarget(); as customer) {
+  <app-customer-deactivate-dialog [customer]="customer" (closed)="deactivateTarget.set(null)" />
+}
