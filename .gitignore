@@ -45,3 +45,6 @@ Thumbs.db
 
 # Plans
 .plans/
+
+# Claude Code local files
+.claude/
