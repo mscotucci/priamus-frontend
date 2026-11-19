@@ -1020,7 +1020,7 @@ select.pt-input option:checked {
   font-size: var(--text-body-size);
   font-weight: 600;
 }
-.pt-question__answer app-icon {
+.pt-question__answer .pt-icon {
   color: var(--primary);
 }
 
