@@ -1,0 +1,207 @@
+<app-topbar
+  [crumbs]="[{ label: 'shell.nav.registry' | translate }]"
+  [title]="'drivers.list.title' | translate"
+  [line]="
+    facade.loaded()
+      ? ((facade.total() === 1 ? 'drivers.list.count.one' : 'drivers.list.count.other')
+        | translate: { count: facade.total() })
+      : undefined
+  "
+>
+  <button type="button" class="pt-btn pt-btn--primary" (click)="openForm(null)">
+    {{ 'drivers.list.new' | translate }}
+  </button>
+</app-topbar>
+<main class="flex flex-col gap-4 p-8">
+  @if (facade.reactivateNotice(); as notice) {
+    <app-notice [notice]="notice" />
+  }
+  @if (!registryEmpty()) {
+    <div class="pt-card flex flex-wrap items-center gap-2">
+      <label class="pt-search pt-search--sm max-w-full">
+        <app-icon name="search" size="sm" />
+        <input
+          #searchField
+          class="w-80 min-w-0"
+          type="search"
+          maxlength="100"
+          [placeholder]="'drivers.list.search.placeholder' | translate"
+          [attr.aria-label]="'drivers.list.search.label' | translate"
+          (input)="searchFor(searchField.value)"
+        />
+      </label>
+      <app-filter-menu
+        labelKey="drivers.list.filter.status"
+        [options]="statuses"
+        [value]="facade.status()"
+        (valueChange)="facade.setStatus($event)"
+      />
+      @if (filtered()) {
+        <button
+          type="button"
+          class="pt-btn pt-btn--outline pt-btn--sm"
+          (click)="clearFilters(searchField)"
+        >
+          {{ 'drivers.list.clear' | translate }}
+        </button>
+      }
+      @if (facade.reloading()) {
+        <span class="pt-spinner pt-spinner--sm ml-auto" role="status"
+          ><span class="sr-only">{{ 'common.refreshing' | translate }}</span></span
+        >
+      }
+    </div>
+  }
+  @if (facade.loading()) {
+    <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'drivers.list.loading' | translate }}</span>
+    </div>
+  } @else if (facade.failed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="facade.reload()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (facade.total() === 0) {
+    <div class="pt-card pt-empty">
+      @if (filtered()) {
+        <p class="pt-title">{{ 'drivers.list.nomatch.title' | translate }}</p>
+        <p class="pt-muted">{{ 'drivers.list.nomatch.hint' | translate }}</p>
+      } @else {
+        <p class="pt-title">{{ 'drivers.list.empty.title' | translate }}</p>
+        <p class="pt-muted">{{ 'drivers.list.empty.hint' | translate }}</p>
+      }
+    </div>
+  } @else {
+    <div class="pt-table-wrap">
+      <table class="pt-table" [attr.aria-busy]="facade.reloading() || null">
+        <thead>
+          <tr>
+            @for (column of columns; track column.suffix) {
+              @if (column.sortKey === null) {
+                <th scope="col">{{ 'drivers.list.column.' + column.suffix | translate }}</th>
+              } @else {
+                <th
+                  scope="col"
+                  [attr.aria-sort]="
+                    facade.sortColumn() === column.sortKey
+                      ? facade.sortDirection() === 'Ascending'
+                        ? 'ascending'
+                        : 'descending'
+                      : null
+                  "
+                >
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1 uppercase"
+                    (click)="sortBy(column.sortKey)"
+                  >
+                    {{ 'drivers.list.column.' + column.suffix | translate }}
+                    @if (facade.sortColumn() === column.sortKey) {
+                      <app-icon
+                        name="chevron"
+                        size="xs"
+                        [class.rotate-180]="facade.sortDirection() === 'Ascending'"
+                      />
+                    }
+                  </button>
+                </th>
+              }
+            }
+            <th scope="col">
+              <span class="sr-only">{{ 'drivers.list.column.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (driver of facade.items(); track driver.id) {
+            <tr>
+              <td class="pt-text" [id]="'driver-' + driver.id">{{ listName(driver) }}</td>
+              @if (driver.phone) {
+                <td>{{ driver.phone }}</td>
+              } @else {
+                <td class="pt-muted">—</td>
+              }
+              @if (driver.account; as account) {
+                <td>
+                  <span class="pt-mono">{{ account.username }}</span>
+                  @if (account.isDisabled) {
+                    <span class="pt-muted">
+                      · {{ 'drivers.list.account.disabled' | translate }}</span
+                    >
+                  }
+                </td>
+              } @else {
+                <td class="pt-muted">{{ 'drivers.list.account.none' | translate }}</td>
+              }
+              <td>
+                <span
+                  class="pt-pill"
+                  [class.pt-pill--success]="driver.status === 'Active'"
+                  [class.pt-pill--danger]="driver.status === 'Deactivated'"
+                  >{{ 'drivers.status.' + driver.status.toLowerCase() | translate }}</span
+                >
+              </td>
+              <td>{{ driver.lastModifiedAt | date: 'dd/MM/yyyy' }}</td>
+              <td class="text-right whitespace-nowrap">
+                <div class="inline-flex gap-1">
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-describedby]="'driver-' + driver.id"
+                    (click)="openForm(driver)"
+                  >
+                    {{ 'drivers.list.edit' | translate }}
+                  </button>
+                  <!-- one button for both statuses: it survives the status change, and so does its focus -->
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-describedby]="'driver-' + driver.id"
+                    [attr.aria-disabled]="
+                      (driver.status !== 'Active' && facade.reactivatingId() !== null) || null
+                    "
+                    (click)="
+                      driver.status === 'Active'
+                        ? openDeactivate(driver)
+                        : facade.reactivate(driver)
+                    "
+                  >
+                    {{
+                      (driver.status === 'Active'
+                        ? 'drivers.list.deactivate'
+                        : facade.reactivatingId() === driver.id
+                          ? 'drivers.reactivate.pending'
+                          : 'drivers.list.reactivate'
+                      ) | translate
+                    }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td [attr.colspan]="columns.length + 1">
+              <app-paging
+                [page]="facade.page()"
+                [pageSize]="pageSize"
+                [total]="facade.total()"
+                rangeKey="drivers.list.range"
+                (pageChange)="facade.setPage($event)"
+              />
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  }
+</main>
+@if (formOpen()) {
+  <app-driver-form-dialog [driver]="formDriver()" (closed)="formOpen.set(false)" />
+}
+@if (deactivateTarget(); as driver) {
+  <app-driver-deactivate-dialog [driver]="driver" (closed)="deactivateTarget.set(null)" />
+}

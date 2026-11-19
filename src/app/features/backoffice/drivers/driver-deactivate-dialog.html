@@ -1,0 +1,36 @@
+<app-dialog
+  icon="user"
+  tone="danger"
+  [title]="'drivers.deactivate.title' | translate: { name: fullName(driver()) }"
+  [busy]="facade.deactivating()"
+  (closeRequested)="close()"
+>
+  @if (notice(); as notice) {
+    <app-notice class="mb-3" [notice]="notice" />
+  }
+  <p>{{ 'drivers.deactivate.text' | translate }}</p>
+  <button
+    actions
+    #cancel
+    type="button"
+    class="pt-btn pt-btn--outline"
+    [disabled]="facade.deactivating()"
+    (click)="close()"
+  >
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button
+    actions
+    type="button"
+    class="pt-btn pt-btn--danger"
+    [disabled]="facade.deactivating()"
+    (click)="deactivate()"
+  >
+    {{
+      (facade.deactivating()
+        ? 'drivers.deactivate.submit.pending'
+        : 'drivers.deactivate.submit.idle'
+      ) | translate
+    }}
+  </button>
+</app-dialog>

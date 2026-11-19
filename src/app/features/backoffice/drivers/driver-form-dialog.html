@@ -1,0 +1,164 @@
+<app-dialog
+  icon="user"
+  tone="primary"
+  [title]="(driver() ? 'drivers.form.edit.title' : 'drivers.form.create.title') | translate"
+  [line]="
+    (driver()
+      ? 'drivers.form.edit.line.' + driver()!.status.toLowerCase()
+      : 'drivers.form.create.line'
+    ) | translate
+  "
+  [busy]="facade.saving()"
+  (closeRequested)="close()"
+>
+  <form id="driver-form" class="flex flex-col gap-3" novalidate (submit)="onSubmit($event)">
+    @if (notice(); as notice) {
+      <app-notice [notice]="notice" />
+    }
+    <div class="grid grid-cols-2 gap-3">
+      <div class="pt-field">
+        <label class="pt-label" for="driver-first">{{
+          'drivers.form.firstname.label' | translate
+        }}</label>
+        <input
+          #firstName
+          class="pt-input"
+          id="driver-first"
+          autocomplete="off"
+          [formField]="driverForm.firstName"
+          [attr.aria-invalid]="firstNameError() ? 'true' : null"
+          [attr.aria-describedby]="firstNameError() ? 'driver-first-note' : null"
+        />
+        @if (firstNameError(); as error) {
+          <span class="pt-field__error" id="driver-first-note">{{
+            'key' in error ? (error.key | translate) : error.text
+          }}</span>
+        }
+      </div>
+      <div class="pt-field">
+        <label class="pt-label" for="driver-last">{{
+          'drivers.form.lastname.label' | translate
+        }}</label>
+        <input
+          class="pt-input"
+          id="driver-last"
+          autocomplete="off"
+          [formField]="driverForm.lastName"
+          [attr.aria-invalid]="lastNameError() ? 'true' : null"
+          [attr.aria-describedby]="lastNameError() ? 'driver-last-note' : null"
+        />
+        @if (lastNameError(); as error) {
+          <span class="pt-field__error" id="driver-last-note">{{
+            'key' in error ? (error.key | translate) : error.text
+          }}</span>
+        }
+      </div>
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="driver-phone">{{
+        'drivers.form.phone.label' | translate
+      }}</label>
+      <input
+        class="pt-input"
+        id="driver-phone"
+        type="tel"
+        inputmode="tel"
+        autocomplete="off"
+        [placeholder]="'drivers.form.phone.placeholder' | translate"
+        [formField]="driverForm.phone"
+        [attr.aria-invalid]="phoneError() ? 'true' : null"
+        aria-describedby="driver-phone-note"
+      />
+      @if (phoneError(); as error) {
+        <span class="pt-field__error" id="driver-phone-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="driver-phone-note">{{
+          'drivers.form.phone.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="driver-account">{{
+        'drivers.form.account.label' | translate
+      }}</label>
+      <div class="flex gap-2">
+        <select
+          class="pt-input min-w-0 flex-1"
+          #account
+          id="driver-account"
+          [formField]="driverForm.userId"
+          aria-describedby="driver-account-note"
+        >
+          <option value="">{{ 'drivers.form.account.none' | translate }}</option>
+          @for (account of accounts(); track account.userId) {
+            <option
+              [value]="account.userId"
+              [selected]="account.userId === driverForm.userId().value()"
+            >
+              {{
+                account.isDisabled
+                  ? ('drivers.form.account.disabled' | translate: { username: account.username })
+                  : account.username
+              }}
+            </option>
+          }
+        </select>
+        @if (facade.isAdmin()) {
+          <button
+            #newAccount
+            type="button"
+            class="pt-btn pt-btn--outline shrink-0"
+            [disabled]="facade.saving()"
+            (click)="accountOpen.set(true)"
+          >
+            {{ 'drivers.form.account.new' | translate }}
+          </button>
+        }
+      </div>
+      @if (facade.linkableAccountsFailed()) {
+        <span class="pt-field__error" id="driver-account-note">{{
+          'drivers.form.account.readfailed' | translate
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="driver-account-note">{{
+          (facade.isAdmin()
+            ? 'drivers.form.account.hint.admin'
+            : 'drivers.form.account.hint.backoffice'
+          ) | translate
+        }}</span>
+      }
+    </div>
+  </form>
+  <button
+    actions
+    type="button"
+    class="pt-btn pt-btn--outline"
+    [disabled]="facade.saving()"
+    (click)="close()"
+  >
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button
+    actions
+    type="submit"
+    form="driver-form"
+    class="pt-btn pt-btn--primary"
+    [disabled]="facade.saving()"
+  >
+    {{
+      facade.saving()
+        ? ('drivers.form.pending' | translate)
+        : ((driver() ? 'drivers.form.edit.submit' : 'drivers.form.create.submit') | translate)
+    }}
+  </button>
+</app-dialog>
+@if (accountOpen()) {
+  <app-driver-account-dialog
+    [firstName]="model().firstName"
+    [lastName]="model().lastName"
+    (created)="onAccountCreated($event)"
+    (closed)="closeAccount()"
+  />
+}

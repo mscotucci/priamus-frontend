@@ -15,15 +15,9 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ApiError, fieldErrors, noticeOf } from '../../../core/api/api-error';
 import { Notice } from '../../../shared/components/notice/notice';
 import { Dialog } from '../../../shared/components/dialog/dialog';
+import { isValidPassword, isValidUsername } from './user-credentials';
 import { UserRole } from './users-api';
 import { UsersFacade } from './users-facade';
-
-const USERNAME = /^[a-z0-9][a-z0-9._-]{2,63}$/;
-const LETTER = /[a-zA-Z]/;
-const DIGIT = /[0-9]/;
-const SPECIAL = /[!-/:-@[-`{-~]/;
-const MIN_PASSWORD = 8;
-const MAX_PASSWORD = 128;
 
 type Field = 'username' | 'password' | 'role';
 const FIELDS: Field[] = ['username', 'password', 'role'];
@@ -47,20 +41,15 @@ export class UserCreateDialog {
   });
   protected readonly createForm = form(this.model, (f) => {
     validate(f.username, ({ value }) =>
-      USERNAME.test(value())
+      isValidUsername(value())
         ? undefined
         : { kind: 'username', message: 'users.create.username.invalid' },
     );
-    validate(f.password, ({ value }) => {
-      const password = value();
-      const valid =
-        password.length >= MIN_PASSWORD &&
-        password.length <= MAX_PASSWORD &&
-        LETTER.test(password) &&
-        DIGIT.test(password) &&
-        SPECIAL.test(password);
-      return valid ? undefined : { kind: 'password', message: 'users.create.password.invalid' };
-    });
+    validate(f.password, ({ value }) =>
+      isValidPassword(value())
+        ? undefined
+        : { kind: 'password', message: 'users.create.password.invalid' },
+    );
     validate(f.role, ({ value }) =>
       value() !== '' ? undefined : { kind: 'role', message: 'users.create.role.invalid' },
     );

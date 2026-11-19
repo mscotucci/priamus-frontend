@@ -50,6 +50,7 @@
       "registry": "Anagrafiche",
       "system": "Sistema",
       "customers": "Clienti",
+      "drivers": "Autisti",
       "users": "Utenti",
       "vehicles": "Mezzi"
     },
@@ -60,6 +61,120 @@
     "previous": "Precedente",
     "next": "Successiva",
     "page": "Pagina {{page}} di {{pages}}"
+  },
+  "drivers": {
+    "list": {
+      "title": "Autisti",
+      "new": "Nuovo autista",
+      "loading": "Caricamento…",
+      "range": "Autisti {{from}}–{{to}} di {{total}}",
+      "count": {
+        "one": "{{count}} autista",
+        "other": "{{count}} autisti"
+      },
+      "column": {
+        "name": "Autista",
+        "phone": "Telefono",
+        "account": "Account",
+        "status": "Stato",
+        "modified": "Ultima modifica",
+        "actions": "Azioni"
+      },
+      "search": {
+        "label": "Cerca nome, cognome o telefono",
+        "placeholder": "Cerca nome, cognome o telefono…"
+      },
+      "filter": {
+        "status": "Stato:"
+      },
+      "clear": "Azzera filtri",
+      "edit": "Modifica",
+      "deactivate": "Disattiva",
+      "reactivate": "Riattiva",
+      "account": {
+        "disabled": "disabilitato",
+        "none": "Nessun accesso"
+      },
+      "empty": {
+        "title": "Nessun autista in anagrafica",
+        "hint": "Aggiungi il primo con \"Nuovo autista\"."
+      },
+      "nomatch": {
+        "title": "Nessun autista trovato",
+        "hint": "Prova a cambiare la ricerca o i filtri."
+      }
+    },
+    "status": {
+      "active": "Attivo",
+      "deactivated": "Disattivato"
+    },
+    "deactivate": {
+      "title": "Disattivare l'autista {{name}}?",
+      "text": "Non potrà più lavorare nell'app autisti. I suoi viaggi restano registrati a suo nome. Potrai riattivarlo in qualsiasi momento.",
+      "submit": {
+        "idle": "Disattiva",
+        "pending": "Disattivazione…"
+      },
+      "done": "Autista {{name}} disattivato"
+    },
+    "reactivate": {
+      "pending": "Riattivazione…",
+      "done": "Autista {{name}} riattivato"
+    },
+    "form": {
+      "create": {
+        "title": "Nuovo autista",
+        "line": "Nome e cognome sono obbligatori.",
+        "submit": "Crea autista",
+        "done": "Autista {{name}} creato"
+      },
+      "edit": {
+        "title": "Modifica autista",
+        "line": {
+          "active": "Attivo: può lavorare nell'app autisti.",
+          "deactivated": "Disattivato: non può lavorare nell'app autisti."
+        },
+        "submit": "Salva modifiche",
+        "done": "Autista {{name}} modificato"
+      },
+      "pending": "Salvataggio in corso…",
+      "firstname": {
+        "label": "Nome",
+        "required": "Inserisci il nome.",
+        "toolong": "Il nome può avere al massimo 60 caratteri."
+      },
+      "lastname": {
+        "label": "Cognome",
+        "required": "Inserisci il cognome.",
+        "toolong": "Il cognome può avere al massimo 60 caratteri."
+      },
+      "phone": {
+        "label": "Telefono",
+        "placeholder": "Es. 333 418 2291",
+        "hint": "Facoltativo. Cifre e spazi, con \"+\" iniziale per i numeri esteri.",
+        "invalid": "Usa solo cifre e spazi, con \"+\" iniziale per i numeri esteri.",
+        "toolong": "Il telefono può avere al massimo 20 caratteri."
+      },
+      "account": {
+        "label": "Account",
+        "none": "Nessun accesso",
+        "disabled": "{{username}} (disabilitato)",
+        "new": "Nuovo account",
+        "readfailed": "Non è stato possibile leggere gli account. Chiudi e riapri per riprovare.",
+        "hint": {
+          "backoffice": "L'utente con cui l'autista entra nell'app. Gli account li crea l'amministratore in \"Utenti\".",
+          "admin": "L'utente con cui l'autista entra nell'app. Se non è nell'elenco, crealo con \"Nuovo account\"."
+        }
+      }
+    },
+    "account": {
+      "title": "Nuovo account autista",
+      "line": "Per {{name}}. Potrà accedere subito con queste credenziali.",
+      "submit": {
+        "idle": "Crea account",
+        "pending": "Creazione in corso…"
+      }
+    }
   },
   "customers": {
     "list": {

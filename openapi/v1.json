@@ -552,6 +552,37 @@
         ],
         "type": "object"
       },
+      "CreateDriverRequest": {
+        "description": "Request body for `POST /api/registry/drivers` (PRD §6.5, RF-24). First and last name are\r\nrequired; an empty phone number is stored as none and a missing `UserId` means a driver\r\nwithout an account. Lengths and the phone format are checked in `Validate`, measured once\r\ntrimmed as the aggregate stores them.",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userId": {
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName",
+          "phone",
+          "userId"
+        ],
+        "type": "object"
+      },
       "CreateUserRequest": {
         "description": "Request body for `POST /api/identity/users`.",
         "properties": {
@@ -786,6 +817,24 @@
         ],
         "type": "object"
       },
+      "DeactivateDriverRequest": {
+        "description": "Request body for `POST /api/registry/drivers/{id}/deactivate`. `Version` is the version\r\nthe client read; the change is refused when the driver has changed since.",
+        "properties": {
+          "version": {
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "type": "object"
+      },
       "DecommissionVehicleRequest": {
         "description": "Request body for `POST /api/registry/vehicles/{id}/decommission`. `Version` is the version\r\nthe client read; the change is refused when the vehicle has changed since.",
         "properties": {
@@ -821,6 +870,102 @@
           "version"
         ],
         "type": "object"
+      },
+      "DriverAccountDto": {
+        "description": "The Identity user account a driver is linked to, read from Identity at the time of the request\r\n(ADR 0013).",
+        "properties": {
+          "isDisabled": {
+            "description": "Whether the account is disabled.",
+            "type": "boolean"
+          },
+          "userId": {
+            "description": "Identifier of the user account.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "username": {
+            "description": "Normalised login name of the account.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "isDisabled"
+        ],
+        "type": "object"
+      },
+      "DriverListItemDto": {
+        "description": "A driver as the API returns it (PRD §6.5, RF-24).",
+        "properties": {
+          "account": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DriverAccountDto",
+                "description": "The linked user account, or `null` when the driver has no access."
+              }
+            ]
+          },
+          "firstName": {
+            "description": "The trimmed first name.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Identifier of the driver.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastModifiedAt": {
+            "description": "UTC instant of the last change.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastName": {
+            "description": "The trimmed last name.",
+            "type": "string"
+          },
+          "phone": {
+            "description": "The phone number as typed, trimmed, or `null`.",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/DriverStatus",
+            "description": "The status."
+          },
+          "version": {
+            "description": "Version the client sends back with its next write on this driver.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "lastName",
+          "phone",
+          "account",
+          "status",
+          "lastModifiedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "DriverStatus": {
+        "description": "Whether a Driver can be chosen for new trips and can use the driver area\r\n(PRD §6.5, RF-24, RF-25).",
+        "enum": [
+          "Active",
+          "Deactivated"
+        ]
       },
       "EnableUserRequest": {
         "description": "Request body for `POST /api/identity/users/{id}/enable`. `Version` is the version\r\nthe client read; the change is refused when the user has changed since.",
@@ -934,6 +1079,69 @@
             "description": "The items returned in the current page.",
             "items": {
               "$ref": "#/components/schemas/CustomerListItemDto"
+            },
+            "type": "array"
+          },
+          "hasNextPage": {
+            "description": "True when there is a page after this one.",
+            "type": "boolean"
+          },
+          "hasPreviousPage": {
+            "description": "True when there is a page before this one.",
+            "type": "boolean"
+          },
+          "page": {
+            "description": "1-based page number returned.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "pageSize": {
+            "description": "Page size used to compute the result.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "totalCount": {
+            "description": "Total number of items across all pages.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "totalPages": {
+            "description": "Total number of pages, computed as `ceil(TotalCount / PageSize)`.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "totalCount",
+          "page",
+          "pageSize"
+        ],
+        "type": "object"
+      },
+      "PagedResponseOfDriverListItemDto": {
+        "description": "Response envelope for a paginated query. Immutable record.",
+        "properties": {
+          "data": {
+            "description": "The items returned in the current page.",
+            "items": {
+              "$ref": "#/components/schemas/DriverListItemDto"
             },
             "type": "array"
           },
@@ -1165,6 +1373,24 @@
       },
       "ReactivateCustomerRequest": {
         "description": "Request body for `POST /api/registry/customers/{id}/reactivate`. `Version` is the version\r\nthe client read; the change is refused when the customer has changed since.",
+        "properties": {
+          "version": {
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "type": "object"
+      },
+      "ReactivateDriverRequest": {
+        "description": "Request body for `POST /api/registry/drivers/{id}/reactivate`. `Version` is the version\r\nthe client read; the change is refused when the driver has changed since.",
         "properties": {
           "version": {
             "format": "int32",
@@ -1452,6 +1678,47 @@
           "vatNumber",
           "taxCode",
           "address",
+          "version"
+        ],
+        "type": "object"
+      },
+      "UpdateDriverRequest": {
+        "description": "Request body for `PUT /api/registry/drivers/{id}` (PRD §6.5, RF-24). `Version` is the\r\nversion the client read; the save is refused when the driver has changed since. A missing\r\n`UserId` removes the account link.",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userId": {
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName",
+          "phone",
+          "userId",
           "version"
         ],
         "type": "object"
@@ -3192,6 +3459,501 @@
         ]
       }
     },
+    "/api/registry/drivers": {
+      "get": {
+        "operationId": "ListDrivers",
+        "parameters": [
+          {
+            "description": "Text matched, ignoring case, against part of the first name or of the last name; with\r\nspaces removed, against part of the phone number with spaces removed. When null or\r\nwhitespace, no search is applied.",
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by status. When null, all statuses are included.",
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "$ref": "#/components/schemas/DriverStatus"
+            }
+          },
+          {
+            "description": "1-based page number. Optional on the wire; values below 1 are coerced to 1\r\non the setter. Read via int PagedRequest.EffectivePage to get the resolved value\r\n(defaulting to int PagedRequest.DefaultPage when null).",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "format": "int32",
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ]
+            }
+          },
+          {
+            "description": "Page size between 1 and int PagedRequest.MaxPageSize. Optional on the wire;\r\nnon-positive values are coerced to int PagedRequest.DefaultPageSize, values\r\ngreater than int PagedRequest.MaxPageSize are clamped to int PagedRequest.MaxPageSize.\r\nRead via int PagedRequest.EffectivePageSize to get the resolved value\r\n(defaulting to int PagedRequest.DefaultPageSize when null).",
+            "in": "query",
+            "name": "pageSize",
+            "schema": {
+              "format": "int32",
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ]
+            }
+          },
+          {
+            "description": "Name of the column to sort by. Optional; handlers fall back to a default\r\nsafe column when this is null or not in their whitelist.",
+            "in": "query",
+            "name": "sortColumn",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort direction. Optional on the wire; readers should use\r\nbool PagedRequest.IsAscending which resolves null to\r\nSortDirection.Ascending.",
+            "in": "query",
+            "name": "sortDirection",
+            "schema": {
+              "$ref": "#/components/schemas/SortDirection"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfDriverListItemDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "tags": [
+          "Registry.Drivers"
+        ]
+      },
+      "post": {
+        "operationId": "CreateDriver",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDriverRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverListItemDto"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Drivers"
+        ]
+      }
+    },
+    "/api/registry/drivers/linkable-accounts": {
+      "get": {
+        "operationId": "ListLinkableAccounts",
+        "parameters": [
+          {
+            "description": "The driver being edited: when it has an account, that account is offered too, even when\r\ndisabled. When null, only the free enabled driver accounts are returned.",
+            "in": "query",
+            "name": "driverId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DriverAccountDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Registry.Drivers"
+        ]
+      }
+    },
+    "/api/registry/drivers/{id}": {
+      "put": {
+        "operationId": "UpdateDriver",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDriverRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Drivers"
+        ]
+      }
+    },
+    "/api/registry/drivers/{id}/deactivate": {
+      "post": {
+        "operationId": "DeactivateDriver",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeactivateDriverRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Drivers"
+        ]
+      }
+    },
+    "/api/registry/drivers/{id}/reactivate": {
+      "post": {
+        "operationId": "ReactivateDriver",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactivateDriverRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Drivers"
+        ]
+      }
+    },
     "/api/registry/vehicles": {
       "get": {
         "operationId": "ListVehicles",
@@ -3649,6 +4411,9 @@
     },
     {
       "name": "Registry.Customers"
+    },
+    {
+      "name": "Registry.Drivers"
     },
     {
       "name": "Registry.Contracts"

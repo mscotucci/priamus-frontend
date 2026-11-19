@@ -6,6 +6,7 @@ export type IconName =
   | 'user'
   | 'user-plus'
   | 'user-x'
+  | 'users'
   | 'sign-out'
   | 'menu'
   | 'close'

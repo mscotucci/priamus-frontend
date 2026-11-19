@@ -239,6 +239,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/drivers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListDrivers"];
+        put?: never;
+        post: operations["CreateDriver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/drivers/linkable-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListLinkableAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/drivers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateDriver"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/drivers/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DeactivateDriver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/drivers/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReactivateDriver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/registry/vehicles": {
         parameters: {
             query?: never;
@@ -491,6 +571,19 @@ export interface components {
              */
             version: number;
         };
+        /**
+         * @description Request body for `POST /api/registry/drivers` (PRD §6.5, RF-24). First and last name are
+         *     required; an empty phone number is stored as none and a missing `UserId` means a driver
+         *     without an account. Lengths and the phone format are checked in `Validate`, measured once
+         *     trimmed as the aggregate stores them.
+         */
+        CreateDriverRequest: {
+            firstName: string;
+            lastName: string;
+            phone: null | string;
+            /** Format: uuid */
+            userId: null | string;
+        };
         /** @description Request body for `POST /api/identity/users`. */
         CreateUserRequest: {
             password: string;
@@ -592,6 +685,14 @@ export interface components {
             version: number | null;
         };
         /**
+         * @description Request body for `POST /api/registry/drivers/{id}/deactivate`. `Version` is the version
+         *     the client read; the change is refused when the driver has changed since.
+         */
+        DeactivateDriverRequest: {
+            /** Format: int32 */
+            version: number | null;
+        };
+        /**
          * @description Request body for `POST /api/registry/vehicles/{id}/decommission`. `Version` is the version
          *     the client read; the change is refused when the vehicle has changed since.
          */
@@ -607,6 +708,54 @@ export interface components {
             /** Format: int32 */
             version: number | null;
         };
+        /**
+         * @description The Identity user account a driver is linked to, read from Identity at the time of the request
+         *     (ADR 0013).
+         */
+        DriverAccountDto: {
+            /** @description Whether the account is disabled. */
+            isDisabled: boolean;
+            /**
+             * Format: uuid
+             * @description Identifier of the user account.
+             */
+            userId: string;
+            /** @description Normalised login name of the account. */
+            username: string;
+        };
+        /** @description A driver as the API returns it (PRD §6.5, RF-24). */
+        DriverListItemDto: {
+            account: null | components["schemas"]["DriverAccountDto"];
+            /** @description The trimmed first name. */
+            firstName: string;
+            /**
+             * Format: uuid
+             * @description Identifier of the driver.
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description UTC instant of the last change.
+             */
+            lastModifiedAt: string;
+            /** @description The trimmed last name. */
+            lastName: string;
+            /** @description The phone number as typed, trimmed, or `null`. */
+            phone: null | string;
+            /** @description The status. */
+            status: components["schemas"]["DriverStatus"];
+            /**
+             * Format: int32
+             * @description Version the client sends back with its next write on this driver.
+             */
+            version: number;
+        };
+        /**
+         * @description Whether a Driver can be chosen for new trips and can use the driver area
+         *     (PRD §6.5, RF-24, RF-25).
+         * @enum {unknown}
+         */
+        DriverStatus: "Active" | "Deactivated";
         /**
          * @description Request body for `POST /api/identity/users/{id}/enable`. `Version` is the version
          *     the client read; the change is refused when the user has changed since.
@@ -660,6 +809,35 @@ export interface components {
         PagedResponseOfCustomerListItemDto: {
             /** @description The items returned in the current page. */
             data: components["schemas"]["CustomerListItemDto"][];
+            /** @description True when there is a page after this one. */
+            hasNextPage?: boolean;
+            /** @description True when there is a page before this one. */
+            hasPreviousPage?: boolean;
+            /**
+             * Format: int32
+             * @description 1-based page number returned.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description Page size used to compute the result.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description Total number of items across all pages.
+             */
+            totalCount: number;
+            /**
+             * Format: int32
+             * @description Total number of pages, computed as `ceil(TotalCount / PageSize)`.
+             */
+            totalPages?: number;
+        };
+        /** @description Response envelope for a paginated query. Immutable record. */
+        PagedResponseOfDriverListItemDto: {
+            /** @description The items returned in the current page. */
+            data: components["schemas"]["DriverListItemDto"][];
             /** @description True when there is a page after this one. */
             hasNextPage?: boolean;
             /** @description True when there is a page before this one. */
@@ -765,6 +943,14 @@ export interface components {
             version: number | null;
         };
         /**
+         * @description Request body for `POST /api/registry/drivers/{id}/reactivate`. `Version` is the version
+         *     the client read; the change is refused when the driver has changed since.
+         */
+        ReactivateDriverRequest: {
+            /** Format: int32 */
+            version: number | null;
+        };
+        /**
          * @description Request body for `POST /api/registry/vehicles/{id}/reactivate`. `Version` is the version
          *     the client read; the change is refused when the vehicle has changed since.
          */
@@ -845,6 +1031,20 @@ export interface components {
             companyName: string;
             taxCode: null | string;
             vatNumber: null | string;
+            /** Format: int32 */
+            version: number | null;
+        };
+        /**
+         * @description Request body for `PUT /api/registry/drivers/{id}` (PRD §6.5, RF-24). `Version` is the
+         *     version the client read; the save is refused when the driver has changed since. A missing
+         *     `UserId` removes the account link.
+         */
+        UpdateDriverRequest: {
+            firstName: string;
+            lastName: string;
+            phone: null | string;
+            /** Format: uuid */
+            userId: null | string;
             /** Format: int32 */
             version: number | null;
         };
@@ -2130,6 +2330,407 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ReactivateCustomerRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListDrivers: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Text matched, ignoring case, against part of the first name or of the last name; with
+                 *     spaces removed, against part of the phone number with spaces removed. When null or
+                 *     whitespace, no search is applied.
+                 */
+                search?: string;
+                /** @description Filter by status. When null, all statuses are included. */
+                status?: components["schemas"]["DriverStatus"];
+                /**
+                 * @description 1-based page number. Optional on the wire; values below 1 are coerced to 1
+                 *     on the setter. Read via int PagedRequest.EffectivePage to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPage when null).
+                 */
+                page?: number;
+                /**
+                 * @description Page size between 1 and int PagedRequest.MaxPageSize. Optional on the wire;
+                 *     non-positive values are coerced to int PagedRequest.DefaultPageSize, values
+                 *     greater than int PagedRequest.MaxPageSize are clamped to int PagedRequest.MaxPageSize.
+                 *     Read via int PagedRequest.EffectivePageSize to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPageSize when null).
+                 */
+                pageSize?: number;
+                /**
+                 * @description Name of the column to sort by. Optional; handlers fall back to a default
+                 *     safe column when this is null or not in their whitelist.
+                 */
+                sortColumn?: string;
+                /**
+                 * @description Sort direction. Optional on the wire; readers should use
+                 *     bool PagedRequest.IsAscending which resolves null to
+                 *     SortDirection.Ascending.
+                 */
+                sortDirection?: components["schemas"]["SortDirection"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfDriverListItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateDriver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDriverRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverListItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListLinkableAccounts: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The driver being edited: when it has an account, that account is offered too, even when
+                 *     disabled. When null, only the free enabled driver accounts are returned.
+                 */
+                driverId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverAccountDto"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateDriver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDriverRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeactivateDriver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeactivateDriverRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReactivateDriver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReactivateDriverRequest"];
             };
         };
         responses: {

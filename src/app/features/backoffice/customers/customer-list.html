@@ -117,7 +117,7 @@
         <tbody>
           @for (customer of facade.items(); track customer.id) {
             <tr>
-              <td [id]="'customer-' + customer.id">{{ customer.companyName }}</td>
+              <td class="pt-text" [id]="'customer-' + customer.id">{{ customer.companyName }}</td>
               @if (customer.vatNumber) {
                 <td>
                   <span class="pt-mono">{{ customer.vatNumber }}</span>
