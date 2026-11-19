@@ -335,7 +335,7 @@ describe('CustomerPage', () => {
     expect(element.querySelector('main .pt-notice--info')).toBeNull();
   });
 
-  it('AC-23: the "Tariffa" column shows the day price with the unit of each pricing mode, and "—" muted when there is no rate', async () => {
+  it('the "Tariffa" column shows the day price with the unit of each pricing mode, and "—" muted when there is no rate', async () => {
     const element = await answer(await render(), customer, [
       contract({ id: 'a', pricingMode: 'ByHour', dayPrice: 30 }),
       contract({ id: 'b', pricingMode: 'ByWeight', dayPrice: 18.5 }),
@@ -367,7 +367,7 @@ describe('CustomerPage', () => {
     expect(rate(5).classList.contains('pt-muted')).toBe(true);
   });
 
-  it('AC-23: a deactivated customer has a notice on the contracts and "Apri" in place of "Modifica" on each row, with the same link', async () => {
+  it('a deactivated customer has a notice on the contracts and "Apri" in place of "Modifica" on each row, with the same link', async () => {
     const element = await answer(await render(), { ...customer, status: 'Deactivated' }, contracts);
 
     expect(text(element.querySelector('main .pt-notice--info'))).toBe(

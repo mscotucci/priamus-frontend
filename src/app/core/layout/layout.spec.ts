@@ -146,7 +146,7 @@ describe('Layout', () => {
       return { ...harness, button };
     };
 
-    it('AC-8: "Esci" asks the page first and does not sign out while the page says to stay', async () => {
+    it('"Esci" asks the page first and does not sign out while the page says to stay', async () => {
       const { button, signOut } = renderWithPage(() => Promise.resolve(false));
 
       button.click();
@@ -155,7 +155,7 @@ describe('Layout', () => {
       expect(signOut).not.toHaveBeenCalled();
     });
 
-    it('AC-8: "Esci" signs out once the page says the user may leave', async () => {
+    it('"Esci" signs out once the page says the user may leave', async () => {
       const { button, signOut } = renderWithPage(() => Promise.resolve(true));
 
       button.click();
@@ -164,7 +164,7 @@ describe('Layout', () => {
       expect(signOut).toHaveBeenCalledTimes(1);
     });
 
-    it('AC-8: after staying, "Esci" asks again', async () => {
+    it('after staying, "Esci" asks again', async () => {
       const answer = vi.fn(() => Promise.resolve(false));
       const { button } = renderWithPage(answer);
 

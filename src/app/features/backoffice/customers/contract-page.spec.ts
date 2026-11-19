@@ -236,7 +236,7 @@ describe('ContractPage', () => {
     expect(saveButtons(harness).map((b) => b.disabled)).toEqual([true]);
   });
 
-  it('AC-20: the contract of a deactivated customer is read-only: answers without "Modifica", no save or "Annulla", the notice says why', async () => {
+  it('the contract of a deactivated customer is read-only: answers without "Modifica", no save or "Annulla", the notice says why', async () => {
     const harness = await render('/customers/c1/contracts/k1');
     http.expectOne(CUSTOMER_URL).flush({ ...customer, status: 'Deactivated' });
     http.expectOne(CONTRACTS_URL).flush([]);
@@ -1302,7 +1302,7 @@ describe('ContractPage', () => {
         harness.element.querySelectorAll('.pt-question[aria-current="step"] .pt-input-group'),
       ).map((group) => text(group.querySelector('.pt-input-group__addon')));
 
-    it('AC-14: the rate is question 6 and the minimum question 7 after the night surcharge, and the documents move to 8', async () => {
+    it('the rate is question 6 and the minimum question 7 after the night surcharge, and the documents move to 8', async () => {
       const harness = await openAtRate('No');
       await answerRate(harness);
       await answerNoMinimum(harness);
@@ -1327,7 +1327,7 @@ describe('ContractPage', () => {
       ]);
     });
 
-    it('AC-14: answered rate and minimum read as the spec words them', async () => {
+    it('answered rate and minimum read as worded on the page', async () => {
       const harness = await openAtRate('Sì');
       fillRate(harness, { day: '30', night: '42', callFee: '35' });
       await click(harness, buttonIn(harness.element, 'Conferma'));
@@ -1483,7 +1483,7 @@ describe('ContractPage', () => {
       });
     });
 
-    it('AC-14: a day price alone, and a fixed minimum, read as the spec words them; the comma is accepted', async () => {
+    it('a day price alone, and a fixed minimum, read as worded on the page; the comma is accepted', async () => {
       const harness = await openAtRate('No');
       await answerRate(harness, '30,5');
       await choose(harness, 'Minimo fisso');
@@ -1493,7 +1493,7 @@ describe('ContractPage', () => {
       expect(pills(harness).slice(4, 6)).toEqual(['30,50 €/h', 'Minimo 30,00 €']);
     });
 
-    it('AC-14: under a tiered overage an example uses sample values until the three typed ones hold', async () => {
+    it('under a tiered overage an example uses sample values until the three typed ones hold', async () => {
       const harness = await openAtRate('No');
       await answerRate(harness);
       await choose(harness, 'Scaglione con eccesso');
@@ -1534,7 +1534,7 @@ describe('ContractPage', () => {
       );
     });
 
-    it('AC-12: each field shows the unit of the pricing mode as an add-on', async () => {
+    it('each field shows the unit of the pricing mode as an add-on', async () => {
       const cases: [string, string[], string[]][] = [
         ['A ore', ['€/h', '€/h', '€'], ['€', 'ore', '€/h']],
         ['A peso', ['€/ton', '€/ton', '€'], ['€', 'ton', '€/ton']],
@@ -1551,13 +1551,13 @@ describe('ContractPage', () => {
       }
     });
 
-    it('AC-12: a trip price is in euro, and the night call fee and M always are', async () => {
+    it('a trip price is in euro, and the night call fee and M always are', async () => {
       const harness = await openAtRate('Sì', 'A viaggio');
 
       expect(addons(harness)).toEqual(['€', '€', '€']);
     });
 
-    it('AC-10: confirming shows the message under each field that does not hold, and keeps the question open', async () => {
+    it('confirming shows the message under each field that does not hold, and keeps the question open', async () => {
       const harness = await openAtRate('Sì');
       type(harness, 'rate-day', '');
       type(harness, 'rate-night', '0');
@@ -1575,7 +1575,7 @@ describe('ContractPage', () => {
       expect(pills(harness)[4]).toBeUndefined();
     });
 
-    it('AC-10: an empty night price and call fee, a third decimal and a non-number are refused; a call fee of 0 is accepted', async () => {
+    it('an empty night price and call fee, a third decimal and a non-number are refused; a call fee of 0 is accepted', async () => {
       const harness = await openAtRate('Sì');
       fillRate(harness, { day: '12,345', night: '', callFee: '' });
       await click(harness, buttonIn(harness.element, 'Conferma'));
@@ -1594,7 +1594,7 @@ describe('ContractPage', () => {
       expect(pills(harness)[4]).toBe('30,00 €/h di giorno · 42,00 €/h di notte · chiamata 0,00 €');
     });
 
-    it('AC-10: the minimum is confirmed only with the values its kind asks for, each with its message', async () => {
+    it('the minimum is confirmed only with the values its kind asks for, each with its message', async () => {
       const harness = await openAtRate('No');
       await answerRate(harness);
       const confirm = () => click(harness, buttonIn(harness.element, 'Conferma'));
@@ -1620,7 +1620,7 @@ describe('ContractPage', () => {
       expect(errorOf(harness, 'minimum-threshold')).toBe('Usa al massimo due decimali.');
     });
 
-    it('AC-10: an amount or threshold over 9999999999.99 is refused with "Importo troppo alto."; the bound itself is accepted', async () => {
+    it('an amount or threshold over 9999999999.99 is refused with "Importo troppo alto."; the bound itself is accepted', async () => {
       const harness = await openAtRate('Sì');
       fillRate(harness, { day: '10000000000', night: '9999999999,99', callFee: '10000000000,00' });
       await click(harness, buttonIn(harness.element, 'Conferma'));
@@ -1629,7 +1629,7 @@ describe('ContractPage', () => {
       expect(errorOf(harness, 'rate-callFee')).toBe('Importo troppo alto.');
     });
 
-    it('AC-10: a threshold over 9999999999.99 is refused with "Importo troppo alto."; the bound itself is accepted for the overage', async () => {
+    it('a threshold over 9999999999.99 is refused with "Importo troppo alto."; the bound itself is accepted for the overage', async () => {
       const minimum = await openAtRate('No');
       await answerRate(minimum);
       await choose(minimum, 'Scaglione con eccesso');
@@ -1641,7 +1641,7 @@ describe('ContractPage', () => {
       expect(errorOf(minimum, 'minimum-overage')).toBeUndefined();
     });
 
-    it('AC-11: the minimum is none, fixed or tiered; "Nessun minimo" asks no value', async () => {
+    it('the minimum is none, fixed or tiered; "Nessun minimo" asks no value', async () => {
       const harness = await openAtRate('No');
       await answerRate(harness);
 
@@ -1657,7 +1657,7 @@ describe('ContractPage', () => {
       expect(pills(harness)[5]).toBe('Nessun minimo');
     });
 
-    it('AC-11: a contract priced by trip is not asked the minimum', async () => {
+    it('a contract priced by trip is not asked the minimum', async () => {
       const harness = await openAtRate('No', 'A viaggio');
       await answerRate(harness);
 
@@ -1667,7 +1667,7 @@ describe('ContractPage', () => {
       expect(saveButtons(harness).map((b) => b.disabled)).toEqual([false, false]);
     });
 
-    it('AC-1: the rate and the minimum are saved with the one "Salva contratto"', async () => {
+    it('the rate and the minimum are saved with the one "Salva contratto"', async () => {
       const harness = await openAtRate('Sì');
       fillRate(harness, { day: '30', night: '42,5', callFee: '35' });
       await click(harness, buttonIn(harness.element, 'Conferma'));
@@ -1695,7 +1695,7 @@ describe('ContractPage', () => {
       });
     });
 
-    it('AC-1: a fixed minimum sends its amount only', async () => {
+    it('a fixed minimum sends its amount only', async () => {
       const fixed = await openAtRate('No');
       await answerRate(fixed);
       await choose(fixed, 'Minimo fisso');
@@ -1712,7 +1712,7 @@ describe('ContractPage', () => {
       });
     });
 
-    it('AC-1: a contract priced by trip saves with no minimum rule', async () => {
+    it('a contract priced by trip saves with no minimum rule', async () => {
       const harness = await openAtRate('No', 'A viaggio');
       await answerRate(harness);
       await click(harness, buttonIn(harness.element, 'Conferma selezione'));
@@ -1726,7 +1726,7 @@ describe('ContractPage', () => {
       });
     });
 
-    it('AC-1: a stored flat rate opens answered and a save puts it back with the version read', async () => {
+    it('a stored flat rate opens answered and a save puts it back with the version read', async () => {
       const harness = await openExisting(flatExisting);
 
       expect(pills(harness)).toEqual([
@@ -1770,7 +1770,7 @@ describe('ContractPage', () => {
       expect(unsaved()).toBe(false);
     });
 
-    it('AC-13: a new pricing mode clears the rate and the minimum and asks them again', async () => {
+    it('a new pricing mode clears the rate and the minimum and asks them again', async () => {
       const harness = await openExisting(flatExisting);
 
       await click(harness, buttonIn(questions(harness)[2], 'Modifica'));
@@ -1798,7 +1798,7 @@ describe('ContractPage', () => {
       );
     });
 
-    it('AC-13: choosing the same pricing mode again clears nothing', async () => {
+    it('choosing the same pricing mode again clears nothing', async () => {
       const harness = await openExisting(flatExisting);
 
       await click(harness, buttonIn(questions(harness)[2], 'Modifica'));
@@ -1808,7 +1808,7 @@ describe('ContractPage', () => {
       expect(pills(harness)[5]).toBe('Scaglione: 50,00 € fino a 4 ore, poi 12,00 €/h');
     });
 
-    it('AC-13: a new pricing mode of "A viaggio" removes the minimum question', async () => {
+    it('a new pricing mode of "A viaggio" removes the minimum question', async () => {
       const harness = await openExisting(flatExisting);
 
       await click(harness, buttonIn(questions(harness)[2], 'Modifica'));
@@ -1831,7 +1831,7 @@ describe('ContractPage', () => {
       put.flush(null, { status: 204, statusText: 'No Content' });
     });
 
-    it('AC-13: removing the night surcharge clears the night price and the night call fee only', async () => {
+    it('removing the night surcharge clears the night price and the night call fee only', async () => {
       const harness = await openExisting(flatExisting);
 
       await click(harness, buttonIn(questions(harness)[3], 'Modifica'));
@@ -1854,7 +1854,7 @@ describe('ContractPage', () => {
       put.flush(null, { status: 204, statusText: 'No Content' });
     });
 
-    it('AC-13: adding the night surcharge asks the rate again, with the day price still typed', async () => {
+    it('adding the night surcharge asks the rate again, with the day price still typed', async () => {
       const harness = await openExisting({
         ...flatExisting,
         nightSurcharge: false,
@@ -1871,7 +1871,7 @@ describe('ContractPage', () => {
       expect(saveButtons(harness).map((b) => b.disabled)).toEqual([true]);
     });
 
-    it('AC-13: moving the billing level away from the flat rate clears the rate and the minimum', async () => {
+    it('moving the billing level away from the flat rate clears the rate and the minimum', async () => {
       const harness = await openExisting(flatExisting);
 
       await click(harness, buttonIn(questions(harness)[1], 'Modifica'));
@@ -1895,7 +1895,7 @@ describe('ContractPage', () => {
       http.match((request) => request.method === 'GET').forEach((r) => r.flush([]));
     });
 
-    it('AC-13: going back to the flat rate asks the rate and the minimum again', async () => {
+    it('going back to the flat rate asks the rate and the minimum again', async () => {
       const harness = await openExisting(flatExisting);
       await click(harness, buttonIn(questions(harness)[1], 'Modifica'));
       await choose(harness, 'Sì');
@@ -1910,7 +1910,7 @@ describe('ContractPage', () => {
       expect(saveButtons(harness).map((b) => b.disabled)).toEqual([true]);
     });
 
-    it('AC-15: "Salva contratto" stays disabled for a flat contract without rate or minimum', async () => {
+    it('"Salva contratto" stays disabled for a flat contract without rate or minimum', async () => {
       const harness = await openAtRate('No');
       expect(saveButtons(harness).map((b) => b.disabled)).toEqual([true]);
 
@@ -1921,7 +1921,7 @@ describe('ContractPage', () => {
       expect(saveButtons(harness).map((b) => b.disabled)).toEqual([false, false]);
     });
 
-    it('AC-15: for another billing level question 6 is an answered card with the notice, no "Modifica", and no minimum question', async () => {
+    it('for another billing level question 6 is an answered card with the notice, no "Modifica", and no minimum question', async () => {
       const harness = await openExisting();
 
       const rate = questions(harness)[5];
@@ -1936,7 +1936,7 @@ describe('ContractPage', () => {
       expect(saveButtons(harness).map((b) => b.disabled)).toEqual([false, false]);
     });
 
-    it('AC-15: a new contract with locations does not show question 6 before the mode and the night are answered', async () => {
+    it('a new contract with locations does not show question 6 before the mode and the night are answered', async () => {
       const harness = await openNew();
       await confirmValidity(harness, '2027-01-01');
       await choose(harness, 'Sì');
@@ -1952,7 +1952,7 @@ describe('ContractPage', () => {
       expect(saveButtons(harness).map((b) => b.disabled)).toEqual([false, false]);
     });
 
-    it('AC-15: a flat contract stored without a rate opens with question 6 as the current one', async () => {
+    it('a flat contract stored without a rate opens with question 6 as the current one', async () => {
       const harness = await openExisting({
         ...flatExisting,
         dayPrice: null,
@@ -2014,7 +2014,7 @@ describe('ContractPage', () => {
       };
 
     it.each(['Enter', ' '])(
-      'AC-6: an arrow key moves the selection and the question stays open; %j confirms it',
+      'an arrow key moves the selection and the question stays open; %j confirms it',
       async (confirmKey) => {
         const harness = await openNew();
         await confirmValidity(harness, '2027-01-01');
@@ -2033,7 +2033,7 @@ describe('ContractPage', () => {
       },
     );
 
-    it('AC-6: a pointer click confirms the choice and closes the question', async () => {
+    it('a pointer click confirms the choice and closes the question', async () => {
       const harness = await openNew();
       await confirmValidity(harness, '2027-01-01');
       const before = currentTitle(harness);
@@ -2044,7 +2044,7 @@ describe('ContractPage', () => {
       expect(currentTitle(harness)).not.toBe(before);
     });
 
-    it('AC-6: on the minimum question an arrow key selects the kind and shows its fields, without confirming', async () => {
+    it('on the minimum question an arrow key selects the kind and shows its fields, without confirming', async () => {
       const harness = await openNew();
       await confirmValidity(harness, '2027-01-01');
       await choose(harness, 'No');
@@ -2064,7 +2064,7 @@ describe('ContractPage', () => {
       expect(currentTitle(harness)).toBe(before);
     });
 
-    it('AC-8: the sign-out asks through the page while it is open and no longer once it is gone', async () => {
+    it('the sign-out asks through the page while it is open and no longer once it is gone', async () => {
       const harness = await openNew();
       await confirmValidity(harness, '2027-01-01');
 
@@ -2091,7 +2091,7 @@ describe('ContractPage', () => {
       expect(state(harness).radio().locations).toBe('no');
     });
 
-    it('AC-9: a document ticked but not confirmed is not an unsaved change', async () => {
+    it('a document ticked but not confirmed is not an unsaved change', async () => {
       const harness = await openExisting();
       await click(harness, buttonIn(questions(harness).at(-1)!, 'Modifica'));
       await click(
@@ -2105,7 +2105,7 @@ describe('ContractPage', () => {
       expect(url()).toBe('/customers/c1');
     });
 
-    it('AC-9: a date typed but not confirmed is not an unsaved change', async () => {
+    it('a date typed but not confirmed is not an unsaved change', async () => {
       const harness = await openNew();
       type(harness, 'contract-from', '2027-01-01');
       await settle(harness.fixture);
@@ -2155,7 +2155,7 @@ describe('ContractPage', () => {
 
     const writes = () => http.match((request) => request.method !== 'GET');
 
-    it('AC-4: saving a contract in force with changed terms asks from when, with the two options', async () => {
+    it('saving a contract in force with changed terms asks from when, with the two options', async () => {
       const harness = await openDialog();
 
       expect(text(dialog(harness)!.querySelector('.pt-title'))).toBe(
@@ -2173,7 +2173,7 @@ describe('ContractPage', () => {
       expect(writes()).toHaveLength(0);
     });
 
-    it('AC-4: "Annulla" closes the dialog and leaves the page as it was, unsaved', async () => {
+    it('"Annulla" closes the dialog and leaves the page as it was, unsaved', async () => {
       const harness = await openDialog();
 
       await click(harness, buttonIn(dialog(harness)!, 'Annulla'));
@@ -2187,7 +2187,7 @@ describe('ContractPage', () => {
       expect(saveButtons(harness).map((b) => b.disabled)).toEqual([false, false]);
     });
 
-    it('AC-22: it opens with no option chosen and "Salva" disabled; "Da una data" shows the empty date and moves the focus to it', async () => {
+    it('it opens with no option chosen and "Salva" disabled; "Da una data" shows the empty date and moves the focus to it', async () => {
       const harness = await openDialog();
 
       expect(scopes(harness).map((input) => input.checked)).toEqual([false, false]);
@@ -2203,7 +2203,7 @@ describe('ContractPage', () => {
       expect(dialogSave(harness).disabled).toBe(false);
     });
 
-    it('AC-22: a valid date shows what will happen, for a contract with an end', async () => {
+    it('a valid date shows what will happen, for a contract with an end', async () => {
       const harness = await openDialog();
 
       await chooseFromDate(harness, '2026-12-01');
@@ -2213,7 +2213,7 @@ describe('ContractPage', () => {
       );
     });
 
-    it('AC-16: for a contract without an end the notice says the new one has no expiry', async () => {
+    it('for a contract without an end the notice says the new one has no expiry', async () => {
       const harness = await openDialog({ ...existing, validTo: null });
       expect(text(dialog(harness)!.querySelector('.pt-muted'))).toBe(
         'Il contratto è in vigore dal 01/04/2026 e ne hai cambiato le condizioni.',
@@ -2226,7 +2226,7 @@ describe('ContractPage', () => {
       );
     });
 
-    it('AC-16: "Da una data" sends the written validity, the terms, the date and the version read', async () => {
+    it('"Da una data" sends the written validity, the terms, the date and the version read', async () => {
       const harness = await openDialog();
       await chooseFromDate(harness, '2026-12-01');
 
@@ -2254,7 +2254,7 @@ describe('ContractPage', () => {
       http.expectNone((request) => request.method === 'PUT');
     });
 
-    it('AC-3: a change from a date posts the new contract and returns to the customer page without asking to leave', async () => {
+    it('a change from a date posts the new contract and returns to the customer page without asking to leave', async () => {
       const harness = await openDialog();
       const page = harness.page() as unknown as { changeDialog: () => boolean };
       await chooseFromDate(harness, '2026-12-01');
@@ -2275,7 +2275,7 @@ describe('ContractPage', () => {
       expect(page.changeDialog()).toBe(false);
     });
 
-    it('AC-17: an empty date, one not after the start and one after the end are refused under the date; a past one is accepted', async () => {
+    it('an empty date, one not after the start and one after the end are refused under the date; a past one is accepted', async () => {
       const harness = await openDialog();
       await click(harness, scopes(harness)[0]);
 
@@ -2299,7 +2299,7 @@ describe('ContractPage', () => {
       });
     });
 
-    it('AC-17: a 400 of the backend under ChangeFrom shows under the date and keeps the dialog open', async () => {
+    it('a 400 of the backend under ChangeFrom shows under the date and keeps the dialog open', async () => {
       const harness = await openDialog();
       await chooseFromDate(harness, '2026-12-01');
       await click(harness, dialogSave(harness));
@@ -2338,7 +2338,7 @@ describe('ContractPage', () => {
       expect(buttonIn(harness.element.querySelector('app-notice')!, 'Ricarica')).toBeDefined();
     });
 
-    it('AC-18: "Da sempre" updates the contract in place', async () => {
+    it('"Da sempre" updates the contract in place', async () => {
       const harness = await openDialog();
 
       await click(harness, scopes(harness)[1]);
@@ -2352,7 +2352,7 @@ describe('ContractPage', () => {
     });
 
     it.each(['Upcoming', 'Expired'] as const)(
-      'AC-19: a %s contract with changed terms saves in place with no dialog',
+      'a %s contract with changed terms saves in place with no dialog',
       async (status) => {
         const harness = await openExisting({ ...existing, status });
         await click(harness, buttonIn(questions(harness)[3], 'Modifica'));
@@ -2365,7 +2365,7 @@ describe('ContractPage', () => {
       },
     );
 
-    it('AC-19: a save that changes only the validity opens no dialog', async () => {
+    it('a save that changes only the validity opens no dialog', async () => {
       const harness = await openExisting();
       await click(harness, buttonIn(questions(harness)[0], 'Modifica'));
       await confirmValidity(harness, '2026-04-01', '2027-06-30');
@@ -2378,7 +2378,7 @@ describe('ContractPage', () => {
       });
     });
 
-    it('AC-19: a save with no change opens no dialog', async () => {
+    it('a save with no change opens no dialog', async () => {
       const harness = await openExisting();
 
       await click(harness, saveButtons(harness)[0]);

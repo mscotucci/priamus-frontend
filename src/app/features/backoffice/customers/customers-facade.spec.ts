@@ -595,7 +595,7 @@ describe('CustomersFacade', () => {
       expect(navigate).toHaveBeenCalledWith(['/customers', 'c1']);
     });
 
-    it('AC-1: the save request carries the rate and the minimum with the rest of the contract', async () => {
+    it('the save request carries the rate and the minimum with the rest of the contract', async () => {
       const withRate: CreateContractRequest = {
         ...values,
         pricingMode: 'ByHour',
@@ -617,7 +617,7 @@ describe('CustomersFacade', () => {
       expect(await outcome).toBe('created');
     });
 
-    it('AC-16: a change from a date posts the values, the version and the date to its endpoint, then finishes like a save', async () => {
+    it('a change from a date posts the values, the version and the date to its endpoint, then finishes like a save', async () => {
       const outcome = facade.changeContractFromDate('c1', contract, values, '2026-12-01');
       const post = http.expectOne((request) => request.method === 'POST');
 
@@ -631,7 +631,7 @@ describe('CustomersFacade', () => {
       expect(facade.savingContract()).toBe(false);
     });
 
-    it('AC-16: a change from a date while a save runs is ignored', async () => {
+    it('a change from a date while a save runs is ignored', async () => {
       const first = facade.saveContract('c1', null, values);
 
       expect(await facade.changeContractFromDate('c1', contract, values, '2026-12-01')).toBe(
@@ -643,7 +643,7 @@ describe('CustomersFacade', () => {
       await first;
     });
 
-    it('AC-16: a change from a date refused with 400 returns the errors and goes nowhere', async () => {
+    it('a change from a date refused with 400 returns the errors and goes nowhere', async () => {
       const outcome = facade.changeContractFromDate('c1', contract, values, '2026-03-01');
       http
         .expectOne((request) => request.method === 'POST')
@@ -661,7 +661,7 @@ describe('CustomersFacade', () => {
       expect(TestBed.inject(Toast).current()).toBeNull();
     });
 
-    it('AC-16: a change from a date refused with 409 returns the domain error and reads the contracts and the open contract again', async () => {
+    it('a change from a date refused with 409 returns the domain error and reads the contracts and the open contract again', async () => {
       facade.openCustomer('c1');
       at(`${URL}/c1`).flush(null);
       at(CONTRACTS).flush([]);
