@@ -492,6 +492,13 @@ describe('CustomersFacade', () => {
       pricingMode: 'ByTrip',
       requiredDocuments: ['DeliveryNote'],
       nightSurcharge: false,
+      dayPrice: 80,
+      nightPrice: null,
+      nightCallFee: null,
+      minimumRule: 'None',
+      minimumAmount: null,
+      minimumThreshold: null,
+      minimumOveragePrice: null,
       version: 4,
     };
     const values: CreateContractRequest = {
@@ -501,6 +508,13 @@ describe('CustomersFacade', () => {
       pricingMode: 'ByTrip',
       requiredDocuments: ['DeliveryNote'],
       nightSurcharge: false,
+      dayPrice: 80,
+      nightPrice: null,
+      nightCallFee: null,
+      minimumRule: 'None',
+      minimumAmount: null,
+      minimumThreshold: null,
+      minimumOveragePrice: null,
     };
 
     beforeEach(() => {
@@ -579,6 +593,101 @@ describe('CustomersFacade', () => {
       expect(await outcome).toBe('updated');
       expect(TestBed.inject(Toast).current()).toBe('Contratto salvato');
       expect(navigate).toHaveBeenCalledWith(['/customers', 'c1']);
+    });
+
+    it('AC-1: the save request carries the rate and the minimum with the rest of the contract', async () => {
+      const withRate: CreateContractRequest = {
+        ...values,
+        pricingMode: 'ByHour',
+        nightSurcharge: true,
+        dayPrice: 60,
+        nightPrice: 75.5,
+        nightCallFee: 0,
+        minimumRule: 'TieredOverage',
+        minimumAmount: 200,
+        minimumThreshold: 4,
+        minimumOveragePrice: 45,
+      };
+
+      const outcome = facade.saveContract('c1', null, withRate);
+      const post = http.expectOne((request) => request.method === 'POST');
+      expect(post.request.body).toEqual(withRate);
+      post.flush(contract, { status: 201, statusText: 'Created' });
+
+      expect(await outcome).toBe('created');
+    });
+
+    it('AC-16: a change from a date posts the values, the version and the date to its endpoint, then finishes like a save', async () => {
+      const outcome = facade.changeContractFromDate('c1', contract, values, '2026-12-01');
+      const post = http.expectOne((request) => request.method === 'POST');
+
+      expect(post.request.url).toBe(`${CONTRACTS}/k1/change-from-date`);
+      expect(post.request.body).toEqual({ ...values, version: 4, changeFrom: '2026-12-01' });
+      post.flush({ ...contract, id: 'k2' }, { status: 201, statusText: 'Created' });
+
+      expect(await outcome).toBe('changed');
+      expect(TestBed.inject(Toast).current()).toBe('Contratto salvato');
+      expect(navigate).toHaveBeenCalledWith(['/customers', 'c1']);
+      expect(facade.savingContract()).toBe(false);
+    });
+
+    it('AC-16: a change from a date while a save runs is ignored', async () => {
+      const first = facade.saveContract('c1', null, values);
+
+      expect(await facade.changeContractFromDate('c1', contract, values, '2026-12-01')).toBe(
+        'ignored',
+      );
+      http
+        .expectOne((request) => request.method === 'POST')
+        .flush(contract, { status: 201, statusText: 'Created' });
+      await first;
+    });
+
+    it('AC-16: a change from a date refused with 400 returns the errors and goes nowhere', async () => {
+      const outcome = facade.changeContractFromDate('c1', contract, values, '2026-03-01');
+      http
+        .expectOne((request) => request.method === 'POST')
+        .flush(
+          { errors: { ChangeFrom: ['Outside validity.'] } },
+          { status: 400, statusText: 'Bad Request' },
+        );
+
+      expect(await outcome).toEqual({
+        kind: 'validation',
+        errors: { ChangeFrom: ['Outside validity.'] },
+      });
+      http.expectNone((request) => request.method === 'GET');
+      expect(navigate).not.toHaveBeenCalled();
+      expect(TestBed.inject(Toast).current()).toBeNull();
+    });
+
+    it('AC-16: a change from a date refused with 409 returns the domain error and reads the contracts and the open contract again', async () => {
+      facade.openCustomer('c1');
+      at(`${URL}/c1`).flush(null);
+      at(CONTRACTS).flush([]);
+      facade.openContract('k1');
+      at(`${CONTRACTS}/k1`).flush(contract);
+      await settle();
+      const conflict = {
+        errorCode: 'Registry.Contract.ConcurrentUpdate',
+        detail: 'Modificato da un altro utente.',
+      };
+
+      const outcome = facade.changeContractFromDate('c1', contract, values, '2026-12-01');
+      http
+        .expectOne((request) => request.method === 'POST')
+        .flush(conflict, { status: 409, statusText: 'Conflict' });
+
+      expect(await outcome).toEqual({
+        kind: 'domain',
+        status: 409,
+        errorCode: conflict.errorCode,
+        detail: conflict.detail,
+      });
+      TestBed.tick();
+      http.expectOne((request) => request.url === CONTRACTS && request.method === 'GET');
+      http.expectOne((request) => request.url === `${CONTRACTS}/k1` && request.method === 'GET');
+      expect(navigate).not.toHaveBeenCalled();
     });
 
     it('a second save while one runs is ignored', async () => {

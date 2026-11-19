@@ -170,6 +170,9 @@
       "new": "Nuovo contratto",
       "edit": "Modifica",
       "deactivated": "Il cliente è disattivato: non si possono aggiungere contratti. Riattivalo per aggiungerne uno.",
+      "readonly": "Il cliente è disattivato: il contratto si può solo consultare. Riattivalo per modificarlo.",
+      "deactivatedList": "Il cliente è disattivato: i suoi contratti si possono solo consultare. Riattivalo per aggiungerne o modificarli.",
+      "open": "Apri",
       "empty": {
         "title": "Nessun contratto",
         "hint": "Aggiungi il primo con \"Nuovo contratto\"."
@@ -179,6 +182,7 @@
         "status": "Stato",
         "billing": "Livello di fatturazione",
         "pricing": "Modalità",
+        "rate": "Tariffa",
         "night": "Notturno",
         "documents": "Documenti obbligatori"
       },
@@ -228,7 +232,30 @@
         "stay": "Resta sulla pagina",
         "discard": "Esci senza salvare"
       },
+      "change": {
+        "title": "Da quando valgono le modifiche?",
+        "line": "Il contratto è in vigore dal {{from}} e ne hai cambiato le condizioni.",
+          "lineRange": "Il contratto è in vigore dal {{from}} al {{to}} e ne hai cambiato le condizioni.",
+        "legend": "Da quando valgono le modifiche",
+        "from": {
+          "title": "Da una data",
+          "hint": "Il contratto attuale resta com'era fino al giorno prima; da quella data ne parte uno nuovo con le modifiche.",
+          "label": "Dal",
+          "required": "Inserisci la data da cui valgono le modifiche.",
+          "outside": "La data deve essere successiva all'inizio e dentro la validità del contratto."
+        },
+        "always": {
+          "title": "Da sempre: correggo un dato sbagliato",
+          "hint": "Le modifiche valgono per tutta la validità, anche per i giorni già passati."
+        },
+        "notice": {
+          "range": "Il contratto dal {{from}} sarà chiuso al {{closedOn}}; il nuovo vale dal {{changeFrom}} al {{to}}.",
+          "open": "Il contratto dal {{from}} sarà chiuso al {{closedOn}}; il nuovo vale dal {{changeFrom}}, senza scadenza."
+        },
+        "submit": "Salva"
+      },
       "modify": "Modifica",
+      "cancelModify": "Annulla modifica",
       "title": "Configurazione contratto",
       "intro": "Rispondi alle domande seguenti per configurare il contratto. Le opzioni successive verranno mostrate in base alle tue risposte.",
       "notfound": {
@@ -322,6 +349,95 @@
           "title": "Sì",
           "hint": "Maggiorazione notturna",
           "answer": "Maggiorazione notturna"
+        }
+      },
+      "rate": {
+        "title": "Qual è la tariffa del cliente?",
+        "hint": "Tariffa unica, valida per tutti i viaggi del contratto.",
+        "hintNight": "Tariffa unica, valida per tutti i viaggi del contratto. La chiamata notturna si aggiunge a ogni viaggio che inizia di notte.",
+        "confirm": "Conferma",
+        "notice": "Le tariffe per luogo si configureranno con l'anagrafica dei luoghi. Il contratto si può salvare anche senza.",
+        "answer": {
+          "day": "{{day}} {{unit}}",
+          "night": "{{day}} {{unit}} di giorno · {{night}} {{unit}} di notte · chiamata {{callFee}} €"
+        }
+      },
+      "minimum": {
+        "title": "Vuoi impostare un minimo fatturabile?",
+        "hint": "Un importo minimo applicato anche se il calcolo ordinario risulterebbe inferiore.",
+        "none": {
+          "title": "Nessun minimo",
+          "hint": "Solo calcolo ordinario"
+        },
+        "fixed": {
+          "title": "Minimo fisso",
+          "hint": "Un importo minimo per ogni viaggio"
+        },
+        "tiered": {
+          "title": "Scaglione con eccesso",
+          "hint": "Soglia + costo eccedenza"
+        },
+        "confirm": "Conferma",
+        "answer": {
+          "none": "Nessun minimo",
+          "fixed": "Minimo {{amount}} €",
+          "tiered": "Scaglione: {{amount}} € fino a {{threshold}} {{thresholdUnit}}, poi {{overage}} {{unit}}"
+        },
+        "example": "Esempio: fino a {{threshold}} {{thresholdUnit}} si fatturano {{amount}} €; ogni {{single}} oltre {{threshold}} {{thresholdUnit}} aggiunge {{overage}} €. Un viaggio di {{trip}} {{thresholdUnit}}: {{total}} €.",
+        "exampleFixed": "Esempio: con un minimo di {{amount}} €, un viaggio che col calcolo ordinario vale meno di {{amount}} € si fattura {{amount}} €; se vale di più, si fattura il suo importo."
+      },
+      "field": {
+        "day": {
+          "label": "Prezzo diurno",
+          "required": "Inserisci il prezzo diurno."
+        },
+        "night": {
+          "label": "Prezzo notturno",
+          "required": "Inserisci il prezzo notturno."
+        },
+        "callFee": {
+          "label": "Chiamata notturna",
+          "required": "Inserisci la chiamata notturna.",
+          "hint": "Metti 0 se al cliente non si addebita la chiamata."
+        },
+        "amount": {
+          "label": "Importo minimo",
+          "required": "Inserisci l'importo minimo."
+        },
+        "threshold": {
+          "label": "Soglia",
+          "required": "Inserisci la soglia."
+        },
+        "overage": {
+          "label": "Costo eccedenza",
+          "required": "Inserisci il costo dell'eccedenza."
+        }
+      },
+      "error": {
+        "invalid": "Inserisci un importo valido.",
+        "decimals": "Usa al massimo due decimali.",
+        "negative": "L'importo non può essere negativo.",
+        "positive": "Inserisci un importo maggiore di zero.",
+        "threshold": "Inserisci un valore maggiore di zero.",
+        "toohigh": "Importo troppo alto."
+      },
+      "unit": {
+        "euro": "€",
+        "price": {
+          "byhour": "€/h",
+          "byweight": "€/ton",
+          "bydistance": "€/km",
+          "bytrip": "€"
+        },
+        "threshold": {
+          "byhour": "ore",
+          "byweight": "ton",
+          "bydistance": "km"
+        },
+        "single": {
+          "byhour": "ora",
+          "byweight": "ton",
+          "bydistance": "km"
         }
       },
       "documents": {

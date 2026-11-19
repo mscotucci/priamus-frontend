@@ -70,7 +70,8 @@
   >
     <ng-container *ngTemplateOutlet="panel; context: { $implicit: true }" />
   </dialog>
-  <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
+  <!-- relative: absolutely positioned content (sr-only legends) is clipped here, not lengthening the page -->
+  <div class="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
     <router-outlet />
   </div>
 </div>

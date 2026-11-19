@@ -10,8 +10,10 @@ export type ContractStatus = Schemas['ContractStatus'];
 export type BillingLevel = Schemas['BillingLevel'];
 export type PricingMode = Schemas['PricingMode'];
 export type RequiredDocument = Schemas['RequiredDocument'];
+export type MinimumRuleKind = NonNullable<Schemas['MinimumRuleKind']>;
 export type CreateContractRequest = Schemas['CreateContractRequest'];
 export type UpdateContractRequest = Schemas['UpdateContractRequest'];
+export type ChangeContractFromDateRequest = Schemas['ChangeContractFromDateRequest'];
 
 const url = (customerId: string) => `/api/registry/customers/${customerId}/contracts`;
 
@@ -33,5 +35,13 @@ export class ContractsApi {
 
   update(customerId: string, contractId: string, request: UpdateContractRequest): Observable<void> {
     return this.http.put<void>(`${url(customerId)}/${contractId}`, request);
+  }
+
+  changeFromDate(
+    customerId: string,
+    contractId: string,
+    request: ChangeContractFromDateRequest,
+  ): Observable<Contract> {
+    return this.http.post<Contract>(`${url(customerId)}/${contractId}/change-from-date`, request);
   }
 }

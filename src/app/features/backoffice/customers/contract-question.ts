@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { TranslatePipe } from '@ngx-translate/core';
 import { Icon } from '../../../shared/components/icon/icon';
 
-/** The card of one numbered question: open it shows the projected choices, closed its answer; a `[note]` shows in both. */
+/** The card of one numbered question: open it shows the projected choices, closed its answer (none: only the `[note]`); a `[note]` shows in both. */
 @Component({
   selector: 'app-contract-question',
   imports: [TranslatePipe, Icon],
@@ -21,19 +21,21 @@ import { Icon } from '../../../shared/components/icon/icon';
         }
         @if (open()) {
           <ng-content />
-        } @else {
-          <p>
-            <span class="pt-pill pt-pill--success"
-              ><app-icon name="check" size="xs" /> {{ answer() }}</span
+        } @else if (answer() !== null) {
+          <p class="flex flex-wrap items-center gap-3">
+            <span class="pt-question__answer"
+              ><app-icon name="check" size="sm" /> {{ answer() }}</span
             >
-            <button
-              type="button"
-              class="pt-btn pt-btn--sm"
-              [disabled]="busy()"
-              (click)="modify.emit()"
-            >
-              {{ 'contracts.form.modify' | translate }}
-            </button>
+            @if (!locked()) {
+              <button
+                type="button"
+                class="pt-btn pt-btn--sm"
+                [disabled]="busy()"
+                (click)="modify.emit()"
+              >
+                {{ 'contracts.form.modify' | translate }}
+              </button>
+            }
           </p>
         }
         <ng-content select="[note]" />
@@ -52,5 +54,7 @@ export class ContractQuestion {
   readonly answer = input<string | null>(null);
   /** A save is running: "Modifica" is not actionable. */
   readonly busy = input(false);
+  /** The answer is shown without "Modifica". */
+  readonly locked = input(false);
   readonly modify = output();
 }

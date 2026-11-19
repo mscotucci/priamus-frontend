@@ -5,7 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Topbar } from '../../../core/layout/topbar';
 import { Notice } from '../../../shared/components/notice/notice';
-import { CONTRACT_STATUS_PILL, documentsSentence } from './contract-labels';
+import { CONTRACT_STATUS_PILL, dayPriceSummary, documentsSentence } from './contract-labels';
 import { Contract } from './contracts-api';
 import { CustomerDeactivateDialog } from './customer-deactivate-dialog';
 import { CustomerFormDialog } from './customer-form-dialog';
@@ -41,6 +41,10 @@ export class CustomerPage {
         this.facade.clearReactivateNotice();
         this.facade.openCustomer(params.get('customerId')!);
       });
+  }
+
+  protected dayPriceOf(contract: Contract): string | null {
+    return dayPriceSummary(contract, this.translate);
   }
 
   protected documents(contract: Contract): string {

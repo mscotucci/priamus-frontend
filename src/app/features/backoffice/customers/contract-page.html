@@ -16,23 +16,25 @@
       'customers.contracts.status.' + contract.value().status.toLowerCase() | translate
     }}</span>
   }
-  @if (saving()) {
-    <button type="button" class="pt-btn pt-btn--outline" disabled>
-      {{ 'common.actions.cancel' | translate }}
+  @if (ready() && !readOnly()) {
+    @if (saving()) {
+      <button type="button" class="pt-btn pt-btn--outline" disabled>
+        {{ 'common.actions.cancel' | translate }}
+      </button>
+    } @else {
+      <a class="pt-btn pt-btn--outline" [routerLink]="['/customers', customerId()]">{{
+        'common.actions.cancel' | translate
+      }}</a>
+    }
+    <button
+      type="button"
+      class="pt-btn pt-btn--primary"
+      [disabled]="!canSave() || saving()"
+      (click)="save()"
+    >
+      {{ (saving() ? 'contracts.form.saving' : 'contracts.form.save') | translate }}
     </button>
-  } @else {
-    <a class="pt-btn pt-btn--outline" [routerLink]="['/customers', customerId()]">{{
-      'common.actions.cancel' | translate
-    }}</a>
   }
-  <button
-    type="button"
-    class="pt-btn pt-btn--primary"
-    [disabled]="!canSave() || saving()"
-    (click)="save()"
-  >
-    {{ (saving() ? 'contracts.form.saving' : 'contracts.form.save') | translate }}
-  </button>
 </app-topbar>
 <main class="mx-auto flex w-full max-w-4xl flex-col gap-4 p-8">
   @if (notFound()) {
@@ -65,6 +67,11 @@
       {{ 'customers.contracts.deactivated' | translate }}
     </div>
   } @else if (ready()) {
+    @if (readOnly()) {
+      <div class="pt-notice pt-notice--info">
+        {{ 'customers.contracts.readonly' | translate }}
+      </div>
+    }
     @if (notice(); as notice) {
       <app-notice [notice]="notice">
         @if (stale()) {
@@ -95,6 +102,7 @@
       [current]="current(1)"
       [answer]="validityAnswer"
       [busy]="saving()"
+      [locked]="readOnly()"
       (modify)="edit(1)"
     >
       @if (closing(); as closing) {
@@ -155,10 +163,15 @@
           }
         </div>
       </div>
-      <div>
+      <div class="flex flex-wrap gap-2">
         <button type="button" class="pt-btn pt-btn--primary pt-btn--sm" (click)="confirmValidity()">
           {{ 'contracts.form.q1.confirm' | translate }}
         </button>
+        @if (editing() === 1) {
+          <button type="button" class="pt-btn pt-btn--sm" (click)="cancelEdit()">
+            {{ 'contracts.form.cancelModify' | translate }}
+          </button>
+        }
       </div>
     </app-contract-question>
 
@@ -173,6 +186,7 @@
           [current]="current(question.number)"
           [answer]="key ? (key | translate) : null"
           [busy]="saving()"
+          [locked]="readOnly()"
           (modify)="edit(question.number)"
         >
           <fieldset class="grid min-w-0 gap-3" [class]="question.grid">
@@ -186,6 +200,10 @@
                   [name]="question.id"
                   [checked]="radio()[question.id] === choice.value"
                   (click)="pick(question, choice)"
+                  (keydown)="choiceKeyDown($event)"
+                  (keydown.space)="confirmChoice($event); pick(question, choice)"
+                  (keydown.enter)="confirmChoice($event); pick(question, choice)"
+                  (keyup)="choiceKeyUp($event)"
                 />
                 <span>
                   <strong>{{ 'contracts.form.' + choice.key + '.title' | translate }}</strong>
@@ -196,20 +214,169 @@
               </label>
             }
           </fieldset>
+          @if (editing() === question.number) {
+            <div>
+              <button type="button" class="pt-btn pt-btn--sm" (click)="cancelEdit()">
+                {{ 'contracts.form.cancelModify' | translate }}
+              </button>
+            </div>
+          }
         </app-contract-question>
       }
     }
 
+    <ng-template #amountFields let-fields let-prefix="prefix">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+        @for (spec of fields; track spec.field) {
+          <div class="pt-field">
+            <label class="pt-label" [for]="prefix + spec.field">{{
+              'contracts.form.field.' + spec.field + '.label' | translate
+            }}</label>
+            <span class="pt-input-group">
+              <input
+                class="pt-input"
+                [id]="prefix + spec.field"
+                inputmode="decimal"
+                [value]="draft(spec)"
+                [attr.aria-invalid]="fieldError(spec) ? 'true' : null"
+                [attr.aria-describedby]="describedBy(prefix, spec)"
+                (input)="setDraft(spec.field, $any($event.target).value)"
+              />
+              <span class="pt-input-group__addon">{{ unit(spec) | translate }}</span>
+            </span>
+            @if (spec.field === 'callFee') {
+              <span class="pt-field__hint" [id]="prefix + spec.field + '-hint'">{{
+                'contracts.form.field.callFee.hint' | translate
+              }}</span>
+            }
+            @if (fieldError(spec); as error) {
+              <span class="pt-field__error" [id]="prefix + spec.field + '-error'">{{
+                error | translate
+              }}</span>
+            }
+          </div>
+        }
+      </div>
+    </ng-template>
+
     @if (visible(6)) {
       <app-contract-question
         [number]="6"
+        [title]="'contracts.form.rate.title' | translate"
+        [hint]="
+          flat()
+            ? ((radio().night === 'yes'
+                ? 'contracts.form.rate.hintNight'
+                : 'contracts.form.rate.hint'
+              ) | translate)
+            : undefined
+        "
+        [open]="flat() && open(6)"
+        [current]="current(6)"
+        [answer]="rateAnswer()"
+        [busy]="saving()"
+        [locked]="readOnly()"
+        (modify)="edit(6)"
+      >
+        @if (!flat()) {
+          <div note class="pt-notice pt-notice--info">
+            {{ 'contracts.form.rate.notice' | translate }}
+          </div>
+        }
+        <ng-container
+          *ngTemplateOutlet="
+            amountFields;
+            context: { $implicit: rateFieldSpecs(), prefix: 'rate-' }
+          "
+        />
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="pt-btn pt-btn--primary pt-btn--sm" (click)="confirmRate()">
+            {{ 'contracts.form.rate.confirm' | translate }}
+          </button>
+          @if (editing() === 6) {
+            <button type="button" class="pt-btn pt-btn--sm" (click)="cancelEdit()">
+              {{ 'contracts.form.cancelModify' | translate }}
+            </button>
+          }
+        </div>
+      </app-contract-question>
+    }
+
+    @if (visible(7)) {
+      <app-contract-question
+        [number]="7"
+        [title]="'contracts.form.minimum.title' | translate"
+        [hint]="'contracts.form.minimum.hint' | translate"
+        [open]="open(7)"
+        [current]="current(7)"
+        [answer]="minimumAnswer()"
+        [busy]="saving()"
+        [locked]="readOnly()"
+        (modify)="edit(7)"
+      >
+        <fieldset class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-3">
+          <legend class="sr-only">{{ 'contracts.form.minimum.title' | translate }}</legend>
+          @for (option of minimumKinds; track option.kind) {
+            <label class="pt-choice">
+              <input
+                type="radio"
+                name="minimum"
+                [checked]="minimumKindDraft() === option.kind"
+                (click)="pickMinimumKind(option.kind)"
+                (keydown)="choiceKeyDown($event)"
+                (keydown.space)="confirmChoice($event); pickMinimumKind(option.kind)"
+                (keydown.enter)="confirmChoice($event); pickMinimumKind(option.kind)"
+                (keyup)="choiceKeyUp($event)"
+              />
+              <span>
+                <strong>{{ 'contracts.form.minimum.' + option.key + '.title' | translate }}</strong>
+                <span class="pt-choice__hint">{{
+                  'contracts.form.minimum.' + option.key + '.hint' | translate
+                }}</span>
+              </span>
+            </label>
+          }
+        </fieldset>
+        @if (minimumFieldSpecs().length > 0) {
+          <ng-container
+            *ngTemplateOutlet="
+              amountFields;
+              context: { $implicit: minimumFieldSpecs(), prefix: 'minimum-' }
+            "
+          />
+        }
+        @if (example(); as example) {
+          <p class="pt-field__hint">{{ example }}</p>
+        }
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            class="pt-btn pt-btn--primary pt-btn--sm"
+            [disabled]="minimumKindDraft() === null"
+            (click)="confirmMinimum()"
+          >
+            {{ 'contracts.form.minimum.confirm' | translate }}
+          </button>
+          @if (editing() === 7) {
+            <button type="button" class="pt-btn pt-btn--sm" (click)="cancelEdit()">
+              {{ 'contracts.form.cancelModify' | translate }}
+            </button>
+          }
+        </div>
+      </app-contract-question>
+    }
+
+    @if (visible(8)) {
+      <app-contract-question
+        [number]="8"
         [title]="'contracts.form.documents.title' | translate"
         [hint]="'contracts.form.documents.hint' | translate"
-        [open]="open(6)"
-        [current]="current(6)"
+        [open]="open(8)"
+        [current]="current(8)"
         [answer]="documentsAnswer()"
         [busy]="saving()"
-        (modify)="edit(6)"
+        [locked]="readOnly()"
+        (modify)="edit(8)"
       >
         <fieldset class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
           <legend class="sr-only">{{ 'contracts.form.documents.title' | translate }}</legend>
@@ -231,7 +398,7 @@
             </label>
           }
         </fieldset>
-        <div>
+        <div class="flex flex-wrap gap-2">
           <button
             type="button"
             class="pt-btn pt-btn--primary pt-btn--sm"
@@ -239,11 +406,16 @@
           >
             {{ 'contracts.form.documents.confirm' | translate }}
           </button>
+          @if (editing() === 8) {
+            <button type="button" class="pt-btn pt-btn--sm" (click)="cancelEdit()">
+              {{ 'contracts.form.cancelModify' | translate }}
+            </button>
+          }
         </div>
       </app-contract-question>
     }
 
-    @if (complete()) {
+    @if (complete() && !readOnly()) {
       <section class="pt-card flex items-center justify-between gap-3">
         <div>
           <p class="pt-title">{{ 'contracts.form.done.title' | translate }}</p>
@@ -279,6 +451,110 @@
     </button>
     <button actions type="button" class="pt-btn pt-btn--danger" (click)="decide(true)">
       {{ 'contracts.form.leave.discard' | translate }}
+    </button>
+  </app-dialog>
+}
+@if (changeDialog()) {
+  <app-dialog
+    icon="alert"
+    tone="primary"
+    [busy]="saving()"
+    [title]="'contracts.form.change.title' | translate"
+    [line]="
+      (validity()?.to ? 'contracts.form.change.lineRange' : 'contracts.form.change.line')
+        | translate
+          : {
+              from: (validity()?.from | date: 'dd/MM/yyyy'),
+              to: (validity()?.to | date: 'dd/MM/yyyy'),
+            }
+    "
+    (closeRequested)="closeChangeDialog()"
+  >
+    <fieldset class="flex flex-col gap-3">
+      <legend class="sr-only">{{ 'contracts.form.change.legend' | translate }}</legend>
+      <label class="pt-choice">
+        <input
+          type="radio"
+          name="change-scope"
+          [checked]="changeScope() === 'from'"
+          (click)="pickChangeScope('from')"
+        />
+        <span>
+          <strong>{{ 'contracts.form.change.from.title' | translate }}</strong>
+          <span class="pt-choice__hint">{{ 'contracts.form.change.from.hint' | translate }}</span>
+        </span>
+      </label>
+      @if (changeScope() === 'from') {
+        <div class="pt-field ml-8 max-w-56">
+          <label class="pt-label" for="change-from">{{
+            'contracts.form.change.from.label' | translate
+          }}</label>
+          <input
+            class="pt-input"
+            id="change-from"
+            type="date"
+            [value]="changeFromDraft()"
+            [attr.aria-invalid]="
+              changeFromError() || changeFromRefusal().length > 0 ? 'true' : null
+            "
+            [attr.aria-describedby]="
+              changeFromError() || changeFromRefusal().length > 0 ? 'change-from-error' : null
+            "
+            (input)="setChangeFrom($any($event.target).value)"
+          />
+          @if (changeFromError(); as error) {
+            <span class="pt-field__error" id="change-from-error">{{ error | translate }}</span>
+          } @else if (changeFromRefusal().length > 0) {
+            <span class="pt-field__error" id="change-from-error">{{
+              changeFromRefusal().join(' ')
+            }}</span>
+          }
+        </div>
+        @if (changePlan(); as plan) {
+          <div class="pt-notice pt-notice--info ml-8">
+            {{
+              (plan.to ? 'contracts.form.change.notice.range' : 'contracts.form.change.notice.open')
+                | translate
+                  : {
+                      from: (plan.from | date: 'dd/MM/yyyy'),
+                      closedOn: (plan.closedOn | date: 'dd/MM/yyyy'),
+                      changeFrom: (plan.changeFrom | date: 'dd/MM/yyyy'),
+                      to: (plan.to | date: 'dd/MM/yyyy'),
+                    }
+            }}
+          </div>
+        }
+      }
+      <label class="pt-choice">
+        <input
+          type="radio"
+          name="change-scope"
+          [checked]="changeScope() === 'always'"
+          (click)="pickChangeScope('always')"
+        />
+        <span>
+          <strong>{{ 'contracts.form.change.always.title' | translate }}</strong>
+          <span class="pt-choice__hint">{{ 'contracts.form.change.always.hint' | translate }}</span>
+        </span>
+      </label>
+    </fieldset>
+    <button
+      actions
+      type="button"
+      class="pt-btn pt-btn--outline"
+      [disabled]="saving()"
+      (click)="closeChangeDialog()"
+    >
+      {{ 'common.actions.cancel' | translate }}
+    </button>
+    <button
+      actions
+      type="button"
+      class="pt-btn pt-btn--primary"
+      [disabled]="changeScope() === null || saving()"
+      (click)="confirmChange()"
+    >
+      {{ (saving() ? 'contracts.form.saving' : 'contracts.form.change.submit') | translate }}
     </button>
   </app-dialog>
 }

@@ -47,12 +47,12 @@ describe('ContractQuestion', () => {
     expect(text(section().querySelector('h3'))).toBe('Quali luoghi?');
     expect(text(section().querySelector('.pt-muted'))).toBe('Un suggerimento');
     expect(element.querySelector('.projected')).not.toBeNull();
-    expect(section().querySelector('.pt-pill')).toBeNull();
+    expect(section().querySelector('.pt-question__answer')).toBeNull();
     expect(section().getAttribute('aria-current')).toBe('step');
     expect(section().classList.contains('pt-question--answered')).toBe(false);
   });
 
-  it('a closed question shows its title, hint and the answer pill with a check and "Modifica", not the choices', () => {
+  it('a closed question shows its title, hint and the answer in bold with a check and "Modifica", not the choices', () => {
     const { fixture, element, section } = render();
     fixture.componentInstance.open.set(false);
     fixture.componentInstance.current.set(false);
@@ -62,11 +62,21 @@ describe('ContractQuestion', () => {
     expect(section().getAttribute('aria-current')).toBeNull();
     expect(text(section().querySelector('h3'))).toBe('Quali luoghi?');
     expect(text(section().querySelector('.pt-muted'))).toBe('Un suggerimento');
-    const pill = section().querySelector('.pt-pill--success')!;
-    expect(text(pill)).toBe('Entrambi i luoghi');
-    expect(pill.querySelector('app-icon')).not.toBeNull();
+    const answer = section().querySelector('.pt-question__answer')!;
+    expect(text(answer)).toBe('Entrambi i luoghi');
+    expect(answer.querySelector('app-icon')).not.toBeNull();
     expect(text(section().querySelector('button'))).toBe('Modifica');
     expect(element.querySelector('.projected')).toBeNull();
+  });
+
+  it('a closed question with no answer shows no answer and no "Modifica"', () => {
+    const { fixture, section } = render();
+    fixture.componentInstance.open.set(false);
+    fixture.componentInstance.answer.set(null);
+    fixture.detectChanges();
+
+    expect(section().querySelector('.pt-question__answer')).toBeNull();
+    expect(section().querySelector('button')).toBeNull();
   });
 
   it('"Modifica" emits modify', () => {

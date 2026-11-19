@@ -89,7 +89,7 @@
 
     @if (current.status === 'Deactivated') {
       <div class="pt-notice pt-notice--info">
-        {{ 'customers.contracts.deactivated' | translate }}
+        {{ 'customers.contracts.deactivatedList' | translate }}
       </div>
     }
     <section class="flex flex-col gap-2">
@@ -125,6 +125,9 @@
                   <th scope="col">{{ 'customers.contracts.column.status' | translate }}</th>
                   <th scope="col">{{ 'customers.contracts.column.billing' | translate }}</th>
                   <th scope="col">{{ 'customers.contracts.column.pricing' | translate }}</th>
+                  <th scope="col" class="pt-num">
+                    {{ 'customers.contracts.column.rate' | translate }}
+                  </th>
                   <th scope="col">{{ 'customers.contracts.column.night' | translate }}</th>
                   <th scope="col">{{ 'customers.contracts.column.documents' | translate }}</th>
                   <th scope="col">
@@ -169,6 +172,10 @@
                           | translate
                       }}
                     </td>
+                    @let dayPrice = dayPriceOf(contract);
+                    <td class="pt-num" [class.pt-muted]="!dayPrice">
+                      {{ dayPrice ?? '—' }}
+                    </td>
                     <td>
                       {{
                         (contract.nightSurcharge
@@ -186,7 +193,12 @@
                         [attr.aria-describedby]="'contract-' + contract.id"
                         [routerLink]="['contracts', contract.id]"
                       >
-                        {{ 'customers.contracts.edit' | translate }}
+                        {{
+                          (current.status === 'Deactivated'
+                            ? 'customers.contracts.open'
+                            : 'customers.contracts.edit'
+                          ) | translate
+                        }}
                       </a>
                     </td>
                   </tr>

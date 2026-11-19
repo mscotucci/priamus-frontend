@@ -11,6 +11,7 @@ import {
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Icon } from '../../shared/components/icon/icon';
+import { LeaveConfirmation } from '../../shared/guards/leave-confirmation';
 import { Session } from '../auth/session';
 import { initials } from './initials';
 import { navFor } from './nav';
@@ -23,6 +24,7 @@ import { navFor } from './nav';
 })
 export class Layout {
   private readonly session = inject(Session);
+  private readonly leaveConfirmation = inject(LeaveConfirmation);
   private readonly drawer = viewChild.required<ElementRef<HTMLDialogElement>>('drawer');
 
   private signingOut = false;
@@ -68,7 +70,9 @@ export class Layout {
     this.signingOut = true;
     this.closeDrawer();
     try {
-      await this.session.signOut();
+      if (await this.leaveConfirmation.confirm()) {
+        await this.session.signOut();
+      }
     } finally {
       this.signingOut = false;
     }

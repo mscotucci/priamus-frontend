@@ -249,6 +249,51 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
     </div>
   </section>
 
+  <section class="flex flex-col gap-3" aria-labelledby="g-input-group">
+    <h2 id="g-input-group" class="pt-label">Campo con unità — sm · md · lg, stato non valido</h2>
+    <div class="grid max-w-3xl gap-4 sm:grid-cols-2">
+      <div class="pt-field">
+        <label class="pt-label" for="g-group-sm">Prezzo diurno (sm)</label>
+        <span class="pt-input-group"
+          ><input class="pt-input pt-input--sm" id="g-group-sm" inputmode="decimal" value="30,00" /><span
+            class="pt-input-group__addon"
+            >€/h</span
+          ></span
+        >
+      </div>
+      <div class="pt-field">
+        <label class="pt-label" for="g-group-md">Soglia (md)</label>
+        <span class="pt-input-group"
+          ><input class="pt-input" id="g-group-md" inputmode="decimal" value="4" /><span
+            class="pt-input-group__addon"
+            >ore</span
+          ></span
+        >
+      </div>
+      <div class="pt-field">
+        <label class="pt-label" for="g-group-lg">Prezzo diurno (lg)</label>
+        <span class="pt-input-group"
+          ><input class="pt-input pt-input--lg" id="g-group-lg" inputmode="decimal" value="30,00" /><span
+            class="pt-input-group__addon"
+            >€/h</span
+          ></span
+        >
+      </div>
+      <div class="pt-field">
+        <label class="pt-label" for="g-group-invalid">Chiamata notturna (non valido)</label>
+        <span class="pt-input-group"
+          ><input
+            class="pt-input"
+            id="g-group-invalid"
+            inputmode="decimal"
+            aria-invalid="true"
+            aria-describedby="g-group-invalid-error" /><span class="pt-input-group__addon">€</span></span
+        >
+        <span class="pt-field__error" id="g-group-invalid-error">Inserisci la chiamata notturna.</span>
+      </div>
+    </div>
+  </section>
+
   <section class="flex flex-col gap-3" aria-labelledby="g-check">
     <h2 id="g-check" class="pt-label">Casella di spunta</h2>
     <div class="flex flex-wrap items-center gap-6">
@@ -298,7 +343,7 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
       <span class="pt-question__number"><app-icon name="check" size="sm" /></span>
       <div>
         <p>Domanda risposta</p>
-        <span class="pt-pill pt-pill--success">Risposta</span>
+        <span class="pt-question__answer"><app-icon name="check" size="sm" /> Risposta</span>
       </div>
     </div>
     <div class="pt-question">

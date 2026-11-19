@@ -38,6 +38,13 @@ const contract = (values: Partial<Contract>): Contract => ({
   pricingMode: 'ByHour',
   requiredDocuments: [],
   nightSurcharge: false,
+  dayPrice: null,
+  nightPrice: null,
+  nightCallFee: null,
+  minimumRule: null,
+  minimumAmount: null,
+  minimumThreshold: null,
+  minimumOveragePrice: null,
   version: 1,
   ...values,
 });
@@ -231,7 +238,7 @@ describe('CustomerPage', () => {
     expect(element.querySelector('main .pt-spinner')).toBeNull();
   });
 
-  it('the table has the seven columns and shows validity, status, billing, mode, night and documents as received', async () => {
+  it('the table has the eight columns and shows validity, status, billing, mode, rate, night and documents as received', async () => {
     const element = await answer(await render(), customer, contracts);
 
     expect(Array.from(element.querySelectorAll('th')).map((th) => th.textContent?.trim())).toEqual([
@@ -239,6 +246,7 @@ describe('CustomerPage', () => {
       'Stato',
       'Livello di fatturazione',
       'Modalità',
+      'Tariffa',
       'Notturno',
       'Documenti obbligatori',
       'Azioni',
@@ -246,7 +254,7 @@ describe('CustomerPage', () => {
     expect(
       Array.from(element.querySelectorAll('tbody tr')).map((_, row) =>
         cells(element, row)
-          .slice(0, 6)
+          .slice(0, 7)
           .map((cell) => text(cell)),
       ),
     ).toEqual([
@@ -255,6 +263,7 @@ describe('CustomerPage', () => {
         'Futuro',
         'Per coppia di luoghi',
         'A ore',
+        '—',
         'Sì',
         'DDT, formulario rifiuti',
       ],
@@ -263,10 +272,11 @@ describe('CustomerPage', () => {
         'In vigore',
         'Forfettario',
         'A ore',
+        '—',
         'Sì',
         'DDT, riepilogo di fine giornata',
       ],
-      ['01/01/2026 – 31/03/2026', 'Scaduto', 'Forfettario', 'A viaggio', 'No', 'Nessuno'],
+      ['01/01/2026 – 31/03/2026', 'Scaduto', 'Forfettario', 'A viaggio', '—', 'No', 'Nessuno'],
     ]);
   });
 
@@ -275,7 +285,7 @@ describe('CustomerPage', () => {
       contract({ requiredDocuments: ['DeliverySlip', 'WasteForm'] }),
     ]);
 
-    expect(text(cells(element, 0)[5])).toBe('Bolla, formulario rifiuti');
+    expect(text(cells(element, 0)[6])).toBe('Bolla, formulario rifiuti');
   });
 
   it('the status pill shows the status the API sends, with its colour', async () => {
@@ -325,6 +335,58 @@ describe('CustomerPage', () => {
     expect(element.querySelector('main .pt-notice--info')).toBeNull();
   });
 
+  it('AC-23: the "Tariffa" column shows the day price with the unit of each pricing mode, and "—" muted when there is no rate', async () => {
+    const element = await answer(await render(), customer, [
+      contract({ id: 'a', pricingMode: 'ByHour', dayPrice: 30 }),
+      contract({ id: 'b', pricingMode: 'ByWeight', dayPrice: 18.5 }),
+      contract({ id: 'c', pricingMode: 'ByDistance', dayPrice: 1.2 }),
+      contract({ id: 'd', pricingMode: 'ByTrip', dayPrice: 150 }),
+      contract({
+        id: 'e',
+        pricingMode: 'ByHour',
+        nightSurcharge: true,
+        dayPrice: 30,
+        nightPrice: 42,
+        nightCallFee: 35,
+      }),
+      contract({ id: 'f', pricingMode: 'ByHour' }),
+    ]);
+
+    const rate = (row: number) => cells(element, row)[4];
+    expect([0, 1, 2, 3, 4, 5].map((row) => text(rate(row)))).toEqual([
+      '30,00 €/h',
+      '18,50 €/ton',
+      '1,20 €/km',
+      '150,00 €',
+      '30,00 €/h',
+      '—',
+    ]);
+    expect(rate(0).classList.contains('pt-num')).toBe(true);
+    expect(rate(5).classList.contains('pt-num')).toBe(true);
+    expect(rate(0).classList.contains('pt-muted')).toBe(false);
+    expect(rate(5).classList.contains('pt-muted')).toBe(true);
+  });
+
+  it('AC-23: a deactivated customer has a notice on the contracts and "Apri" in place of "Modifica" on each row, with the same link', async () => {
+    const element = await answer(await render(), { ...customer, status: 'Deactivated' }, contracts);
+
+    expect(text(element.querySelector('main .pt-notice--info'))).toBe(
+      'Il cliente è disattivato: i suoi contratti si possono solo consultare. Riattivalo per aggiungerne o modificarli.',
+    );
+    const links = Array.from(element.querySelectorAll('tbody tr')).map((row) =>
+      row.querySelector('a')!,
+    );
+    expect(links.map((a) => a.textContent?.trim())).toEqual(['Apri', 'Apri', 'Apri']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      '/customers/c1/contracts/k3',
+      '/customers/c1/contracts/k2',
+      '/customers/c1/contracts/k1',
+    ]);
+    expect(text(element.querySelector(`[id="${links[1].getAttribute('aria-describedby')}"]`))).toBe(
+      '01/04/2026 – 31/12/2026',
+    );
+  });
+
   it('a deactivated customer has no "Nuovo contratto", a notice says why, and the contracts are still listed', async () => {
     const element = await answer(await render(), { ...customer, status: 'Deactivated' }, contracts);
 
@@ -333,9 +395,7 @@ describe('CustomerPage', () => {
         (a) => a.textContent?.trim() === 'Nuovo contratto',
       ),
     ).toBe(false);
-    expect(text(element.querySelector('main .pt-notice--info'))).toBe(
-      'Il cliente è disattivato: non si possono aggiungere contratti. Riattivalo per aggiungerne uno.',
-    );
+    expect(element.querySelector('main .pt-notice--info')).not.toBeNull();
     expect(element.querySelectorAll('tbody tr')).toHaveLength(3);
     expect(element.querySelector('.pt-topbar__heading .pt-pill')?.textContent?.trim()).toBe(
       'Disattivato',

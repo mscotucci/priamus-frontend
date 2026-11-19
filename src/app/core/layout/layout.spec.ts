@@ -5,6 +5,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { CurrentUser } from '../auth/auth-api';
 import { Session } from '../auth/session';
 import { provideTestI18n } from '../i18n/i18n-testing';
+import { LeaveConfirmation } from '../../shared/guards/leave-confirmation';
 import { stubModalDialog, userWithRole } from '../testing/dom-testing';
 import { Layout } from './layout';
 
@@ -104,11 +105,14 @@ describe('Layout', () => {
     },
   );
 
-  it('"Esci" signs out at once, without asking for confirmation', () => {
+  const settled = () => new Promise<void>((resolve) => setTimeout(resolve));
+
+  it('"Esci" signs out at once, without asking for confirmation', async () => {
     const confirm = vi.spyOn(window, 'confirm');
     const { sidebar, signOut, element } = render(admin);
 
     sidebar.querySelector<HTMLButtonElement>('button[aria-label="Esci"]')!.click();
+    await settled();
 
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(confirm).not.toHaveBeenCalled();
@@ -124,13 +128,53 @@ describe('Layout', () => {
 
     button.click();
     button.click();
+    await settled();
     expect(signOut).toHaveBeenCalledTimes(1);
 
     finish();
-    await Promise.resolve();
-    await Promise.resolve();
+    await settled();
     button.click();
+    await settled();
     expect(signOut).toHaveBeenCalledTimes(2);
+  });
+
+  describe('with a page that has unsaved changes', () => {
+    const renderWithPage = (answer: () => Promise<boolean>) => {
+      const harness = render(admin);
+      TestBed.inject(LeaveConfirmation).register({ confirmLeave: answer });
+      const button = harness.sidebar.querySelector<HTMLButtonElement>('button[aria-label="Esci"]')!;
+      return { ...harness, button };
+    };
+
+    it('AC-8: "Esci" asks the page first and does not sign out while the page says to stay', async () => {
+      const { button, signOut } = renderWithPage(() => Promise.resolve(false));
+
+      button.click();
+      await settled();
+
+      expect(signOut).not.toHaveBeenCalled();
+    });
+
+    it('AC-8: "Esci" signs out once the page says the user may leave', async () => {
+      const { button, signOut } = renderWithPage(() => Promise.resolve(true));
+
+      button.click();
+      await settled();
+
+      expect(signOut).toHaveBeenCalledTimes(1);
+    });
+
+    it('AC-8: after staying, "Esci" asks again', async () => {
+      const answer = vi.fn(() => Promise.resolve(false));
+      const { button } = renderWithPage(answer);
+
+      button.click();
+      await settled();
+      button.click();
+      await settled();
+
+      expect(answer).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('the page column scrolls and the drawer is not hidden by width, so an open drawer survives a resize', () => {

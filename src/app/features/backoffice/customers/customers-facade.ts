@@ -2,7 +2,7 @@ import { HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import {
   ApiError,
   isStale,
@@ -11,7 +11,12 @@ import {
   toApiError,
 } from '../../../core/api/api-error';
 import { Toast } from '../../../core/toast/toast';
-import { Contract, ContractsApi, CreateContractRequest } from './contracts-api';
+import {
+  ChangeContractFromDateRequest,
+  Contract,
+  ContractsApi,
+  CreateContractRequest,
+} from './contracts-api';
 import {
   CreateCustomerRequest,
   CustomerListItem,
@@ -26,6 +31,7 @@ import {
 export type SaveOutcome = 'saved' | 'ignored' | ApiError;
 export type DeactivateOutcome = 'deactivated' | 'ignored' | ApiError;
 export type SaveContractOutcome = 'created' | 'updated' | 'ignored' | ApiError;
+export type ChangeContractOutcome = 'changed' | 'ignored' | ApiError;
 
 const NOT_FOUND = 404;
 
@@ -293,28 +299,59 @@ export class CustomersFacade {
     contract: Contract | null,
     values: CreateContractRequest,
   ): Promise<SaveContractOutcome> {
+    const outcome = await this.writeContract(customerId, () =>
+      contract === null
+        ? this.contractsApi.create(customerId, values)
+        : this.contractsApi.update(customerId, contract.id, {
+            ...values,
+            version: contract.version,
+          }),
+    );
+    if (outcome !== 'done') {
+      return outcome;
+    }
+    return contract === null ? 'created' : 'updated';
+  }
+
+  /**
+   * Cuts `contract` at `changeFrom`: it ends the day before and a new one starts that day with
+   * `values`, sending the version the contract was read at; handled like a save.
+   */
+  async changeContractFromDate(
+    customerId: string,
+    contract: Contract,
+    values: CreateContractRequest,
+    changeFrom: string,
+  ): Promise<ChangeContractOutcome> {
+    const request: ChangeContractFromDateRequest = {
+      ...values,
+      version: contract.version,
+      changeFrom,
+    };
+    const outcome = await this.writeContract(customerId, () =>
+      this.contractsApi.changeFromDate(customerId, contract.id, request),
+    );
+    return outcome === 'done' ? 'changed' : outcome;
+  }
+
+  /** The busy flag, the refusal, the toast and the return to the customer page of a contract write. */
+  private async writeContract(
+    customerId: string,
+    send: () => Observable<unknown>,
+  ): Promise<'done' | 'ignored' | ApiError> {
     if (this.savingContractState()) {
       return 'ignored';
     }
     this.savingContractState.set(true);
     try {
       try {
-        if (contract === null) {
-          await firstValueFrom(this.contractsApi.create(customerId, values));
-        } else {
-          await firstValueFrom(
-            this.contractsApi.update(customerId, contract.id, {
-              ...values,
-              version: contract.version,
-            }),
-          );
-        }
+        await firstValueFrom(send());
       } catch (error) {
         return this.refusedContract(error);
       }
       this.toast.success(this.translate.instant('contracts.form.saved'));
       void this.router.navigate(['/customers', customerId]);
-      return contract === null ? 'created' : 'updated';
+      return 'done';
     } finally {
       this.savingContractState.set(false);
     }

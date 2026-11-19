@@ -398,6 +398,32 @@ textarea.pt-input {
   color: var(--danger);
 }
 
+/* Input with its unit attached: the add-on stretches to the height of the input, whatever its size */
+.pt-input-group {
+  display: flex;
+  align-items: stretch;
+}
+.pt-input-group .pt-input {
+  min-width: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.pt-input-group__addon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-inline-start: 0;
+  border-start-end-radius: var(--radius-md);
+  border-end-end-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--text-small-size);
+}
+
 /* Select: the native element made customisable by the browser; its open list looks like .pt-menu */
 select.pt-input,
 select.pt-input::picker(select) {
@@ -980,6 +1006,22 @@ select.pt-input option:checked {
 .pt-question--answered .pt-question__number {
   background: var(--success);
   color: var(--on-primary);
+}
+/* the chosen value of an answered question: boxed like a selected .pt-choice, so it reads as the choice made */
+.pt-question__answer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: var(--primary-soft);
+  color: var(--text);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+}
+.pt-question__answer app-icon {
+  color: var(--primary);
 }
 
 /* Choice card: a radio or a checkbox with a title and a hint; the selected one takes the primary colour */

@@ -10,6 +10,158 @@
           "PerLocationPair"
         ]
       },
+      "ChangeContractFromDateRequest": {
+        "description": "Request body for `POST /api/registry/customers/{customerId}/contracts/{contractId}/change-from-date`:\r\nthe members of UpdateContractRequest (the terms as written on the\r\npage, the `Version` the client read) plus the day the changed terms start. The validity\r\nas written is cut at `ChangeFrom`.",
+        "properties": {
+          "billingLevel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillingLevel"
+              }
+            ]
+          },
+          "changeFrom": {
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dayPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumAmount": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumOveragePrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumRule": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MinimumRuleKind"
+              }
+            ]
+          },
+          "minimumThreshold": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightCallFee": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightSurcharge": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "pricingMode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PricingMode"
+              }
+            ]
+          },
+          "requiredDocuments": {
+            "items": {
+              "$ref": "#/components/schemas/RequiredDocument"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "validFrom": {
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validTo": {
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "validFrom",
+          "validTo",
+          "billingLevel",
+          "pricingMode",
+          "requiredDocuments",
+          "nightSurcharge",
+          "dayPrice",
+          "nightPrice",
+          "nightCallFee",
+          "minimumRule",
+          "minimumAmount",
+          "minimumThreshold",
+          "minimumOveragePrice",
+          "version",
+          "changeFrom"
+        ],
+        "type": "object"
+      },
       "ContractDto": {
         "description": "A contract as the API returns it.",
         "properties": {
@@ -22,10 +174,81 @@
             "format": "uuid",
             "type": "string"
           },
+          "dayPrice": {
+            "description": "The day price; `null` when the contract has no rate.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
           "id": {
             "description": "The contract's identifier.",
             "format": "uuid",
             "type": "string"
+          },
+          "minimumAmount": {
+            "description": "The minimum amount M; `null` unless the rule has one.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumOveragePrice": {
+            "description": "The overage price Y; `null` unless the rule is tiered overage.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumRule": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MinimumRuleKind",
+                "description": "The kind of minimum rule; `null` when the contract has no rate."
+              }
+            ]
+          },
+          "minimumThreshold": {
+            "description": "The threshold X; `null` unless the rule is tiered overage.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightCallFee": {
+            "description": "The night call fee; `null` without the night surcharge or a rate.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightPrice": {
+            "description": "The night price; `null` without the night surcharge or a rate.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
           },
           "nightSurcharge": {
             "description": "Whether night trips cost more.",
@@ -79,6 +302,13 @@
           "pricingMode",
           "requiredDocuments",
           "nightSurcharge",
+          "dayPrice",
+          "nightPrice",
+          "nightCallFee",
+          "minimumRule",
+          "minimumAmount",
+          "minimumThreshold",
+          "minimumOveragePrice",
           "version"
         ],
         "type": "object"
@@ -92,7 +322,7 @@
         ]
       },
       "CreateContractRequest": {
-        "description": "Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).\r\nEvery member but the end of the validity is required; an empty set of documents is valid and\r\nduplicates collapse.",
+        "description": "Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).\r\nEvery member but the end of the validity and the seven rate members is required; an empty set\r\nof documents is valid and duplicates collapse. The rate members are required for a flat-rate\r\ncontract (the night ones with the night surcharge, the minimum ones as its rule asks) and must\r\nbe absent for any other billing level.",
         "properties": {
           "billingLevel": {
             "oneOf": [
@@ -102,6 +332,70 @@
               {
                 "$ref": "#/components/schemas/BillingLevel"
               }
+            ]
+          },
+          "dayPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumAmount": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumOveragePrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumRule": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MinimumRuleKind"
+              }
+            ]
+          },
+          "minimumThreshold": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightCallFee": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
             ]
           },
           "nightSurcharge": {
@@ -150,7 +444,14 @@
           "billingLevel",
           "pricingMode",
           "requiredDocuments",
-          "nightSurcharge"
+          "nightSurcharge",
+          "dayPrice",
+          "nightPrice",
+          "nightCallFee",
+          "minimumRule",
+          "minimumAmount",
+          "minimumThreshold",
+          "minimumOveragePrice"
         ],
         "type": "object"
       },
@@ -618,6 +919,14 @@
         ],
         "type": "object"
       },
+      "MinimumRuleKind": {
+        "enum": [
+          "None",
+          "FixedMinimum",
+          "TieredOverage",
+          null
+        ]
+      },
       "PagedResponseOfCustomerListItemDto": {
         "description": "Response envelope for a paginated query. Immutable record.",
         "properties": {
@@ -961,7 +1270,7 @@
         ]
       },
       "UpdateContractRequest": {
-        "description": "Request body for `PUT /api/registry/customers/{customerId}/contracts/{contractId}`\r\n(PRD §5.4, RF-16): the terms of the contract plus the `Version` the client read; the save\r\nis refused when the contract has changed since.",
+        "description": "Request body for `PUT /api/registry/customers/{customerId}/contracts/{contractId}`\r\n(PRD §5.4, RF-16): the terms of the contract, with its rate members as in\r\nCreateContractRequest, plus the `Version` the client read; the\r\nsave is refused when the contract has changed since.",
         "properties": {
           "billingLevel": {
             "oneOf": [
@@ -971,6 +1280,70 @@
               {
                 "$ref": "#/components/schemas/BillingLevel"
               }
+            ]
+          },
+          "dayPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumAmount": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumOveragePrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumRule": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MinimumRuleKind"
+              }
+            ]
+          },
+          "minimumThreshold": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightCallFee": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
             ]
           },
           "nightSurcharge": {
@@ -1029,6 +1402,13 @@
           "pricingMode",
           "requiredDocuments",
           "nightSurcharge",
+          "dayPrice",
+          "nightPrice",
+          "nightCallFee",
+          "minimumRule",
+          "minimumAmount",
+          "minimumThreshold",
+          "minimumOveragePrice",
           "version"
         ],
         "type": "object"
@@ -2344,6 +2724,106 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Contracts"
+        ]
+      }
+    },
+    "/api/registry/customers/{customerId}/contracts/{contractId}/change-from-date": {
+      "post": {
+        "operationId": "ChangeContractFromDate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contractId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeContractFromDateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractDto"
+                }
+              }
+            },
+            "description": "Created"
           },
           "400": {
             "content": {

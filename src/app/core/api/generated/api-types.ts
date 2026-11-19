@@ -175,6 +175,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/customers/{customerId}/contracts/{contractId}/change-from-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChangeContractFromDate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/registry/customers/{id}": {
         parameters: {
             query?: never;
@@ -297,6 +313,39 @@ export interface components {
          * @enum {unknown}
          */
         BillingLevel: "FlatRate" | "PerPickupLocation" | "PerDeliveryLocation" | "PerLocationPair";
+        /**
+         * @description Request body for `POST /api/registry/customers/{customerId}/contracts/{contractId}/change-from-date`:
+         *     the members of UpdateContractRequest (the terms as written on the
+         *     page, the `Version` the client read) plus the day the changed terms start. The validity
+         *     as written is cut at `ChangeFrom`.
+         */
+        ChangeContractFromDateRequest: {
+            billingLevel: null | components["schemas"]["BillingLevel"];
+            /** Format: date */
+            changeFrom: null | string;
+            /** Format: double */
+            dayPrice: number | null;
+            /** Format: double */
+            minimumAmount: number | null;
+            /** Format: double */
+            minimumOveragePrice: number | null;
+            minimumRule: null | components["schemas"]["MinimumRuleKind"];
+            /** Format: double */
+            minimumThreshold: number | null;
+            /** Format: double */
+            nightCallFee: number | null;
+            /** Format: double */
+            nightPrice: number | null;
+            nightSurcharge: null | boolean;
+            pricingMode: null | components["schemas"]["PricingMode"];
+            requiredDocuments: null | components["schemas"]["RequiredDocument"][];
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+            /** Format: int32 */
+            version: number | null;
+        };
         /** @description A contract as the API returns it. */
         ContractDto: {
             /** @description The billing level. */
@@ -307,10 +356,41 @@ export interface components {
              */
             customerId: string;
             /**
+             * Format: double
+             * @description The day price; `null` when the contract has no rate.
+             */
+            dayPrice: number | null;
+            /**
              * Format: uuid
              * @description The contract's identifier.
              */
             id: string;
+            /**
+             * Format: double
+             * @description The minimum amount M; `null` unless the rule has one.
+             */
+            minimumAmount: number | null;
+            /**
+             * Format: double
+             * @description The overage price Y; `null` unless the rule is tiered overage.
+             */
+            minimumOveragePrice: number | null;
+            minimumRule: null | components["schemas"]["MinimumRuleKind"];
+            /**
+             * Format: double
+             * @description The threshold X; `null` unless the rule is tiered overage.
+             */
+            minimumThreshold: number | null;
+            /**
+             * Format: double
+             * @description The night call fee; `null` without the night surcharge or a rate.
+             */
+            nightCallFee: number | null;
+            /**
+             * Format: double
+             * @description The night price; `null` without the night surcharge or a rate.
+             */
+            nightPrice: number | null;
             /** @description Whether night trips cost more. */
             nightSurcharge: boolean;
             /** @description The pricing mode. */
@@ -343,11 +423,26 @@ export interface components {
         ContractStatus: "Current" | "Upcoming" | "Expired";
         /**
          * @description Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).
-         *     Every member but the end of the validity is required; an empty set of documents is valid and
-         *     duplicates collapse.
+         *     Every member but the end of the validity and the seven rate members is required; an empty set
+         *     of documents is valid and duplicates collapse. The rate members are required for a flat-rate
+         *     contract (the night ones with the night surcharge, the minimum ones as its rule asks) and must
+         *     be absent for any other billing level.
          */
         CreateContractRequest: {
             billingLevel: null | components["schemas"]["BillingLevel"];
+            /** Format: double */
+            dayPrice: number | null;
+            /** Format: double */
+            minimumAmount: number | null;
+            /** Format: double */
+            minimumOveragePrice: number | null;
+            minimumRule: null | components["schemas"]["MinimumRuleKind"];
+            /** Format: double */
+            minimumThreshold: number | null;
+            /** Format: double */
+            nightCallFee: number | null;
+            /** Format: double */
+            nightPrice: number | null;
             nightSurcharge: null | boolean;
             pricingMode: null | components["schemas"]["PricingMode"];
             requiredDocuments: null | components["schemas"]["RequiredDocument"][];
@@ -559,6 +654,8 @@ export interface components {
              */
             refreshTokenExpiresAt: string;
         };
+        /** @enum {unknown} */
+        MinimumRuleKind: "None" | "FixedMinimum" | "TieredOverage" | null;
         /** @description Response envelope for a paginated query. Immutable record. */
         PagedResponseOfCustomerListItemDto: {
             /** @description The items returned in the current page. */
@@ -710,11 +807,25 @@ export interface components {
         SortDirection: "Ascending" | "Descending" | null;
         /**
          * @description Request body for `PUT /api/registry/customers/{customerId}/contracts/{contractId}`
-         *     (PRD §5.4, RF-16): the terms of the contract plus the `Version` the client read; the save
-         *     is refused when the contract has changed since.
+         *     (PRD §5.4, RF-16): the terms of the contract, with its rate members as in
+         *     CreateContractRequest, plus the `Version` the client read; the
+         *     save is refused when the contract has changed since.
          */
         UpdateContractRequest: {
             billingLevel: null | components["schemas"]["BillingLevel"];
+            /** Format: double */
+            dayPrice: number | null;
+            /** Format: double */
+            minimumAmount: number | null;
+            /** Format: double */
+            minimumOveragePrice: number | null;
+            minimumRule: null | components["schemas"]["MinimumRuleKind"];
+            /** Format: double */
+            minimumThreshold: number | null;
+            /** Format: double */
+            nightCallFee: number | null;
+            /** Format: double */
+            nightPrice: number | null;
             nightSurcharge: null | boolean;
             pricingMode: null | components["schemas"]["PricingMode"];
             requiredDocuments: null | components["schemas"]["RequiredDocument"][];
@@ -1700,6 +1811,78 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ChangeContractFromDate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customerId: string;
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeContractFromDateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDto"];
+                };
             };
             /** @description Bad Request */
             400: {
