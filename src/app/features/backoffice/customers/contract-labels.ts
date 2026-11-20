@@ -1,6 +1,7 @@
 import { TranslateService } from '@ngx-translate/core';
 import { LANGUAGE } from '../../../core/i18n/i18n';
 import { Minimum, Rate, rateOfContract, unitKey } from './contract-rate';
+import type { VehicleRateAnswer } from './contract-vehicle-rates';
 import { Contract, ContractStatus, PricingMode, RequiredDocument } from './contracts-api';
 
 export const CONTRACT_STATUS_PILL: Record<ContractStatus, string> = {
@@ -108,4 +109,18 @@ export function tieredExample(
     trip: formatQuantity(minimum.threshold! + over),
     total: formatAmount(total),
   });
+}
+
+/** "55,00 €/h di giorno · 70,00 €/h di notte · chiamata 40,00 € · minimo 120,00 €": the terms of a vehicle rate; no minimum under a trip price. */
+export function vehicleRateTerms(
+  answer: VehicleRateAnswer,
+  mode: PricingMode,
+  translate: TranslateService,
+): string {
+  const rate = rateSummary(answer.rate, mode, translate);
+  if (answer.minimum === null) {
+    return rate;
+  }
+  const minimum = minimumSummary(answer.minimum, mode, translate);
+  return `${rate} · ${minimum.charAt(0).toLowerCase()}${minimum.slice(1)}`;
 }

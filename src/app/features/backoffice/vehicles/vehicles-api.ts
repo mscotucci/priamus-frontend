@@ -11,6 +11,7 @@ export type VehicleListItem = Schemas['VehicleListItemDto'];
 export type CreateVehicleRequest = Schemas['CreateVehicleRequest'];
 export type CreatedVehicle = Schemas['CreateVehicleResponse'];
 export type UpdateVehicleRequest = Schemas['UpdateVehicleRequest'];
+export type RateableVehicle = Schemas['RateableVehicleDto'];
 export type VehiclePage = Schemas['PagedResponseOfVehicleListItemDto'];
 export type SortColumn = 'licensePlate' | 'description' | 'lastModifiedAt';
 export type SortDirection = NonNullable<Schemas['SortDirection']>;
@@ -49,6 +50,10 @@ export class VehiclesApi {
       params['search'] = query.search;
     }
     return { url: URL, params };
+  }
+
+  rateable(): HttpResourceRequest {
+    return { url: `${URL}/rateable` };
   }
 
   create(request: CreateVehicleRequest): Observable<CreatedVehicle> {

@@ -10,6 +10,7 @@ export type IconName =
   | 'sign-out'
   | 'menu'
   | 'close'
+  | 'plus'
   | 'search'
   | 'chevron'
   | 'check'

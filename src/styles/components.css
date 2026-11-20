@@ -1024,6 +1024,32 @@ select.pt-input option:checked {
   color: var(--primary);
 }
 
+/* A keyboard key named in a hint, on the native <kbd>: a small key cap with a thicker bottom edge */
+.pt-kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line);
+  text-align: center;
+  white-space: nowrap;
+}
+/* A line of keyboard hints: muted small text, the keys and what they do, wrapping as a whole group */
+.pt-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-small-size);
+}
+
 /* Choice card: a radio or a checkbox with a title and a hint; the selected one takes the primary colour */
 .pt-choice {
   display: flex;

@@ -323,6 +323,31 @@ describe('VehicleFormDialog', () => {
     http.match(() => true);
   });
 
+  it('a type change to Rimorchio refused for a vehicle rate shows the backend text, keeps the dialog open and the values entered', async () => {
+    const { fixture, element, closedCount } = render(ROW);
+    type(element, '#vehicle-description', 'Iveco Eurocargo ribaltabile');
+    type(element, '#vehicle-type', 'Trailer');
+    await submit(fixture);
+    const detail =
+      'Il mezzo ha una tariffa propria nel contratto di Ecoservizi Adriatica S.r.l.: toglila dal contratto prima di farlo diventare un rimorchio.';
+
+    const [put] = http.match((r) => r.method === 'PUT');
+    expect((put.request.body as { type: string }).type).toBe('Trailer');
+    put.flush(
+      { errorCode: 'Registry.Vehicle.HasVehicleRates', detail },
+      { status: 422, statusText: 'Unprocessable Entity' },
+    );
+    await settle(fixture);
+
+    expect(text(element, '.pt-notice--danger')).toBe(detail);
+    expect(element.querySelector<HTMLInputElement>('#vehicle-description')!.value).toBe(
+      'Iveco Eurocargo ribaltabile',
+    );
+    expect(element.querySelector<HTMLSelectElement>('#vehicle-type')!.value).toBe('Trailer');
+    expect(closedCount()).toBe(0);
+    http.match(() => true);
+  });
+
   it('a 409 on the edit stays inside the dialog, which stays open, and the list reloads at once', async () => {
     const { fixture, element, closedCount } = render(ROW);
     http

@@ -8,8 +8,10 @@ import {
   minimumSummary,
   rateSummary,
   tieredExample,
+  vehicleRateTerms,
 } from './contract-labels';
 import type { Minimum } from './contract-rate';
+import type { VehicleRateAnswer } from './contract-vehicle-rates';
 import type { PricingMode } from './contracts-api';
 
 describe('contract labels', () => {
@@ -106,5 +108,45 @@ describe('contract labels', () => {
     expect(dayBefore('2026-03-15')).toBe('2026-03-14');
     expect(dayBefore('2026-03-01')).toBe('2026-02-28');
     expect(dayBefore('2026-01-01')).toBe('2025-12-31');
+  });
+
+  describe('vehicleRateTerms', () => {
+    const vehicle: VehicleRateAnswer = {
+      vehicleId: 'v1',
+      licensePlate: 'AB123CD',
+      description: 'Autospurgo Scania P410',
+      decommissioned: false,
+      rate: { day: 55, night: 70, callFee: 40 },
+      minimum: { kind: 'FixedMinimum', amount: 120, threshold: null, overage: null },
+    };
+
+    it('tells the rate and the minimum with its first letter in lower case', () => {
+      const service = translate();
+
+      expect(vehicleRateTerms(vehicle, 'ByHour', service)).toBe(
+        '55,00 €/h di giorno · 70,00 €/h di notte · chiamata 40,00 € · minimo 120,00 €',
+      );
+      expect(
+        vehicleRateTerms(
+          {
+            ...vehicle,
+            rate: { day: 48, night: null, callFee: null },
+            minimum: { kind: 'None', amount: null, threshold: null, overage: null },
+          },
+          'ByHour',
+          service,
+        ),
+      ).toBe('48,00 €/h · nessun minimo');
+    });
+
+    it('tells the rate alone under a trip price, which has no minimum', () => {
+      expect(
+        vehicleRateTerms(
+          { ...vehicle, rate: { day: 90, night: null, callFee: null }, minimum: null },
+          'ByTrip',
+          translate(),
+        ),
+      ).toBe('90,00 €');
+    });
   });
 });

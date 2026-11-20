@@ -335,6 +335,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/vehicles/rateable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListRateableVehicles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/registry/vehicles/{id}": {
         parameters: {
             query?: never;
@@ -423,6 +439,7 @@ export interface components {
             validFrom: null | string;
             /** Format: date */
             validTo: null | string;
+            vehicleRates: null | components["schemas"]["ContractVehicleRateRequest"][];
             /** Format: int32 */
             version: number | null;
         };
@@ -489,6 +506,8 @@ export interface components {
              * @description Last day of the validity, or `null` when the contract is open.
              */
             validTo: null | string;
+            /** @description The vehicle rates, ordered by license plate; empty when the contract has none. */
+            vehicleRates: components["schemas"]["ContractVehicleRateDto"][];
             /**
              * Format: int32
              * @description Version the client sends back with its next write on this contract.
@@ -501,12 +520,80 @@ export interface components {
          * @enum {unknown}
          */
         ContractStatus: "Current" | "Upcoming" | "Expired";
+        /** @description A vehicle rate of a contract as the API returns it, with the vehicle it is for. */
+        ContractVehicleRateDto: {
+            /**
+             * Format: double
+             * @description The day price.
+             */
+            dayPrice: number;
+            /** @description The vehicle's description. */
+            description: string;
+            /** @description The vehicle's license plate. */
+            licensePlate: string;
+            /**
+             * Format: double
+             * @description The minimum amount M; `null` unless the rule has one.
+             */
+            minimumAmount: number | null;
+            /**
+             * Format: double
+             * @description The overage price Y; `null` unless the rule is tiered overage.
+             */
+            minimumOveragePrice: number | null;
+            /** @description The kind of minimum rule. */
+            minimumRule: components["schemas"]["MinimumRuleKind"];
+            /**
+             * Format: double
+             * @description The threshold X; `null` unless the rule is tiered overage.
+             */
+            minimumThreshold: number | null;
+            /**
+             * Format: double
+             * @description The night call fee; `null` without the night surcharge.
+             */
+            nightCallFee: number | null;
+            /**
+             * Format: double
+             * @description The night price; `null` without the night surcharge.
+             */
+            nightPrice: number | null;
+            /**
+             * Format: uuid
+             * @description The vehicle the rate is for.
+             */
+            vehicleId: string;
+            /** @description The vehicle's status: a decommissioned vehicle keeps its vehicle rate. */
+            vehicleStatus: components["schemas"]["VehicleStatus"];
+        };
+        /**
+         * @description One vehicle rate of a contract request: the vehicle and the seven rate members, as sent. Every
+         *     member is optional here so that a missing or misplaced value is reported by
+         *     ContractRequestValidation on its own key, `VehicleRates[i].Member`.
+         */
+        ContractVehicleRateRequest: {
+            /** Format: double */
+            dayPrice: number | null;
+            /** Format: double */
+            minimumAmount: number | null;
+            /** Format: double */
+            minimumOveragePrice: number | null;
+            minimumRule: null | components["schemas"]["MinimumRuleKind"];
+            /** Format: double */
+            minimumThreshold: number | null;
+            /** Format: double */
+            nightCallFee: number | null;
+            /** Format: double */
+            nightPrice: number | null;
+            /** Format: uuid */
+            vehicleId: null | string;
+        };
         /**
          * @description Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).
-         *     Every member but the end of the validity and the seven rate members is required; an empty set
+         *     Every member but the end of the validity, the seven rate members and the vehicle rates is required; an empty set
          *     of documents is valid and duplicates collapse. The rate members are required for a flat-rate
          *     contract (the night ones with the night surcharge, the minimum ones as its rule asks) and must
-         *     be absent for any other billing level.
+         *     be absent for any other billing level, as must the vehicle rates, an absent list being an empty one.
          */
         CreateContractRequest: {
             billingLevel: null | components["schemas"]["BillingLevel"];
@@ -530,6 +617,7 @@ export interface components {
             validFrom: null | string;
             /** Format: date */
             validTo: null | string;
+            vehicleRates: null | components["schemas"]["ContractVehicleRateRequest"][];
         };
         /**
          * @description Request body for `POST /api/registry/customers` (PRD §4, RF-15). Only the company name is
@@ -934,6 +1022,18 @@ export interface components {
             title?: null | string;
             type?: null | string;
         };
+        /** @description A vehicle that can be given a vehicle rate in a contract. */
+        RateableVehicleDto: {
+            /** @description The description. */
+            description: string;
+            /**
+             * Format: uuid
+             * @description The vehicle's identifier.
+             */
+            id: string;
+            /** @description The plate in normal form. */
+            licensePlate: string;
+        };
         /**
          * @description Request body for `POST /api/registry/customers/{id}/reactivate`. `Version` is the version
          *     the client read; the change is refused when the customer has changed since.
@@ -1019,6 +1119,7 @@ export interface components {
             validFrom: null | string;
             /** Format: date */
             validTo: null | string;
+            vehicleRates: null | components["schemas"]["ContractVehicleRateRequest"][];
             /** Format: int32 */
             version: number | null;
         };
@@ -2921,6 +3022,44 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListRateableVehicles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RateableVehicleDto"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

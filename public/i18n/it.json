@@ -350,7 +350,7 @@
       "change": {
         "title": "Da quando valgono le modifiche?",
         "line": "Il contratto è in vigore dal {{from}} e ne hai cambiato le condizioni.",
-          "lineRange": "Il contratto è in vigore dal {{from}} al {{to}} e ne hai cambiato le condizioni.",
+        "lineRange": "Il contratto è in vigore dal {{from}} al {{to}} e ne hai cambiato le condizioni.",
         "legend": "Da quando valgono le modifiche",
         "from": {
           "title": "Da una data",
@@ -373,6 +373,22 @@
       "cancelModify": "Annulla modifica",
       "title": "Configurazione contratto",
       "intro": "Rispondi alle domande seguenti per configurare il contratto. Le opzioni successive verranno mostrate in base alle tue risposte.",
+      "keys": {
+        "up": "↑",
+        "down": "↓",
+        "choose": "scegli",
+        "enter": "Invio",
+        "or": "o",
+        "space": "Spazio",
+        "confirm": "conferma",
+        "tab": "Tab",
+        "thenConfirm": "vai ai campi, poi «Conferma»",
+        "esc": "Esc",
+        "cancel": "annulla la modifica",
+        "fromModify": "Da un «Modifica»:",
+        "otherQuestion": "passa a un'altra domanda",
+        "modify": "modifica"
+      },
       "notfound": {
         "title": "Contratto non trovato",
         "hint": "Il contratto non esiste o appartiene a un altro cliente."
@@ -554,6 +570,35 @@
           "byweight": "ton",
           "bydistance": "km"
         }
+      },
+      "vehicleRates": {
+        "title": "Ci sono mezzi con una tariffa diversa?",
+        "hint": "Per esempio autospurghi, gru o walking floor. Un viaggio fatto con uno di questi mezzi usa la sua tariffa al posto di quella del cliente.",
+        "no": {
+          "title": "No",
+          "hint": "Stessa tariffa per tutti i mezzi"
+        },
+        "yes": {
+          "title": "Sì",
+          "hint": "Alcuni mezzi hanno una tariffa propria"
+        },
+        "answer": {
+          "no": "Stessa tariffa per tutti i mezzi",
+          "one": "1 mezzo con tariffa propria",
+          "many": "{{count}} mezzi con tariffa propria"
+        },
+        "block": "Mezzo {{number}}",
+        "remove": "Togli il mezzo {{number}}",
+        "decommissioned": "Dismesso",
+        "vehicle": {
+          "label": "Mezzo",
+          "placeholder": "Scegli un mezzo",
+          "required": "Scegli un mezzo.",
+          "loadFailed": "Non è stato possibile leggere i mezzi. Ricarica la pagina per riprovare."
+        },
+        "minimum": "Minimo fatturabile",
+        "add": "Aggiungi un mezzo",
+        "confirm": "Conferma"
       },
       "documents": {
         "title": "Quali documenti sono obbligatori?",

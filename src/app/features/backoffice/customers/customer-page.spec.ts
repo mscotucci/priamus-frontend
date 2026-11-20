@@ -45,6 +45,7 @@ const contract = (values: Partial<Contract>): Contract => ({
   minimumAmount: null,
   minimumThreshold: null,
   minimumOveragePrice: null,
+  vehicleRates: [],
   version: 1,
   ...values,
 });
@@ -365,6 +366,33 @@ describe('CustomerPage', () => {
     expect(rate(5).classList.contains('pt-num')).toBe(true);
     expect(rate(0).classList.contains('pt-muted')).toBe(false);
     expect(rate(5).classList.contains('pt-muted')).toBe(true);
+  });
+
+  it('the "Tariffa" column shows the contract day price only, even when the contract has vehicle rates', async () => {
+    const element = await answer(await render(), customer, [
+      contract({
+        id: 'a',
+        pricingMode: 'ByHour',
+        dayPrice: 30,
+        vehicleRates: [
+          {
+            vehicleId: 'v1',
+            licensePlate: 'AB123CD',
+            description: 'Autospurgo Scania P410',
+            vehicleStatus: 'Active',
+            dayPrice: 55,
+            nightPrice: null,
+            nightCallFee: null,
+            minimumRule: 'None',
+            minimumAmount: null,
+            minimumThreshold: null,
+            minimumOveragePrice: null,
+          },
+        ],
+      }),
+    ]);
+
+    expect(text(cells(element, 0)[4])).toBe('30,00 €/h');
   });
 
   it('a deactivated customer has a notice on the contracts and "Apri" in place of "Modifica" on each row, with the same link', async () => {

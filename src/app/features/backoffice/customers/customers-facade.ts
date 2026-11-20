@@ -11,6 +11,7 @@ import {
   toApiError,
 } from '../../../core/api/api-error';
 import { Toast } from '../../../core/toast/toast';
+import { RateableVehicle, VehiclesApi } from '../vehicles/vehicles-api';
 import {
   ChangeContractFromDateRequest,
   Contract,
@@ -42,6 +43,7 @@ const isNotFound = (error: unknown) =>
 export class CustomersFacade {
   private readonly api = inject(CustomersApi);
   private readonly contractsApi = inject(ContractsApi);
+  private readonly vehiclesApi = inject(VehiclesApi);
   private readonly toast = inject(Toast);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
@@ -246,6 +248,26 @@ export class CustomersFacade {
   readonly contract = this.contractResource.asReadonly();
   readonly customerNotFound = computed(() => isNotFound(this.customerResource.error()));
   readonly contractNotFound = computed(() => isNotFound(this.contractResource.error()));
+
+  private readonly rateableNeeded = signal(false);
+  private readonly rateableResource = httpResource<RateableVehicle[]>(() =>
+    this.rateableNeeded() ? this.vehiclesApi.rateable() : undefined,
+  );
+  /** The vehicles that can receive a vehicle rate; `null` until they are read. */
+  readonly rateableVehicles = computed<RateableVehicle[] | null>(() =>
+    this.rateableResource.hasValue() ? this.rateableResource.value() : null,
+  );
+  readonly rateableVehiclesLoading = computed(() => this.rateableResource.isLoading());
+  readonly rateableVehiclesFailed = computed(() => this.rateableResource.status() === 'error');
+
+  /** Reads the rateable vehicles; called again after a failure it reads them again. */
+  loadRateableVehicles(): void {
+    if (this.rateableNeeded()) {
+      this.rateableResource.reload();
+    } else {
+      this.rateableNeeded.set(true);
+    }
+  }
 
   /** Opening a customer always reads it fresh, also when it is the one already held. */
   openCustomer(id: string): void {

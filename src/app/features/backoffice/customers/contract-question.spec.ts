@@ -14,7 +14,9 @@ import { ContractQuestion } from './contract-question';
       [open]="open()"
       [current]="current()"
       [answer]="answer()"
+      [cancellable]="cancellable()"
       (modify)="modified = modified + 1"
+      (cancelled)="cancelled = cancelled + 1"
     >
       <p class="projected">Scelte</p>
     </app-contract-question>
@@ -25,7 +27,9 @@ class Host {
   readonly open = signal(true);
   readonly current = signal(true);
   readonly answer = signal<string | null>('Entrambi i luoghi');
+  readonly cancellable = signal(false);
   modified = 0;
+  cancelled = 0;
 }
 
 describe('ContractQuestion', () => {
@@ -77,6 +81,22 @@ describe('ContractQuestion', () => {
 
     expect(section().querySelector('.pt-question__answer')).toBeNull();
     expect(section().querySelector('button')).toBeNull();
+  });
+
+  it('Esc in a reopened question emits cancelled; in a question answered for the first time it does nothing', () => {
+    const { fixture, element } = render();
+    const escape = () =>
+      element
+        .querySelector('.projected')!
+        .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    escape();
+    expect(fixture.componentInstance.cancelled).toBe(0);
+
+    fixture.componentInstance.cancellable.set(true);
+    fixture.detectChanges();
+    escape();
+    expect(fixture.componentInstance.cancelled).toBe(1);
   });
 
   it('"Modifica" emits modify', () => {

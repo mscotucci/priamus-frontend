@@ -499,6 +499,7 @@ describe('CustomersFacade', () => {
       minimumAmount: null,
       minimumThreshold: null,
       minimumOveragePrice: null,
+      vehicleRates: [],
       version: 4,
     };
     const values: CreateContractRequest = {
@@ -515,6 +516,7 @@ describe('CustomersFacade', () => {
       minimumAmount: null,
       minimumThreshold: null,
       minimumOveragePrice: null,
+      vehicleRates: [],
     };
 
     beforeEach(() => {
@@ -559,6 +561,62 @@ describe('CustomersFacade', () => {
       await settle();
 
       expect(facade.contractNotFound()).toBe(true);
+    });
+
+    const vehicleRate = {
+      vehicleId: 'v1',
+      dayPrice: 95,
+      nightPrice: null,
+      nightCallFee: null,
+      minimumRule: 'None' as const,
+      minimumAmount: null,
+      minimumThreshold: null,
+      minimumOveragePrice: null,
+    };
+
+    it('the vehicle rates go with the contract on create, correction and change from a date', async () => {
+      const withVehicleRates: CreateContractRequest = { ...values, vehicleRates: [vehicleRate] };
+
+      const created = facade.saveContract('c1', null, withVehicleRates);
+      const post = http.expectOne((request) => request.method === 'POST');
+      expect(post.request.body.vehicleRates).toEqual([vehicleRate]);
+      post.flush(contract, { status: 201, statusText: 'Created' });
+      await created;
+
+      const updated = facade.saveContract('c1', contract, withVehicleRates);
+      const put = http.expectOne((request) => request.method === 'PUT');
+      expect(put.request.body.vehicleRates).toEqual([vehicleRate]);
+      put.flush(null, { status: 204, statusText: 'No Content' });
+      await updated;
+
+      const changed = facade.changeContractFromDate('c1', contract, withVehicleRates, '2026-12-01');
+      const change = http.expectOne((request) => request.url.endsWith('/change-from-date'));
+      expect(change.request.body.vehicleRates).toEqual([vehicleRate]);
+      change.flush(contract, { status: 201, statusText: 'Created' });
+      await changed;
+    });
+
+    it('reads the rateable vehicles only once asked, and again on a retry after a failure', async () => {
+      const RATEABLE = '/api/registry/vehicles/rateable';
+      TestBed.tick();
+      http.expectNone(RATEABLE);
+      expect(facade.rateableVehicles()).toBeNull();
+
+      facade.loadRateableVehicles();
+      TestBed.tick();
+      http.expectOne(RATEABLE).flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+      expect(facade.rateableVehiclesFailed()).toBe(true);
+      expect(facade.rateableVehicles()).toBeNull();
+
+      facade.loadRateableVehicles();
+      TestBed.tick();
+      http.expectOne(RATEABLE).flush([{ id: 'v1', licensePlate: 'AB123CD', description: 'Iveco' }]);
+      await settle();
+      expect(facade.rateableVehiclesFailed()).toBe(false);
+      expect(facade.rateableVehicles()).toEqual([
+        { id: 'v1', licensePlate: 'AB123CD', description: 'Iveco' },
+      ]);
     });
 
     it('creates a contract with a POST and leaves the contracts to the customer page that opens next', async () => {

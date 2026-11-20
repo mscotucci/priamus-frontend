@@ -84,6 +84,20 @@
     <div>
       <h2 class="pt-title">{{ 'contracts.form.title' | translate }}</h2>
       <p class="pt-muted">{{ 'contracts.form.intro' | translate }}</p>
+      @if (!readOnly()) {
+        <p class="pt-keys mt-2" data-page-keys>
+          <span>{{ 'contracts.form.keys.fromModify' | translate }}</span>
+          <span
+            ><kbd class="pt-kbd">{{ 'contracts.form.keys.up' | translate }}</kbd
+            >&ngsp;<kbd class="pt-kbd">{{ 'contracts.form.keys.down' | translate }}</kbd>
+            {{ 'contracts.form.keys.otherQuestion' | translate }}</span
+          >
+          <span
+            ><kbd class="pt-kbd">{{ 'contracts.form.keys.enter' | translate }}</kbd>
+            {{ 'contracts.form.keys.modify' | translate }}</span
+          >
+        </p>
+      }
     </div>
 
     @let v = validity();
@@ -103,7 +117,9 @@
       [answer]="validityAnswer"
       [busy]="saving()"
       [locked]="readOnly()"
+      [cancellable]="editing() === 1"
       (modify)="edit(1)"
+      (cancelled)="cancelEdit()"
     >
       @if (closing(); as closing) {
         <div note class="pt-notice pt-notice--warn">
@@ -187,7 +203,9 @@
           [answer]="key ? (key | translate) : null"
           [busy]="saving()"
           [locked]="readOnly()"
+          [cancellable]="editing() === question.number"
           (modify)="edit(question.number)"
+          (cancelled)="cancelEdit()"
         >
           <fieldset class="grid min-w-0 gap-3" [class]="question.grid">
             <legend class="sr-only">
@@ -200,10 +218,10 @@
                   [name]="question.id"
                   [checked]="radio()[question.id] === choice.value"
                   (click)="pick(question, choice)"
-                  (keydown)="choiceKeyDown($event)"
-                  (keydown.space)="confirmChoice($event); pick(question, choice)"
-                  (keydown.enter)="confirmChoice($event); pick(question, choice)"
-                  (keyup)="choiceKeyUp($event)"
+                  (keydown)="keys.down($event)"
+                  (keydown.space)="keys.confirm($event); pick(question, choice)"
+                  (keydown.enter)="keys.confirm($event); pick(question, choice)"
+                  (keyup)="keys.up($event)"
                 />
                 <span>
                   <strong>{{ 'contracts.form.' + choice.key + '.title' | translate }}</strong>
@@ -221,6 +239,7 @@
               </button>
             </div>
           }
+          <app-contract-keys [cancellable]="editing() === question.number" />
         </app-contract-question>
       }
     }
@@ -276,7 +295,9 @@
         [answer]="rateAnswer()"
         [busy]="saving()"
         [locked]="readOnly()"
+        [cancellable]="editing() === 6"
         (modify)="edit(6)"
+        (cancelled)="cancelEdit()"
       >
         @if (!flat()) {
           <div note class="pt-notice pt-notice--info">
@@ -312,7 +333,9 @@
         [answer]="minimumAnswer()"
         [busy]="saving()"
         [locked]="readOnly()"
+        [cancellable]="editing() === 7"
         (modify)="edit(7)"
+        (cancelled)="cancelEdit()"
       >
         <fieldset class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-3">
           <legend class="sr-only">{{ 'contracts.form.minimum.title' | translate }}</legend>
@@ -323,10 +346,10 @@
                 name="minimum"
                 [checked]="minimumKindDraft() === option.kind"
                 (click)="pickMinimumKind(option.kind)"
-                (keydown)="choiceKeyDown($event)"
-                (keydown.space)="confirmChoice($event); pickMinimumKind(option.kind)"
-                (keydown.enter)="confirmChoice($event); pickMinimumKind(option.kind)"
-                (keyup)="choiceKeyUp($event)"
+                (keydown)="keys.down($event)"
+                (keydown.space)="keys.confirm($event); pickMinimumKind(option.kind)"
+                (keydown.enter)="keys.confirm($event); pickMinimumKind(option.kind)"
+                (keyup)="keys.up($event)"
               />
               <span>
                 <strong>{{ 'contracts.form.minimum.' + option.key + '.title' | translate }}</strong>
@@ -363,20 +386,65 @@
             </button>
           }
         </div>
+        <app-contract-keys [byButton]="true" [cancellable]="editing() === 7" />
       </app-contract-question>
     }
 
     @if (visible(8)) {
       <app-contract-question
         [number]="8"
-        [title]="'contracts.form.documents.title' | translate"
-        [hint]="'contracts.form.documents.hint' | translate"
+        [title]="'contracts.form.vehicleRates.title' | translate"
+        [hint]="'contracts.form.vehicleRates.hint' | translate"
         [open]="open(8)"
         [current]="current(8)"
+        [answer]="vehicleRatesAnswer()"
+        [detailed]="(vehicleRates()?.length ?? 0) > 0"
+        [busy]="saving()"
+        [locked]="readOnly()"
+        [cancellable]="editing() === 8"
+        (modify)="edit(8)"
+        (cancelled)="cancelEdit()"
+      >
+        @for (entry of vehicleRates() ?? []; track entry.vehicleId) {
+          <span detail>
+            <span class="pt-mono">{{ entry.licensePlate }}</span> {{ entry.description }}
+            @if (entry.decommissioned) {
+              <span class="pt-pill pt-pill--warn">{{
+                'contracts.form.vehicleRates.decommissioned' | translate
+              }}</span>
+            }
+            · {{ vehicleRateLine(entry) }}
+          </span>
+        }
+        @if (open(8)) {
+          <app-contract-vehicle-rates
+            [night]="radio().night === 'yes'"
+            [mode]="radio().mode!"
+            [rateable]="facade.rateableVehiclesLoading() ? null : facade.rateableVehicles()"
+            [loading]="facade.rateableVehiclesLoading()"
+            [failed]="facade.rateableVehiclesFailed()"
+            [answer]="vehicleRates()"
+            [cancellable]="editing() === 8"
+            (confirmed)="confirmVehicleRates($event)"
+            (cancelled)="cancelEdit()"
+          />
+        }
+      </app-contract-question>
+    }
+
+    @if (visible(9)) {
+      <app-contract-question
+        [number]="9"
+        [title]="'contracts.form.documents.title' | translate"
+        [hint]="'contracts.form.documents.hint' | translate"
+        [open]="open(9)"
+        [current]="current(9)"
         [answer]="documentsAnswer()"
         [busy]="saving()"
         [locked]="readOnly()"
-        (modify)="edit(8)"
+        [cancellable]="editing() === 9"
+        (modify)="edit(9)"
+        (cancelled)="cancelEdit()"
       >
         <fieldset class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
           <legend class="sr-only">{{ 'contracts.form.documents.title' | translate }}</legend>
@@ -406,7 +474,7 @@
           >
             {{ 'contracts.form.documents.confirm' | translate }}
           </button>
-          @if (editing() === 8) {
+          @if (editing() === 9) {
             <button type="button" class="pt-btn pt-btn--sm" (click)="cancelEdit()">
               {{ 'contracts.form.cancelModify' | translate }}
             </button>
