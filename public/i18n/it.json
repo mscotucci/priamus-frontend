@@ -52,6 +52,7 @@
       "customers": "Clienti",
       "drivers": "Autisti",
       "users": "Utenti",
+      "settings": "Impostazioni",
       "vehicles": "Mezzi"
     },
     "signout": "Esci",
@@ -548,12 +549,17 @@
         "invalid": "Inserisci un importo valido.",
         "decimals": "Usa al massimo due decimali.",
         "negative": "L'importo non può essere negativo.",
+        "nightBelowDay": "Il prezzo notturno non può essere più basso del prezzo diurno.",
         "positive": "Inserisci un importo maggiore di zero.",
         "threshold": "Inserisci un valore maggiore di zero.",
         "toohigh": "Importo troppo alto."
       },
       "unit": {
         "euro": "€",
+        "symbol": {
+          "hour": "h",
+          "minute": "min"
+        },
         "price": {
           "byhour": "€/h",
           "byweight": "€/ton",
@@ -621,6 +627,49 @@
         "dailysummary": {
           "title": "Riepilogo fine giornata",
           "hint": "Compilazione a fine turno"
+        }
+      },
+      "simulation": {
+        "title": "Prova la configurazione",
+        "intro": "Scrivi un viaggio di esempio per vedere quanto costerebbe con il contratto com'è adesso, anche prima di salvarlo.",
+        "vehicle": "Mezzo",
+        "ownRate": "Un mezzo senza tariffa propria",
+        "start": "Ora di inizio",
+        "end": "Ora di fine",
+        "endHint": "Se è prima dell'inizio, il viaggio finisce il giorno dopo.",
+        "kilograms": "Peso (kg)",
+        "kilometres": "Chilometri (km)",
+        "calculate": {
+          "idle": "Calcola",
+          "pending": "Calcolo…"
+        },
+        "blocked": "Conferma la domanda aperta per provare il contratto.",
+        "stale": "Qualcosa è cambiato: premi «Calcola» per rifare il conto.",
+        "error": {
+          "time": "Inserisci un orario.",
+          "endEqualsStart": "La fine deve essere diversa dall'inizio.",
+          "quantity": "Inserisci un numero intero maggiore di zero.",
+          "maxKilograms": "Al massimo 99.999 kg.",
+          "maxKilometres": "Al massimo 9.999 km."
+        },
+        "result": {
+          "band": "Fascia",
+          "rate": "Tariffa",
+          "base": "Importo",
+          "callFee": "Chiamata notturna",
+          "minimum": "Minimo",
+          "total": "Totale",
+          "day": "Di giorno · inizia alle {{start}}, fuori dalla fascia notturna {{from}}–{{to}}",
+          "night": "Di notte · inizia alle {{start}}, nella fascia notturna {{from}}–{{to}}",
+          "nightNoSurcharge": "Di notte · il contratto non ha la maggiorazione notturna: vale il prezzo di giorno",
+          "contractRate": "Del cliente",
+          "vehicleRate": "Propria del mezzo",
+          "formula": "{{quantity}} × {{price}} {{unit}} = {{amount}} €",
+          "formulaTrip": "{{price}} € a viaggio",
+          "callFeeAdded": "+ {{fee}} € = {{amount}} €",
+          "minimumRaised": "{{rule}}: l'importo diventa {{amount}} €",
+          "minimumUnused": "{{rule}}: non serve",
+          "minimumUnchanged": "{{rule}}: non cambia l'importo"
         }
       },
       "done": {
@@ -734,6 +783,25 @@
         "label": "Richiede rimorchio",
         "hint": "I viaggi con questa motrice dovranno indicare il rimorchio agganciato."
       }
+    }
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "loading": "Caricamento…",
+    "nightBand": {
+      "title": "Fascia notturna",
+      "explanation": "Un viaggio che inizia in questa fascia è un viaggio notturno: se il contratto ha la maggiorazione notturna, costa il prezzo di notte più la chiamata notturna. Conta solo l'ora di inizio.",
+      "start": "Dalle",
+      "end": "Alle",
+      "endHint": "Esclusa: un viaggio che inizia alle {{time}} è di giorno.",
+      "endEqualsStart": "La fine deve essere diversa dall'inizio.",
+      "scope": "Una modifica vale per i viaggi salvati da quel momento; i viaggi già salvati restano con la fascia con cui sono stati calcolati.",
+      "stale": "Un altro amministratore ha cambiato la fascia notturna nel frattempo. Ecco la fascia salvata ora: ricontrolla e salva di nuovo.",
+      "save": {
+        "idle": "Salva",
+        "pending": "Salvataggio…"
+      },
+      "done": "Fascia notturna salvata."
     }
   },
   "users": {

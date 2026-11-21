@@ -41,7 +41,10 @@ export const NAV: NavGroup[] = [
   },
   {
     labelKey: 'shell.nav.system',
-    items: [{ labelKey: 'shell.nav.users', icon: 'user', path: '/users', roles: ['Admin'] }],
+    items: [
+      { labelKey: 'shell.nav.users', icon: 'user', path: '/users', roles: ['Admin'] },
+      { labelKey: 'shell.nav.settings', icon: 'settings', path: '/settings', roles: ['Admin'] },
+    ],
   },
 ];
 

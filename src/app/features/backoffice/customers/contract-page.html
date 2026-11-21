@@ -142,7 +142,7 @@
             class="pt-input"
             id="contract-from"
             type="date"
-            [value]="fromDraft()"
+            [appNativeValue]="fromDraft()"
             [attr.aria-invalid]="validityErrors().from || fromRefusal().length > 0 ? 'true' : null"
             [attr.aria-describedby]="
               validityErrors().from || fromRefusal().length > 0 ? 'contract-from-error' : null
@@ -165,7 +165,7 @@
             class="pt-input"
             id="contract-to"
             type="date"
-            [value]="toDraft()"
+            [appNativeValue]="toDraft()"
             [attr.aria-invalid]="validityErrors().to || toRefusal().length > 0 ? 'true' : null"
             [attr.aria-describedby]="
               validityErrors().to || toRefusal().length > 0 ? 'contract-to-error' : null
@@ -483,6 +483,17 @@
       </app-contract-question>
     }
 
+    @if (simulable()) {
+      <app-contract-simulation
+        [mode]="radio().mode!"
+        [night]="radio().night === 'yes'"
+        [rate]="rate()!"
+        [minimum]="radio().mode === 'ByTrip' ? null : minimum()"
+        [vehicleRates]="vehicleRates() ?? []"
+        [blocked]="editing() !== null"
+      />
+    }
+
     @if (complete() && !readOnly()) {
       <section class="pt-card flex items-center justify-between gap-3">
         <div>
@@ -561,7 +572,7 @@
             class="pt-input"
             id="change-from"
             type="date"
-            [value]="changeFromDraft()"
+            [appNativeValue]="changeFromDraft()"
             [attr.aria-invalid]="
               changeFromError() || changeFromRefusal().length > 0 ? 'true' : null
             "

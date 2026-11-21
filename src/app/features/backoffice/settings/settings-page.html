@@ -1,0 +1,90 @@
+<app-topbar
+  [crumbs]="[{ label: 'shell.nav.system' | translate }]"
+  [title]="'settings.title' | translate"
+/>
+<main class="mx-auto flex w-full max-w-4xl flex-col gap-4 p-8">
+  @if (facade.loading()) {
+    <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'settings.loading' | translate }}</span>
+    </div>
+  } @else if (facade.failed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="facade.reload()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (facade.band()) {
+    <section class="pt-card flex flex-col gap-4 p-5" aria-labelledby="band-title">
+      @if (notice(); as content) {
+        <app-notice [notice]="content" />
+      }
+      <div>
+        <h3 class="pt-title" id="band-title">{{ 'settings.nightBand.title' | translate }}</h3>
+        <p class="pt-muted">{{ 'settings.nightBand.explanation' | translate }}</p>
+      </div>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div class="pt-field">
+          <label class="pt-label" for="band-start">{{
+            'settings.nightBand.start' | translate
+          }}</label>
+          <input
+            class="pt-input"
+            id="band-start"
+            type="time"
+            [appNativeValue]="start()"
+            [attr.aria-invalid]="startErrors().length > 0 ? 'true' : null"
+            [attr.aria-describedby]="startErrors().length > 0 ? 'band-start-error' : null"
+            (input)="edit('start', $any($event.target).value)"
+          />
+          @if (startErrors().length > 0) {
+            <span class="pt-field__error" id="band-start-error">{{ startErrors().join(' ') }}</span>
+          }
+        </div>
+        <div class="pt-field">
+          <label class="pt-label" for="band-end">{{ 'settings.nightBand.end' | translate }}</label>
+          <input
+            class="pt-input"
+            id="band-end"
+            type="time"
+            [appNativeValue]="end()"
+            [attr.aria-invalid]="endEqualsStart() || endErrors().length > 0 ? 'true' : null"
+            [attr.aria-describedby]="
+              endEqualsStart() || endErrors().length > 0
+                ? 'band-end-error'
+                : end() !== ''
+                  ? 'band-end-hint'
+                  : null
+            "
+            (input)="edit('end', $any($event.target).value)"
+          />
+          @if (endEqualsStart()) {
+            <span class="pt-field__error" id="band-end-error">{{
+              'settings.nightBand.endEqualsStart' | translate
+            }}</span>
+          } @else if (endErrors().length > 0) {
+            <span class="pt-field__error" id="band-end-error">{{ endErrors().join(' ') }}</span>
+          } @else if (end() !== '') {
+            <span class="pt-field__hint" id="band-end-hint">{{
+              'settings.nightBand.endHint' | translate: { time: end() }
+            }}</span>
+          }
+        </div>
+      </div>
+      <p class="pt-muted">{{ 'settings.nightBand.scope' | translate }}</p>
+      <div>
+        <button
+          type="button"
+          class="pt-btn pt-btn--primary"
+          [disabled]="facade.saving()"
+          (click)="save()"
+        >
+          {{
+            (facade.saving() ? 'settings.nightBand.save.pending' : 'settings.nightBand.save.idle')
+              | translate
+          }}
+        </button>
+      </div>
+    </section>
+  }
+</main>

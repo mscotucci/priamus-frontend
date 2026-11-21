@@ -120,6 +120,14 @@ export function readFields(
       errors[field] = parsed.error;
     }
   }
+  if (
+    errors.night === undefined &&
+    values.night !== undefined &&
+    values.day !== undefined &&
+    values.night < values.day
+  ) {
+    errors.night = 'contracts.form.error.nightBelowDay';
+  }
   return { values, errors };
 }
 

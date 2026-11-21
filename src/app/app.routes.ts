@@ -51,6 +51,14 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/backoffice/users/users.routes').then((m) => m.usersRoutes),
       },
+      {
+        path: 'settings',
+        canActivate: [roleGuard('Admin')],
+        loadComponent: () =>
+          import('./features/backoffice/settings/settings').then((m) => m.Settings),
+        loadChildren: () =>
+          import('./features/backoffice/settings/settings.routes').then((m) => m.settingsRoutes),
+      },
     ],
   },
   {

@@ -1286,6 +1286,34 @@
           null
         ]
       },
+      "NightBandDto": {
+        "description": "The system night band as the API shows it.",
+        "properties": {
+          "end": {
+            "description": "First minute after the band, `HH:mm`.",
+            "type": "string"
+          },
+          "start": {
+            "description": "First minute of the band, `HH:mm`.",
+            "type": "string"
+          },
+          "version": {
+            "description": "Version to send back with a change.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "version"
+        ],
+        "type": "object"
+      },
       "PagedResponseOfCustomerListItemDto": {
         "description": "Response envelope for a paginated query. Immutable record.",
         "properties": {
@@ -1538,6 +1566,148 @@
         ],
         "type": "object"
       },
+      "PriceSimulationDto": {
+        "description": "A simulated amount with the steps that led to it, as the engine computed them.",
+        "properties": {
+          "amountAfterMinimum": {
+            "description": "The amount after the minimum rule, before the night call fee.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "band": {
+            "$ref": "#/components/schemas/TimeBand",
+            "description": "Day or night, by the start time."
+          },
+          "baseAmount": {
+            "description": "The amount before the minimum rule.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "minimumAmount": {
+            "description": "The minimum amount M; `null` unless the rule has one.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumApplied": {
+            "description": "Whether the minimum rule changed the base amount.",
+            "type": "boolean"
+          },
+          "minimumOveragePrice": {
+            "description": "The overage price Y; `null` unless the rule is tiered overage.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumRule": {
+            "$ref": "#/components/schemas/MinimumRuleKind",
+            "description": "The kind of minimum rule of the rate chosen."
+          },
+          "minimumThreshold": {
+            "description": "The threshold X; `null` unless the rule is tiered overage.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightBand": {
+            "$ref": "#/components/schemas/SimulatedNightBandDto",
+            "description": "The night band the trip was classified with."
+          },
+          "nightCallFee": {
+            "description": "The night call fee added; `null` when none is added.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightSurcharge": {
+            "description": "Whether the terms have the night surcharge.",
+            "type": "boolean"
+          },
+          "quantity": {
+            "description": "Minutes, kilograms or kilometres; `null` for a trip priced by trip.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          },
+          "rateSource": {
+            "$ref": "#/components/schemas/RateSource",
+            "description": "Whether the rate is the contract's or a vehicle's."
+          },
+          "total": {
+            "description": "The amount: AmountAfterMinimum plus NightCallFee.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "unitPrice": {
+            "description": "The price used: day or night, of the rate chosen.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "vehicleId": {
+            "description": "The vehicle whose rate was used; `null` for the contract's rate.",
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "total",
+          "band",
+          "nightSurcharge",
+          "nightBand",
+          "rateSource",
+          "vehicleId",
+          "quantity",
+          "unitPrice",
+          "baseAmount",
+          "minimumRule",
+          "minimumAmount",
+          "minimumThreshold",
+          "minimumOveragePrice",
+          "amountAfterMinimum",
+          "minimumApplied",
+          "nightCallFee"
+        ],
+        "type": "object"
+      },
       "PricingMode": {
         "description": "How the amount of a trip is measured under a Contract (PRD §5.4).",
         "enum": [
@@ -1584,6 +1754,13 @@
           }
         },
         "type": "object"
+      },
+      "RateSource": {
+        "description": "Where the rate of a computation came from.",
+        "enum": [
+          "Contract",
+          "Vehicle"
+        ]
       },
       "RateableVehicleDto": {
         "description": "A vehicle that can be given a vehicle rate in a contract.",
@@ -1726,11 +1903,182 @@
         ],
         "type": "object"
       },
+      "SimulatePriceRequest": {
+        "description": "Request body for `POST /api/registry/contracts/simulation`: the terms of a flat-rate contract as\r\nwritten on the page, saved or not, and a sample trip. The rate members and the vehicle rates follow the\r\ncontract requests; `StartTime` and `EndTime` are `HH:mm`. The end is for a trip by hour\r\nonly, `Kilograms` for a trip by weight only and `Kilometres` for a trip by distance only;\r\nthe quantities are whole numbers, read as numbers so that a fraction is reported on its own member.\r\n`VehicleId` is the trip's vehicle: `null`, or a vehicle without a vehicle rate, uses the\r\ncontract's rate.",
+        "properties": {
+          "dayPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "endTime": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kilograms": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "kilometres": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumAmount": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumOveragePrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumRule": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MinimumRuleKind"
+              }
+            ]
+          },
+          "minimumThreshold": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightCallFee": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightSurcharge": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "pricingMode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PricingMode"
+              }
+            ]
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "vehicleId": {
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vehicleRates": {
+            "items": {
+              "$ref": "#/components/schemas/ContractVehicleRateRequest"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          }
+        },
+        "required": [
+          "pricingMode",
+          "nightSurcharge",
+          "dayPrice",
+          "nightPrice",
+          "nightCallFee",
+          "minimumRule",
+          "minimumAmount",
+          "minimumThreshold",
+          "minimumOveragePrice",
+          "vehicleRates",
+          "vehicleId",
+          "startTime",
+          "endTime",
+          "kilograms",
+          "kilometres"
+        ],
+        "type": "object"
+      },
+      "SimulatedNightBandDto": {
+        "description": "The night band a simulation classified the trip with.",
+        "properties": {
+          "end": {
+            "description": "First minute after the band, `HH:mm`.",
+            "type": "string"
+          },
+          "start": {
+            "description": "First minute of the band, `HH:mm`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
       "SortDirection": {
         "enum": [
           "Ascending",
           "Descending",
           null
+        ]
+      },
+      "TimeBand": {
+        "description": "Whether a trip starts in the night band.",
+        "enum": [
+          "Day",
+          "Night"
         ]
       },
       "UpdateContractRequest": {
@@ -1967,6 +2315,32 @@
           "lastName",
           "phone",
           "userId",
+          "version"
+        ],
+        "type": "object"
+      },
+      "UpdateNightBandRequest": {
+        "description": "Request body for `PUT /api/registry/night-band`. `Start` and `End` are `HH:mm`;\r\n`Version` is the version the client read, and the save is refused when the band has changed since.",
+        "properties": {
+          "end": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          },
+          "version": {
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "start",
+          "end",
           "version"
         ],
         "type": "object"
@@ -2800,6 +3174,76 @@
         },
         "tags": [
           "Identity.Users"
+        ]
+      }
+    },
+    "/api/registry/contracts/simulation": {
+      "post": {
+        "operationId": "SimulatePrice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulatePriceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceSimulationDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "tags": [
+          "Registry.Contracts"
         ]
       }
     },
@@ -4202,6 +4646,107 @@
         ]
       }
     },
+    "/api/registry/night-band": {
+      "get": {
+        "operationId": "GetNightBand",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NightBandDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "tags": [
+          "Registry.NightBand"
+        ]
+      },
+      "put": {
+        "operationId": "UpdateNightBand",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNightBandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.NightBand"
+        ]
+      }
+    },
     "/api/registry/vehicles": {
       "get": {
         "operationId": "ListVehicles",
@@ -4708,6 +5253,9 @@
     },
     {
       "name": "Registry.Contracts"
+    },
+    {
+      "name": "Registry.NightBand"
     }
   ]
 }

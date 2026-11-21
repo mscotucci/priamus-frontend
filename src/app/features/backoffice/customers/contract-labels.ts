@@ -33,6 +33,26 @@ const format = (value: number, decimals: { min: number; max: number }): string =
 /** An amount with 2 decimals and the locale's separator, as in "30,00". */
 export const formatAmount = (value: number): string => format(value, { min: 2, max: 2 });
 
+/** A duration in whole minutes as hours and minutes: "2 h 20 min", "3 h", "50 min". */
+export function formatDuration(minutes: number, translate: TranslateService): string {
+  const hour = translate.instant('contracts.form.unit.symbol.hour');
+  const minute = translate.instant('contracts.form.unit.symbol.minute');
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) {
+    return `${rest} ${minute}`;
+  }
+  return rest === 0 ? `${hours} ${hour}` : `${hours} ${hour} ${rest} ${minute}`;
+}
+
+/** Kilograms as tons, up to 3 decimals and none when whole: "12,3 ton", "12 ton", "12,345 ton". */
+export const formatTons = (kilograms: number, translate: TranslateService): string =>
+  `${format(kilograms / 1000, { min: 0, max: 3 })} ${translate.instant('contracts.form.unit.threshold.byweight')}`;
+
+/** A whole number of kilometres with the locale's grouping: "120 km". */
+export const formatKilometres = (kilometres: number, translate: TranslateService): string =>
+  `${format(kilometres, { min: 0, max: 0 })} ${translate.instant('contracts.form.unit.threshold.bydistance')}`;
+
 /** The ISO date (yyyy-mm-dd) of the day before the given ISO date. */
 export function dayBefore(iso: string): string {
   const day = new Date(`${iso}T00:00:00Z`);

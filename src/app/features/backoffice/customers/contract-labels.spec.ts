@@ -5,6 +5,9 @@ import {
   CONTRACT_STATUS_PILL,
   dayBefore,
   documentsSentence,
+  formatDuration,
+  formatKilometres,
+  formatTons,
   minimumSummary,
   rateSummary,
   tieredExample,
@@ -148,5 +151,31 @@ describe('contract labels', () => {
         ),
       ).toBe('90,00 €');
     });
+  });
+
+  it('formatDuration reads hours and minutes, never a decimal number of hours', () => {
+    const service = translate();
+
+    expect(formatDuration(140, service)).toBe('2 h 20 min');
+    expect(formatDuration(180, service)).toBe('3 h');
+    expect(formatDuration(50, service)).toBe('50 min');
+    expect(formatDuration(1439, service)).toBe('23 h 59 min');
+  });
+
+  it('formatKilometres shows whole kilometres with the unit', () => {
+    const service = translate();
+
+    expect(formatKilometres(9999, service)).toBe('9999 km');
+    expect(formatKilometres(120, service)).toBe('120 km');
+  });
+
+  it.each([
+    [12300, '12,3 ton'],
+    [12000, '12 ton'],
+    [12345, '12,345 ton'],
+    [7, '0,007 ton'],
+    [99999, '99,999 ton'],
+  ])('formatTons shows %i kg as %s', (kilograms, expected) => {
+    expect(formatTons(kilograms, translate())).toBe(expected);
   });
 });

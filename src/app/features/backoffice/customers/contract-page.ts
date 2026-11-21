@@ -20,6 +20,7 @@ import { ApiError, fieldErrors, noticeOf } from '../../../core/api/api-error';
 import { Topbar } from '../../../core/layout/topbar';
 import { Dialog } from '../../../shared/components/dialog/dialog';
 import { Notice } from '../../../shared/components/notice/notice';
+import { NativeValue } from '../../../shared/directives/native-value';
 import { LeaveConfirmation } from '../../../shared/guards/leave-confirmation';
 import type { LeaveConfirmable } from '../../../shared/guards/unsaved-changes-guard';
 import {
@@ -34,6 +35,7 @@ import {
 } from './contract-labels';
 import { ChoiceKeys } from './choice-keys';
 import { ContractQuestion } from './contract-question';
+import { ContractSimulation } from './contract-simulation';
 import {
   AmountField,
   Drafts,
@@ -171,7 +173,9 @@ const SAMPLE_MINIMUM: Minimum = { kind: 'TieredOverage', amount: 50, threshold: 
     ContractQuestion,
     ContractKeys,
     ContractVehicleRates,
+    ContractSimulation,
     Dialog,
+    NativeValue,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-1 flex-col', '(window:beforeunload)': 'warnBeforeUnload($event)' },
@@ -326,6 +330,14 @@ export class ContractPage implements LeaveConfirmable {
       [9, this.documents() !== null],
     ]);
   });
+
+  /** The contract has a rate and, unless priced by trip, a minimum: it can be tried with a sample trip. */
+  protected readonly simulable = computed(
+    () =>
+      this.flat() &&
+      this.rate() !== null &&
+      (this.radio().mode === 'ByTrip' || this.minimum() !== null),
+  );
 
   /** Every shown question has an answer. */
   protected readonly complete = computed(() =>

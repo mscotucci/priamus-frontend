@@ -1,0 +1,152 @@
+<section class="pt-card flex flex-col gap-4 p-5" aria-labelledby="sim-title">
+  <div>
+    <h3 class="pt-title" id="sim-title">{{ 'contracts.form.simulation.title' | translate }}</h3>
+    <p class="pt-muted">{{ 'contracts.form.simulation.intro' | translate }}</p>
+  </div>
+
+  <ng-template #startField>
+    <div class="pt-field">
+      <label class="pt-label" for="sim-start">{{
+        'contracts.form.simulation.start' | translate
+      }}</label>
+      <input
+        class="pt-input"
+        id="sim-start"
+        type="time"
+        [attr.aria-invalid]="errors().start ? 'true' : null"
+        [attr.aria-describedby]="errors().start ? 'sim-start-error' : null"
+        (input)="edit('start', $any($event.target).value)"
+      />
+      @if (errors().start; as error) {
+        <span class="pt-field__error" id="sim-start-error">{{ error }}</span>
+      }
+    </div>
+  </ng-template>
+
+  <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+    <div class="pt-field">
+      <label class="pt-label" for="sim-vehicle">{{
+        'contracts.form.simulation.vehicle' | translate
+      }}</label>
+      <select class="pt-input" id="sim-vehicle" (change)="pickVehicle($any($event.target).value)">
+        <option value="">{{ 'contracts.form.simulation.ownRate' | translate }}</option>
+        @for (option of vehicleOptions(); track option.id) {
+          <option [value]="option.id" [selected]="option.id === vehicleId()">
+            {{ option.label }}
+          </option>
+        }
+      </select>
+    </div>
+
+    @switch (mode()) {
+      @case ('ByHour') {
+        <ng-container *ngTemplateOutlet="startField" />
+        <div class="pt-field">
+          <label class="pt-label" for="sim-end">{{
+            'contracts.form.simulation.end' | translate
+          }}</label>
+          <input
+            class="pt-input"
+            id="sim-end"
+            type="time"
+            [attr.aria-invalid]="errors().end ? 'true' : null"
+            [attr.aria-describedby]="errors().end ? 'sim-end-error' : 'sim-end-hint'"
+            (input)="edit('end', $any($event.target).value)"
+          />
+          @if (errors().end; as error) {
+            <span class="pt-field__error" id="sim-end-error">{{ error }}</span>
+          } @else {
+            <span class="pt-field__hint" id="sim-end-hint">{{
+              'contracts.form.simulation.endHint' | translate
+            }}</span>
+          }
+        </div>
+      }
+      @case ('ByWeight') {
+        <div class="pt-field">
+          <label class="pt-label" for="sim-kilograms">{{
+            'contracts.form.simulation.kilograms' | translate
+          }}</label>
+          <input
+            class="pt-input"
+            id="sim-kilograms"
+            inputmode="numeric"
+            [attr.aria-invalid]="errors().kilograms ? 'true' : null"
+            [attr.aria-describedby]="errors().kilograms ? 'sim-kilograms-error' : null"
+            (input)="edit('kilograms', $any($event.target).value)"
+          />
+          @if (errors().kilograms; as error) {
+            <span class="pt-field__error" id="sim-kilograms-error">{{ error }}</span>
+          }
+        </div>
+        <ng-container *ngTemplateOutlet="startField" />
+      }
+      @case ('ByDistance') {
+        <div class="pt-field">
+          <label class="pt-label" for="sim-kilometres">{{
+            'contracts.form.simulation.kilometres' | translate
+          }}</label>
+          <input
+            class="pt-input"
+            id="sim-kilometres"
+            inputmode="numeric"
+            [attr.aria-invalid]="errors().kilometres ? 'true' : null"
+            [attr.aria-describedby]="errors().kilometres ? 'sim-kilometres-error' : null"
+            (input)="edit('kilometres', $any($event.target).value)"
+          />
+          @if (errors().kilometres; as error) {
+            <span class="pt-field__error" id="sim-kilometres-error">{{ error }}</span>
+          }
+        </div>
+        <ng-container *ngTemplateOutlet="startField" />
+      }
+      @default {
+        <ng-container *ngTemplateOutlet="startField" />
+      }
+    }
+  </div>
+
+  @if (blocked()) {
+    <p class="pt-muted">{{ 'contracts.form.simulation.blocked' | translate }}</p>
+  } @else {
+    <div>
+      <button
+        type="button"
+        class="pt-btn pt-btn--primary pt-btn--sm"
+        [disabled]="running()"
+        (click)="calculate()"
+      >
+        {{
+          (running()
+            ? 'contracts.form.simulation.calculate.pending'
+            : 'contracts.form.simulation.calculate.idle'
+          ) | translate
+        }}
+      </button>
+    </div>
+    @if (refusal(); as notice) {
+      <app-notice [notice]="notice" />
+    } @else if (lines(); as rows) {
+      <div class="pt-calc" aria-live="polite">
+        @for (row of rows; track row.label) {
+          <div class="pt-calc__row">
+            <span class="pt-muted">{{ row.label }}</span>
+            <span [class.pt-mono]="row.mono">
+              {{ row.text }}
+              @if (row.plate) {
+                <span class="pt-mono">{{ row.plate }}</span>
+              }
+            </span>
+          </div>
+        }
+        <div class="pt-calc__rule"></div>
+        <div class="pt-calc__row">
+          <span class="pt-label">{{ 'contracts.form.simulation.result.total' | translate }}</span>
+          <span class="pt-amount">{{ total() }}</span>
+        </div>
+      </div>
+    } @else if (stale()) {
+      <p class="pt-muted">{{ 'contracts.form.simulation.stale' | translate }}</p>
+    }
+  }
+</section>

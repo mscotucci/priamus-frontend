@@ -16,6 +16,8 @@ export type ContractVehicleRateRequest = Schemas['ContractVehicleRateRequest'];
 export type CreateContractRequest = Schemas['CreateContractRequest'];
 export type UpdateContractRequest = Schemas['UpdateContractRequest'];
 export type ChangeContractFromDateRequest = Schemas['ChangeContractFromDateRequest'];
+export type SimulatePriceRequest = Schemas['SimulatePriceRequest'];
+export type PriceSimulation = Schemas['PriceSimulationDto'];
 
 const url = (customerId: string) => `/api/registry/customers/${customerId}/contracts`;
 
@@ -45,5 +47,9 @@ export class ContractsApi {
     request: ChangeContractFromDateRequest,
   ): Observable<Contract> {
     return this.http.post<Contract>(`${url(customerId)}/${contractId}/change-from-date`, request);
+  }
+
+  simulate(request: SimulatePriceRequest): Observable<PriceSimulation> {
+    return this.http.post<PriceSimulation>('/api/registry/contracts/simulation', request);
   }
 }

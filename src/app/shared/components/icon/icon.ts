@@ -14,11 +14,14 @@ export type IconName =
   | 'search'
   | 'chevron'
   | 'check'
-  | 'alert';
+  | 'alert'
+  | 'settings';
 
 @Component({
   selector: 'app-icon',
-  template: `<svg [class]="classes()" aria-hidden="true"><use [attr.href]="'icons.svg#' + name()" /></svg>`,
+  template: `<svg [class]="classes()" aria-hidden="true">
+    <use [attr.href]="'icons.svg#' + name()" />
+  </svg>`,
   host: { style: 'display: contents' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

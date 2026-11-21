@@ -54,6 +54,9 @@
       <div class="flex flex-col items-center gap-1">
         <app-icon name="alert" size="lg" /><span class="pt-muted">alert</span>
       </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="settings" size="lg" /><span class="pt-muted">settings</span>
+      </div>
     </div>
     <div class="flex flex-wrap items-center gap-4">
       <app-icon name="truck" size="xs" />
@@ -261,10 +264,12 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
       <div class="pt-field">
         <label class="pt-label" for="g-group-sm">Prezzo diurno (sm)</label>
         <span class="pt-input-group"
-          ><input class="pt-input pt-input--sm" id="g-group-sm" inputmode="decimal" value="30,00" /><span
-            class="pt-input-group__addon"
-            >€/h</span
-          ></span
+          ><input
+            class="pt-input pt-input--sm"
+            id="g-group-sm"
+            inputmode="decimal"
+            value="30,00"
+          /><span class="pt-input-group__addon">€/h</span></span
         >
       </div>
       <div class="pt-field">
@@ -279,10 +284,12 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
       <div class="pt-field">
         <label class="pt-label" for="g-group-lg">Prezzo diurno (lg)</label>
         <span class="pt-input-group"
-          ><input class="pt-input pt-input--lg" id="g-group-lg" inputmode="decimal" value="30,00" /><span
-            class="pt-input-group__addon"
-            >€/h</span
-          ></span
+          ><input
+            class="pt-input pt-input--lg"
+            id="g-group-lg"
+            inputmode="decimal"
+            value="30,00"
+          /><span class="pt-input-group__addon">€/h</span></span
         >
       </div>
       <div class="pt-field">
@@ -293,9 +300,12 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
             id="g-group-invalid"
             inputmode="decimal"
             aria-invalid="true"
-            aria-describedby="g-group-invalid-error" /><span class="pt-input-group__addon">€</span></span
+            aria-describedby="g-group-invalid-error"
+          /><span class="pt-input-group__addon">€</span></span
         >
-        <span class="pt-field__error" id="g-group-invalid-error">Inserisci la chiamata notturna.</span>
+        <span class="pt-field__error" id="g-group-invalid-error"
+          >Inserisci la chiamata notturna.</span
+        >
       </div>
     </div>
   </section>

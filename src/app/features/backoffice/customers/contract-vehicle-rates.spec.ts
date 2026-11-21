@@ -270,6 +270,30 @@ describe('ContractVehicleRates', () => {
     },
   );
 
+  it.each([
+    {
+      night: '49,99',
+      expected: ['Il prezzo notturno non può essere più basso del prezzo diurno.'],
+    },
+    { night: '50', expected: [] },
+  ])(
+    'a vehicle block refuses a night price below its day price and accepts an equal one (night $night)',
+    ({ night, expected }) => {
+      const { host, fixture, yes, fill, type, confirm, errors } = render();
+      host.night.set(true);
+      fixture.detectChanges();
+      yes();
+      fill(0, 'v-1', '50');
+      type(0, 'night', night);
+      type(0, 'callFee', '10');
+
+      confirm();
+
+      expect(errors(0)).toEqual(expected);
+      expect(host.confirmed.length).toBe(expected.length === 0 ? 1 : 0);
+    },
+  );
+
   it('the minimum of a block is validated: a fixed minimum needs its amount, a tiered one its three values', () => {
     const { blocks, yes, fill, confirm, errors, settle } = render();
     yes();

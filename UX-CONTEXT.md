@@ -49,8 +49,11 @@ Reusable UX conventions. Single-screen details live in the mockups, behaviour in
 - A page that edits an entity guards against leaving with unsaved changes: a dialog "Uscire senza salvare?" for in-app navigation, the browser's own prompt for reload or close. Not after a save, not after a deliberate discard, not on session expiry (decided 2026-11-18). "Esci" on such a page asks with the same dialog before the session is closed (decided 2026-11-18). Dialogs need no guard: they close only through their cancel button or Escape.
 - Destructive actions ask for confirmation in a dialog. An action the user may not perform is not rendered, never shown disabled.
 
+- System settings live on the administrator's page "Impostazioni" (navigation group "Sistema"): one card per setting, each with its own "Salva" (decided 2026-11-20).
+
 ## Feedback
 
+- A result computed from values the user is editing (the simulation of a contract) is removed as soon as one of those values changes, and the user computes it again: a result that no longer matches the page is never shown (decided 2026-11-20).
 - Loading a list: the page title stays, a loading indicator replaces the table — when the list opens and when its search, filters, sorting or page change. When the same list is read again after a write, the table stays (so the focus stays where it was) and a small indicator shows at the end of the filter row until the new rows arrive. A button that is saving changes its label and is disabled, without an indicator; a row action that runs at once (enable) is marked `aria-disabled` instead, so it keeps the focus.
 - A list that fails to load: an alert with "Riprova" replaces the table.
 - A create, edit or delete that succeeds: a toast at the bottom right that dismisses itself after 4 seconds, one at a time. Loading never shows a toast, and neither does an error: errors are notices in the page.

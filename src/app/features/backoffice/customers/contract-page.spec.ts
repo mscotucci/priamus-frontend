@@ -551,7 +551,7 @@ describe('ContractPage', () => {
     await click(harness, buttonIn(harness.element, 'Conferma selezione'));
 
     expect(saveButtons(harness).map((b) => b.disabled)).toEqual([false, false]);
-    expect(text(harness.element.querySelector('main section.pt-card .pt-title'))).toBe(
+    expect(text(harness.element.querySelector('main > section.pt-card .pt-title'))).toBe(
       'Configurazione completata',
     );
   });
@@ -2910,6 +2910,194 @@ describe('ContractPage', () => {
       await click(harness, modifyOf(harness, 6));
       await flushRateable(harness);
       expect(current(harness).querySelectorAll('input[id$="-day"]').length).toBe(2);
+    });
+  });
+
+  describe('simulation card', () => {
+    const SIMULATION_URL = '/api/registry/contracts/simulation';
+
+    const flat: Contract = {
+      ...existing,
+      billingLevel: 'FlatRate',
+      nightSurcharge: false,
+      dayPrice: 30,
+      minimumRule: 'FixedMinimum',
+      minimumAmount: 30,
+    };
+
+    const flatNight: Contract = {
+      ...flat,
+      nightSurcharge: true,
+      nightPrice: 42,
+      nightCallFee: 35,
+    };
+
+    const card = (harness: Harness) => harness.element.querySelector('app-contract-simulation');
+
+    const calculate = (harness: Harness) =>
+      buttonIn(card(harness) as Element, 'Calcola') as HTMLButtonElement | undefined;
+
+    const outcome = {
+      amountAfterMinimum: 30,
+      band: 'Day',
+      baseAmount: 30,
+      minimumAmount: 30,
+      minimumApplied: false,
+      minimumOveragePrice: null,
+      minimumRule: 'FixedMinimum',
+      minimumThreshold: null,
+      nightBand: { start: '22:00', end: '06:00' },
+      nightCallFee: null,
+      nightSurcharge: false,
+      quantity: 60,
+      rateSource: 'Contract',
+      total: 30,
+      unitPrice: 30,
+      vehicleId: null,
+    };
+
+    /** Types the sample trip (by the hour) and presses "Calcola". */
+    const run = async (harness: Harness) => {
+      type(harness, 'sim-start', '09:00');
+      type(harness, 'sim-end', '10:00');
+      await click(harness, calculate(harness));
+    };
+
+    it('the card is absent until the rate and the minimum are answered, then follows the last question without a number', async () => {
+      const harness = await openNew();
+      await confirmValidity(harness, '2027-01-01');
+      await choose(harness, 'No');
+      await choose(harness, 'A ore');
+      await choose(harness, 'No');
+      expect(card(harness)).toBeNull();
+
+      await answerRate(harness);
+      expect(card(harness)).toBeNull();
+
+      await answerNoMinimum(harness);
+
+      expect(card(harness)).not.toBeNull();
+      expect(text(card(harness)!.querySelector('h3'))).toBe('Prova la configurazione');
+      expect(card(harness)!.querySelector('.pt-question__number')).toBeNull();
+      expect(card(harness)!.previousElementSibling).toBe(questions(harness).at(-1)!.parentElement);
+    });
+
+    it('a contract priced by trip shows the card once the rate is answered, with no minimum', async () => {
+      const harness = await openNew();
+      await confirmValidity(harness, '2027-01-01');
+      await choose(harness, 'No');
+      await choose(harness, 'A viaggio');
+      await choose(harness, 'No');
+      expect(card(harness)).toBeNull();
+
+      await answerRate(harness);
+
+      expect(card(harness)).not.toBeNull();
+    });
+
+    it('a read-only flat-rate contract shows the card', async () => {
+      const harness = await render('/customers/c1/contracts/k1');
+      http.expectOne(CUSTOMER_URL).flush({ ...customer, status: 'Deactivated' });
+      http.expectOne(CONTRACTS_URL).flush([]);
+      http.expectOne(CONTRACT_URL).flush(flat);
+      await settle(harness.fixture);
+
+      expect(card(harness)).not.toBeNull();
+      expect(calculate(harness)).toBeDefined();
+    });
+
+    it('a contract that is not flat rate shows no card', async () => {
+      const harness = await openExisting(existing);
+
+      expect(card(harness)).toBeNull();
+    });
+
+    it('while a question is reopened the card offers no "Calcola" and says to confirm it; it comes back with "Annulla modifica" and with "Conferma"', async () => {
+      const harness = await openExisting(flat);
+      expect(calculate(harness)).toBeDefined();
+
+      await click(harness, buttonIn(questions(harness)[4], 'Modifica'));
+
+      expect(calculate(harness)).toBeUndefined();
+      expect(text(card(harness))).toContain('Conferma la domanda aperta per provare il contratto.');
+
+      await click(harness, buttonIn(harness.element, 'Annulla modifica'));
+      expect(calculate(harness)).toBeDefined();
+
+      await click(harness, buttonIn(questions(harness)[4], 'Modifica'));
+      await click(harness, buttonIn(harness.element, 'Conferma'));
+      expect(calculate(harness)).toBeDefined();
+      expect(text(card(harness))).not.toContain('Conferma la domanda aperta');
+    });
+
+    it('the card computes the contract as written on the page, saved or not', async () => {
+      const harness = await openExisting(flat);
+      await click(harness, buttonIn(questions(harness)[4], 'Modifica'));
+      type(harness, 'rate-day', '45');
+      await click(harness, buttonIn(harness.element, 'Conferma'));
+
+      await run(harness);
+
+      const request = http.expectOne(SIMULATION_URL);
+      expect(request.request.body).toMatchObject({
+        pricingMode: 'ByHour',
+        nightSurcharge: false,
+        dayPrice: 45,
+        startTime: '09:00',
+        endTime: '10:00',
+      });
+      request.flush({ ...outcome, unitPrice: 45, total: 45, baseAmount: 45 });
+      await settle(harness.fixture);
+      expect(text(card(harness))).toContain('45,00');
+    });
+
+    it('changing an answer clears the result and asks to calculate again', async () => {
+      const harness = await openExisting(flat);
+      await run(harness);
+      http.expectOne(SIMULATION_URL).flush(outcome);
+      await settle(harness.fixture);
+      expect(card(harness)!.querySelector('.pt-calc')).not.toBeNull();
+
+      await click(harness, buttonIn(questions(harness)[4], 'Modifica'));
+      type(harness, 'rate-day', '45');
+      await click(harness, buttonIn(harness.element, 'Conferma'));
+
+      expect(card(harness)!.querySelector('.pt-calc')).toBeNull();
+      expect(text(card(harness))).toContain('Qualcosa è cambiato');
+    });
+
+    it('with the night surcharge off the request carries no night price and no night call fee', async () => {
+      const harness = await openExisting(flatNight);
+      await click(harness, buttonIn(questions(harness)[3], 'Modifica'));
+      await choose(harness, 'No');
+      await run(harness);
+
+      const request = http.expectOne(SIMULATION_URL);
+      expect(request.request.body).toMatchObject({
+        nightSurcharge: false,
+        dayPrice: 30,
+        nightPrice: null,
+        nightCallFee: null,
+      });
+      request.flush(outcome);
+    });
+
+    it('question 6 refuses a night price below the day price under the night price and accepts an equal one', async () => {
+      const harness = await openExisting(flatNight);
+      await click(harness, buttonIn(questions(harness)[4], 'Modifica'));
+      type(harness, 'rate-night', '29,99');
+      await click(harness, buttonIn(harness.element, 'Conferma'));
+
+      expect(text(harness.element.querySelector('#rate-night-error'))).toBe(
+        'Il prezzo notturno non può essere più basso del prezzo diurno.',
+      );
+      expect(harness.element.querySelector('[aria-current="step"]')).not.toBeNull();
+
+      type(harness, 'rate-night', '30');
+      await click(harness, buttonIn(harness.element, 'Conferma'));
+
+      expect(harness.element.querySelector('#rate-night-error')).toBeNull();
+      expect(harness.element.querySelector('[aria-current="step"]')).toBeNull();
     });
   });
 });

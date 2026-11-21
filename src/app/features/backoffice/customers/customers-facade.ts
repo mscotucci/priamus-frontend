@@ -17,6 +17,8 @@ import {
   Contract,
   ContractsApi,
   CreateContractRequest,
+  PriceSimulation,
+  SimulatePriceRequest,
 } from './contracts-api';
 import {
   CreateCustomerRequest,
@@ -33,6 +35,7 @@ export type SaveOutcome = 'saved' | 'ignored' | ApiError;
 export type DeactivateOutcome = 'deactivated' | 'ignored' | ApiError;
 export type SaveContractOutcome = 'created' | 'updated' | 'ignored' | ApiError;
 export type ChangeContractOutcome = 'changed' | 'ignored' | ApiError;
+export type SimulateOutcome = PriceSimulation | ApiError;
 
 const NOT_FOUND = 404;
 
@@ -354,6 +357,15 @@ export class CustomersFacade {
       this.contractsApi.changeFromDate(customerId, contract.id, request),
     );
     return outcome === 'done' ? 'changed' : outcome;
+  }
+
+  /** Prices a sample trip with the contract as written on the page; nothing is saved. */
+  async simulate(request: SimulatePriceRequest): Promise<SimulateOutcome> {
+    try {
+      return await firstValueFrom(this.contractsApi.simulate(request));
+    } catch (error) {
+      return toApiError(error);
+    }
   }
 
   /** The busy flag, the refusal, the toast and the return to the customer page of a contract write. */

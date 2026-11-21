@@ -127,6 +127,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/contracts/simulation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SimulatePrice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/registry/customers": {
         parameters: {
             query?: never;
@@ -313,6 +329,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["ReactivateDriver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/night-band": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetNightBand"];
+        put: operations["UpdateNightBand"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -893,6 +925,18 @@ export interface components {
         };
         /** @enum {unknown} */
         MinimumRuleKind: "None" | "FixedMinimum" | "TieredOverage" | null;
+        /** @description The system night band as the API shows it. */
+        NightBandDto: {
+            /** @description First minute after the band, `HH:mm`. */
+            end: string;
+            /** @description First minute of the band, `HH:mm`. */
+            start: string;
+            /**
+             * Format: int32
+             * @description Version to send back with a change.
+             */
+            version: number;
+        };
         /** @description Response envelope for a paginated query. Immutable record. */
         PagedResponseOfCustomerListItemDto: {
             /** @description The items returned in the current page. */
@@ -1009,6 +1053,71 @@ export interface components {
              */
             totalPages?: number;
         };
+        /** @description A simulated amount with the steps that led to it, as the engine computed them. */
+        PriceSimulationDto: {
+            /**
+             * Format: double
+             * @description The amount after the minimum rule, before the night call fee.
+             */
+            amountAfterMinimum: number;
+            /** @description Day or night, by the start time. */
+            band: components["schemas"]["TimeBand"];
+            /**
+             * Format: double
+             * @description The amount before the minimum rule.
+             */
+            baseAmount: number;
+            /**
+             * Format: double
+             * @description The minimum amount M; `null` unless the rule has one.
+             */
+            minimumAmount: number | null;
+            /** @description Whether the minimum rule changed the base amount. */
+            minimumApplied: boolean;
+            /**
+             * Format: double
+             * @description The overage price Y; `null` unless the rule is tiered overage.
+             */
+            minimumOveragePrice: number | null;
+            /** @description The kind of minimum rule of the rate chosen. */
+            minimumRule: components["schemas"]["MinimumRuleKind"];
+            /**
+             * Format: double
+             * @description The threshold X; `null` unless the rule is tiered overage.
+             */
+            minimumThreshold: number | null;
+            /** @description The night band the trip was classified with. */
+            nightBand: components["schemas"]["SimulatedNightBandDto"];
+            /**
+             * Format: double
+             * @description The night call fee added; `null` when none is added.
+             */
+            nightCallFee: number | null;
+            /** @description Whether the terms have the night surcharge. */
+            nightSurcharge: boolean;
+            /**
+             * Format: int32
+             * @description Minutes, kilograms or kilometres; `null` for a trip priced by trip.
+             */
+            quantity: number | null;
+            /** @description Whether the rate is the contract's or a vehicle's. */
+            rateSource: components["schemas"]["RateSource"];
+            /**
+             * Format: double
+             * @description The amount: AmountAfterMinimum plus NightCallFee.
+             */
+            total: number;
+            /**
+             * Format: double
+             * @description The price used: day or night, of the rate chosen.
+             */
+            unitPrice: number;
+            /**
+             * Format: uuid
+             * @description The vehicle whose rate was used; `null` for the contract's rate.
+             */
+            vehicleId: null | string;
+        };
         /**
          * @description How the amount of a trip is measured under a Contract (PRD §5.4).
          * @enum {unknown}
@@ -1022,6 +1131,11 @@ export interface components {
             title?: null | string;
             type?: null | string;
         };
+        /**
+         * @description Where the rate of a computation came from.
+         * @enum {unknown}
+         */
+        RateSource: "Contract" | "Vehicle";
         /** @description A vehicle that can be given a vehicle rate in a contract. */
         RateableVehicleDto: {
             /** @description The description. */
@@ -1089,8 +1203,55 @@ export interface components {
         RevokeRequest: {
             refreshToken: string;
         };
+        /**
+         * @description Request body for `POST /api/registry/contracts/simulation`: the terms of a flat-rate contract as
+         *     written on the page, saved or not, and a sample trip. The rate members and the vehicle rates follow the
+         *     contract requests; `StartTime` and `EndTime` are `HH:mm`. The end is for a trip by hour
+         *     only, `Kilograms` for a trip by weight only and `Kilometres` for a trip by distance only;
+         *     the quantities are whole numbers, read as numbers so that a fraction is reported on its own member.
+         *     `VehicleId` is the trip's vehicle: `null`, or a vehicle without a vehicle rate, uses the
+         *     contract's rate.
+         */
+        SimulatePriceRequest: {
+            /** Format: double */
+            dayPrice: number | null;
+            endTime: null | string;
+            /** Format: double */
+            kilograms: number | null;
+            /** Format: double */
+            kilometres: number | null;
+            /** Format: double */
+            minimumAmount: number | null;
+            /** Format: double */
+            minimumOveragePrice: number | null;
+            minimumRule: null | components["schemas"]["MinimumRuleKind"];
+            /** Format: double */
+            minimumThreshold: number | null;
+            /** Format: double */
+            nightCallFee: number | null;
+            /** Format: double */
+            nightPrice: number | null;
+            nightSurcharge: null | boolean;
+            pricingMode: null | components["schemas"]["PricingMode"];
+            startTime: string;
+            /** Format: uuid */
+            vehicleId: null | string;
+            vehicleRates: null | components["schemas"]["ContractVehicleRateRequest"][];
+        };
+        /** @description The night band a simulation classified the trip with. */
+        SimulatedNightBandDto: {
+            /** @description First minute after the band, `HH:mm`. */
+            end: string;
+            /** @description First minute of the band, `HH:mm`. */
+            start: string;
+        };
         /** @enum {unknown} */
         SortDirection: "Ascending" | "Descending" | null;
+        /**
+         * @description Whether a trip starts in the night band.
+         * @enum {unknown}
+         */
+        TimeBand: "Day" | "Night";
         /**
          * @description Request body for `PUT /api/registry/customers/{customerId}/contracts/{contractId}`
          *     (PRD §5.4, RF-16): the terms of the contract, with its rate members as in
@@ -1146,6 +1307,16 @@ export interface components {
             phone: null | string;
             /** Format: uuid */
             userId: null | string;
+            /** Format: int32 */
+            version: number | null;
+        };
+        /**
+         * @description Request body for `PUT /api/registry/night-band`. `Start` and `End` are `HH:mm`;
+         *     `Version` is the version the client read, and the save is refused when the band has changed since.
+         */
+        UpdateNightBandRequest: {
+            end: string;
+            start: string;
             /** Format: int32 */
             version: number | null;
         };
@@ -1770,6 +1941,66 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SimulatePrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulatePriceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceSimulationDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2871,6 +3102,102 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetNightBand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NightBandDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateNightBand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNightBandRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

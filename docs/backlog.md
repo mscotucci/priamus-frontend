@@ -2,6 +2,10 @@
 
 Work deferred on purpose, with the decision that deferred it. Items leave this file when a slice picks them up or a decision drops them.
 
+## Contract page
+
+- **Unit prices asked for a tiered overage.** With the minimum rule "Scaglione con eccesso" a trip costs M + overage × Y (plus the night call fee at night): the day and night prices of question 6 are never used, yet the page asks for them. Decided at the grilling of the pricing engine on 2026-11-20 to leave the page as it is in that slice; to decide how the questions change (hide the prices, or reorder rate and minimum).
+
 ## Design system
 
 - **Fonts load from Google Fonts** (`index.html`). The driver app is meant to be installed and used on the road: self-host Manrope and JetBrains Mono before it ships.

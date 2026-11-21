@@ -6,7 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { provideTestI18n } from '../../../core/i18n/i18n-testing';
 import { Toast } from '../../../core/toast/toast';
 import { CustomersFacade } from './customers-facade';
-import type { Contract, CreateContractRequest } from './contracts-api';
+import type { Contract, CreateContractRequest, SimulatePriceRequest } from './contracts-api';
 import type { CustomerListPage } from './customers-api';
 
 const URL = '/api/registry/customers';
@@ -865,6 +865,37 @@ describe('CustomersFacade', () => {
 
       TestBed.tick();
       http.expectOne((request) => request.url === `${URL}/c1` && request.method === 'GET');
+    });
+  });
+
+  describe('simulate', () => {
+    const request = { pricingMode: 'ByTrip', startTime: '09:00' } as SimulatePriceRequest;
+
+    it('posts the request and returns the priced trip', async () => {
+      const outcome = facade.simulate(request);
+      const call = http.expectOne('/api/registry/contracts/simulation');
+      expect(call.request.method).toBe('POST');
+      expect(call.request.body).toBe(request);
+      call.flush({ total: 12.5 });
+
+      expect(await outcome).toEqual({ total: 12.5 });
+    });
+
+    it('returns a refusal as the error, never throws', async () => {
+      const outcome = facade.simulate(request);
+      http
+        .expectOne('/api/registry/contracts/simulation')
+        .flush(
+          { errorCode: 'Registry.Pricing.AmountTooLarge', detail: 'Importo troppo alto.' },
+          { status: 422, statusText: 'Unprocessable Entity' },
+        );
+
+      expect(await outcome).toEqual({
+        kind: 'domain',
+        status: 422,
+        errorCode: 'Registry.Pricing.AmountTooLarge',
+        detail: 'Importo troppo alto.',
+      });
     });
   });
 });
