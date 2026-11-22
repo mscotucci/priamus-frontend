@@ -30,8 +30,10 @@ import {
   fixedExample,
   minimumSummary,
   rateSummary,
+  rateTerms,
+  sortLocationRates,
+  sortVehicleRates,
   tieredExample,
-  vehicleRateTerms,
 } from './contract-labels';
 import { ChoiceKeys } from './choice-keys';
 import { ContractQuestion } from './contract-question';
@@ -65,8 +67,19 @@ import {
   RequiredDocument,
 } from './contracts-api';
 import { ContractKeys } from './contract-keys';
+import {
+  ContractLocationRates,
+  LEVEL_KEY,
+  locationRateAnswerOf,
+  locationRateRequestOf,
+  locationRatesKey,
+  rowKey,
+  type LocationRateAnswer,
+  type LocationRateLevel,
+} from './contract-location-rates';
 import { ContractVehicleRates, type VehicleRateAnswer } from './contract-vehicle-rates';
 import { CustomersFacade } from './customers-facade';
+import { LocationsFacade } from '../locations/locations-facade';
 
 const CONCURRENT_UPDATE = 'Registry.Contract.ConcurrentUpdate';
 
@@ -146,12 +159,6 @@ const RADIO_QUESTIONS: RadioQuestion[] = [
   },
 ];
 
-const WHICH_BY_BILLING: Partial<Record<BillingLevel, Which>> = {
-  PerPickupLocation: 'pickup',
-  PerDeliveryLocation: 'delivery',
-  PerLocationPair: 'both',
-};
-
 const BILLING_BY_WHICH: Record<Which, BillingLevel> = {
   pickup: 'PerPickupLocation',
   delivery: 'PerDeliveryLocation',
@@ -172,6 +179,7 @@ const SAMPLE_MINIMUM: Minimum = { kind: 'TieredOverage', amount: 50, threshold: 
     Notice,
     ContractQuestion,
     ContractKeys,
+    ContractLocationRates,
     ContractVehicleRates,
     ContractSimulation,
     Dialog,
@@ -183,6 +191,7 @@ const SAMPLE_MINIMUM: Minimum = { kind: 'TieredOverage', amount: 50, threshold: 
 })
 export class ContractPage implements LeaveConfirmable {
   protected readonly facade = inject(CustomersFacade);
+  protected readonly locations = inject(LocationsFacade);
   private readonly translate = inject(TranslateService);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -226,10 +235,15 @@ export class ContractPage implements LeaveConfirmable {
   protected readonly minimumKindDraft = signal<MinimumRuleKind | null>(null);
   protected readonly rate = signal<Rate | null>(null);
   protected readonly minimum = signal<Minimum | null>(null);
+  /** The rate of each location or pair of a location contract; empty until question 6 is answered, and for a flat rate. */
+  protected readonly locationRates = signal<LocationRateAnswer[]>([]);
   /** The vehicles with a rate of their own: null while question 8 is unanswered, an empty list for "No". */
   protected readonly vehicleRates = signal<VehicleRateAnswer[] | null>(null);
+  protected readonly sortedVehicleRates = computed(() =>
+    sortVehicleRates(this.vehicleRates() ?? []),
+  );
 
-  /** A contract answered "No" to the locations has the one flat rate; any other has none to set here. */
+  /** A contract answered "No" to the locations has the one flat rate; any other has the rates of its locations. */
   protected readonly flat = computed(() => this.radio().locations !== 'yes');
   protected readonly rateFieldSpecs = computed(() => rateFields(this.radio().night === 'yes'));
   protected readonly minimumFieldSpecs = computed(() => minimumFields(this.minimumKindDraft()));
@@ -253,6 +267,47 @@ export class ContractPage implements LeaveConfirmable {
           mode,
           this.translate,
         );
+  });
+
+  /** The location level of a location contract; null for a flat rate or while unanswered. */
+  protected readonly locationLevel = computed<LocationRateLevel | null>(() => {
+    const level = this.billingLevel();
+    return level === null || level === 'FlatRate' ? null : level;
+  });
+
+  /** Title and hint of question 6 by its kind: the flat rate or the level of the location rates. */
+  protected readonly rateKeys = computed(() =>
+    this.flat()
+      ? {
+          title: 'contracts.form.rate.title',
+          hint:
+            this.radio().night === 'yes'
+              ? 'contracts.form.rate.hintNight'
+              : 'contracts.form.rate.hint',
+        }
+      : {
+          title: `contracts.form.locationRates.${this.radio().which}.title`,
+          hint: `contracts.form.locationRates.${this.radio().which}.hint`,
+        },
+  );
+
+  /** At least one location rate, and each has a night price exactly when the contract has the night surcharge. */
+  private readonly locationRatesAnswered = computed(() => {
+    const night = this.radio().night === 'yes';
+    const rates = this.locationRates();
+    return rates.length > 0 && rates.every((entry) => (entry.rate.night !== null) === night);
+  });
+
+  /** One line per location rate under the closed answer: its locations and its terms. */
+  protected readonly locationRateLines = computed(() => {
+    const mode = this.radio().mode;
+    return mode === null
+      ? []
+      : sortLocationRates(this.locationRates()).map((entry) => ({
+          key: rowKey(entry),
+          sides: [entry.pickup, entry.delivery].filter((side) => side !== null),
+          terms: rateTerms(entry, mode, this.translate),
+        }));
   });
 
   /** The billing level the answers to questions 2 and 3 stand for, for the save. */
@@ -279,6 +334,7 @@ export class ContractPage implements LeaveConfirmable {
       this.rate(),
       this.minimum(),
       this.vehicleRatesKey(),
+      locationRatesKey(this.locationRates()),
       this.documents(),
     ]),
   );
@@ -292,6 +348,7 @@ export class ContractPage implements LeaveConfirmable {
       this.rate(),
       this.minimum(),
       this.vehicleRatesKey(),
+      locationRatesKey(this.locationRates()),
       this.documents(),
     ]),
   );
@@ -319,24 +376,20 @@ export class ContractPage implements LeaveConfirmable {
       [3, radio.which !== null],
       [4, radio.mode !== null],
       [5, radio.night !== null],
-      [
-        6,
-        this.flat()
-          ? this.rate() !== null
-          : this.billingLevel() !== null && radio.mode !== null && radio.night !== null,
-      ],
+      [6, this.flat() ? this.rate() !== null : this.locationRatesAnswered()],
       [7, this.minimum() !== null],
       [8, this.vehicleRates() !== null],
       [9, this.documents() !== null],
     ]);
   });
 
-  /** The contract has a rate and, unless priced by trip, a minimum: it can be tried with a sample trip. */
+  /** The contract has a rate and, unless priced by trip, a minimum, or the rates of its locations: it can be tried with a sample trip. */
   protected readonly simulable = computed(
     () =>
-      this.flat() &&
-      this.rate() !== null &&
-      (this.radio().mode === 'ByTrip' || this.minimum() !== null),
+      this.billingLevel() !== null &&
+      (this.flat()
+        ? this.rate() !== null && (this.radio().mode === 'ByTrip' || this.minimum() !== null)
+        : this.locationRatesAnswered()),
   );
 
   /** Every shown question has an answer. */
@@ -375,7 +428,13 @@ export class ContractPage implements LeaveConfirmable {
       : this.seeded() && this.facade.customer.hasValue(),
   );
 
+  /** Question 6 is on the page and being answered on a location contract: the locations that can be given a rate are read. */
+  private readonly locationRatesOpen = computed(
+    () => !this.flat() && this.visible(6) && this.open(6),
+  );
+
   private rateableAsked = false;
+  private locationsAsked = false;
   private readonly refusal = signal<ApiError | null>(null);
 
   /** The open contract the new one closes (RF-18): the customer's open contract starting before "Dal". */
@@ -494,6 +553,13 @@ export class ContractPage implements LeaveConfirmable {
         untracked(() => this.loadRateable());
       }
     });
+    effect(() => {
+      if (!this.locationRatesOpen()) {
+        this.locationsAsked = false;
+      } else if (!this.locationsAsked) {
+        untracked(() => this.loadRateableLocations());
+      }
+    });
   }
 
   private refusalTexts(field: string): string[] {
@@ -527,7 +593,7 @@ export class ContractPage implements LeaveConfirmable {
     this.toDraft.set(contract.validTo ?? '');
     this.radio.set({
       locations: flat ? 'no' : 'yes',
-      which: WHICH_BY_BILLING[contract.billingLevel] ?? null,
+      which: contract.billingLevel === 'FlatRate' ? null : LEVEL_KEY[contract.billingLevel],
       mode: contract.pricingMode,
       night: contract.nightSurcharge ? 'yes' : 'no',
     });
@@ -538,6 +604,11 @@ export class ContractPage implements LeaveConfirmable {
     this.fieldErrors.set({});
     this.vehicleRates.set(
       flat ? contract.vehicleRates.map((entry) => this.answerOf(contract, entry)) : null,
+    );
+    this.locationRates.set(
+      sortLocationRates(
+        contract.locationRates.map((entry) => locationRateAnswerOf(entry, contract.pricingMode)),
+      ),
     );
     this.documents.set(contract.requiredDocuments);
     this.documentsDraft.set(contract.requiredDocuments);
@@ -577,7 +648,7 @@ export class ContractPage implements LeaveConfirmable {
 
   /** A shown question is open while it is unanswered or being reopened. */
   protected open(number: number): boolean {
-    return !this.answered().get(number) || this.editing() === number;
+    return !this.readOnly() && (!this.answered().get(number) || this.editing() === number);
   }
 
   /** The one current step: the question being reopened, else the first unanswered one. */
@@ -592,15 +663,24 @@ export class ContractPage implements LeaveConfirmable {
     if (number === 8) {
       this.loadRateable();
     }
+    if (number === 6 && !this.flat()) {
+      this.loadRateableLocations();
+    }
     this.resetDrafts(number);
     this.editing.set(number);
     this.focusStep();
   }
 
-  /** Reads the rateable vehicles once per opening of question 8, before its content renders. */
-  private loadRateable(): void {
+  /** Reads the rateable vehicles once per opening of question 8, before its content renders, and again after a failure. */
+  protected loadRateable(): void {
     this.rateableAsked = true;
     this.facade.loadRateableVehicles();
+  }
+
+  /** Reads the rateable locations once per opening of question 6, before its content renders, and again after a failure. */
+  protected loadRateableLocations(): void {
+    this.locationsAsked = true;
+    this.locations.loadRateable();
   }
 
   /** "Annulla modifica": the reopened question closes on the answer it had, nothing else changes. */
@@ -676,6 +756,7 @@ export class ContractPage implements LeaveConfirmable {
           const target =
             step?.querySelector<HTMLElement>('input:checked') ??
             step?.querySelector<HTMLElement>('input') ??
+            step?.querySelector<HTMLElement>('button') ??
             root.querySelector<HTMLElement>('main > section.pt-card button');
           target?.focus();
         },
@@ -708,18 +789,31 @@ export class ContractPage implements LeaveConfirmable {
    * Answering question 2 with "No" drops question 3 and its answer. A new pricing mode, or leaving
    * the flat rate, clears the rate, the minimum and the vehicle rates; removing the night surcharge
    * clears the night price and the night call fee of the rate and of every vehicle rate; adding it
-   * asks the rate and the vehicle rates again. Every other answer stays.
+   * asks the rate and the vehicle rates again. A new billing level, also between pickup, delivery and
+   * pair, or a new pricing mode clears the location rates; removing the night surcharge clears their
+   * night values; adding it keeps them and asks question 6 again. Every other answer stays.
    */
   protected pick(question: RadioQuestion, picked: Choice): void {
     if (this.keys.ignoreClick()) {
       return;
     }
     const before = this.radio();
+    const levelBefore = this.billingLevel();
     const after = {
       ...picked.apply(before),
       ...(question.id === 'locations' && picked.value === 'no' ? { which: null } : {}),
     };
     this.radio.set(after);
+    if (after.mode !== before.mode || this.billingLevel() !== levelBefore) {
+      this.setLocationRates([]);
+    } else if (before.night === 'yes' && after.night === 'no') {
+      this.setLocationRates(
+        this.locationRates().map((entry) => ({
+          ...entry,
+          rate: { ...entry.rate, night: null, callFee: null },
+        })),
+      );
+    }
     if (after.mode !== before.mode || (after.locations === 'yes' && before.locations !== 'yes')) {
       this.rate.set(null);
       this.minimum.set(null);
@@ -826,6 +920,34 @@ export class ContractPage implements LeaveConfirmable {
     this.focusStep();
   }
 
+  /** The page keeps the array it holds unless the content changes: the question's draft starts again from a new one. */
+  private setLocationRates(rates: LocationRateAnswer[]): void {
+    if (
+      JSON.stringify(locationRatesKey(rates)) !==
+      JSON.stringify(locationRatesKey(this.locationRates()))
+    ) {
+      this.locationRates.set(rates);
+    }
+  }
+
+  protected confirmLocationRates(rates: LocationRateAnswer[]): void {
+    this.setLocationRates(rates);
+    this.editing.set(null);
+    this.focusStep();
+  }
+
+  protected locationRatesAnswer(): string | null {
+    if (!this.locationRatesAnswered()) {
+      return null;
+    }
+    const kind = this.radio().which === 'both' ? 'pair' : 'location';
+    const count = this.locationRates().length;
+    return this.translate.instant(
+      `contracts.form.locationRates.answer.${kind}.${count === 1 ? 'one' : 'many'}`,
+      { count },
+    );
+  }
+
   protected vehicleRatesAnswer(): string | null {
     const rates = this.vehicleRates();
     if (rates === null) {
@@ -843,7 +965,7 @@ export class ContractPage implements LeaveConfirmable {
 
   /** The prices and the minimum of a vehicle rate, as the closed answer tells them. */
   protected vehicleRateLine(entry: VehicleRateAnswer): string {
-    return vehicleRateTerms(entry, this.radio().mode!, this.translate);
+    return rateTerms(entry, this.radio().mode!, this.translate);
   }
 
   protected toggleDocument(document: RequiredDocument, checked: boolean): void {
@@ -967,6 +1089,7 @@ export class ContractPage implements LeaveConfirmable {
             ...rateMembers(true, entry.rate, entry.minimum),
           }))
         : [],
+      locationRates: this.flat() ? [] : this.locationRates().map(locationRateRequestOf),
       ...rateMembers(this.flat(), this.rate(), this.minimum()),
     };
     const pending =
@@ -1001,6 +1124,20 @@ export class ContractPage implements LeaveConfirmable {
     if (this.validityRefusal()) {
       this.edit(1);
     }
+    this.showNotice();
+  }
+
+  /** The notice is at the top of the page, the save can be pressed from its end. */
+  private showNotice(): void {
+    afterNextRender(
+      {
+        read: () =>
+          this.host.nativeElement
+            .querySelector('main > app-notice')
+            ?.scrollIntoView({ block: 'center' }),
+      },
+      { injector: this.injector },
+    );
   }
 
   /** Reads the contract again and shows its answers, discarding the entered changes. */

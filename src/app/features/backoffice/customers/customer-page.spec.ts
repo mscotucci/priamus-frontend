@@ -9,7 +9,7 @@ import { Layout } from '../../../core/layout/layout';
 import { stubModalDialog } from '../../../core/testing/dom-testing';
 import { settle } from '../../../core/testing/interaction-testing';
 import { Toast } from '../../../core/toast/toast';
-import type { Contract } from './contracts-api';
+import type { Contract, ContractLocationRate } from './contracts-api';
 import { CustomerPage } from './customer-page';
 import type { CustomerListItem } from './customers-api';
 import { CustomersFacade } from './customers-facade';
@@ -46,6 +46,7 @@ const contract = (values: Partial<Contract>): Contract => ({
   minimumThreshold: null,
   minimumOveragePrice: null,
   vehicleRates: [],
+  locationRates: [],
   version: 1,
   ...values,
 });
@@ -269,7 +270,7 @@ describe('CustomerPage', () => {
         'DDT, formulario rifiuti',
       ],
       [
-        '01/04/2026 – 31/12/2026',
+        'dal 01/04/2026 al 31/12/2026',
         'In vigore',
         'Forfettario',
         'A ore',
@@ -277,7 +278,7 @@ describe('CustomerPage', () => {
         'Sì',
         'DDT, riepilogo di fine giornata',
       ],
-      ['01/01/2026 – 31/03/2026', 'Scaduto', 'Forfettario', 'A viaggio', '—', 'No', 'Nessuno'],
+      ['dal 01/01/2026 al 31/03/2026', 'Scaduto', 'Forfettario', 'A viaggio', '—', 'No', 'Nessuno'],
     ]);
   });
 
@@ -312,7 +313,7 @@ describe('CustomerPage', () => {
     ]);
     expect(links.map((a) => a.textContent?.trim())).toEqual(['Modifica', 'Modifica', 'Modifica']);
     expect(text(element.querySelector(`[id="${links[1].getAttribute('aria-describedby')}"]`))).toBe(
-      '01/04/2026 – 31/12/2026',
+      'dal 01/04/2026 al 31/12/2026',
     );
   });
 
@@ -368,6 +369,52 @@ describe('CustomerPage', () => {
     expect(rate(5).classList.contains('pt-muted')).toBe(true);
   });
 
+  it('the "Tariffa" column of a location contract counts its locations or pairs, and a flat-rate contract keeps its day price', async () => {
+    const rateOf = (id: string): ContractLocationRate => ({
+      pickup: { id, name: 'Cantiere ' + id, municipality: 'Chieti', status: 'Active' },
+      delivery: null,
+      dayPrice: 30,
+      nightPrice: null,
+      nightCallFee: null,
+      minimumRule: null,
+      minimumAmount: null,
+      minimumThreshold: null,
+      minimumOveragePrice: null,
+    });
+    const pairOf = (id: string): ContractLocationRate => ({
+      ...rateOf(id),
+      delivery: { id: 'd' + id, name: 'Discarica', municipality: 'Lanciano', status: 'Active' },
+    });
+    const element = await answer(await render(), customer, [
+      contract({ id: 'a', billingLevel: 'PerPickupLocation', locationRates: [rateOf('1')] }),
+      contract({
+        id: 'b',
+        billingLevel: 'PerDeliveryLocation',
+        locationRates: [rateOf('1'), rateOf('2'), rateOf('3')],
+      }),
+      contract({ id: 'c', billingLevel: 'PerLocationPair', locationRates: [pairOf('1')] }),
+      contract({
+        id: 'd',
+        billingLevel: 'PerLocationPair',
+        locationRates: [pairOf('1'), pairOf('2')],
+      }),
+      contract({ id: 'e', dayPrice: 30 }),
+      contract({ id: 'f', billingLevel: 'PerLocationPair' }),
+    ]);
+
+    const rate = (row: number) => cells(element, row)[4];
+    expect([0, 1, 2, 3, 4, 5].map((row) => text(rate(row)))).toEqual([
+      '1 luogo',
+      '3 luoghi',
+      '1 coppia',
+      '2 coppie',
+      '30,00 €/h',
+      '—',
+    ]);
+    expect(rate(0).classList.contains('pt-muted')).toBe(false);
+    expect(rate(5).classList.contains('pt-muted')).toBe(true);
+  });
+
   it('the "Tariffa" column shows the contract day price only, even when the contract has vehicle rates', async () => {
     const element = await answer(await render(), customer, [
       contract({
@@ -411,7 +458,7 @@ describe('CustomerPage', () => {
       '/customers/c1/contracts/k1',
     ]);
     expect(text(element.querySelector(`[id="${links[1].getAttribute('aria-describedby')}"]`))).toBe(
-      '01/04/2026 – 31/12/2026',
+      'dal 01/04/2026 al 31/12/2026',
     );
   });
 

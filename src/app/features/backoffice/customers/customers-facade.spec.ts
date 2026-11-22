@@ -500,6 +500,7 @@ describe('CustomersFacade', () => {
       minimumThreshold: null,
       minimumOveragePrice: null,
       vehicleRates: [],
+      locationRates: [],
       version: 4,
     };
     const values: CreateContractRequest = {
@@ -517,6 +518,7 @@ describe('CustomersFacade', () => {
       minimumThreshold: null,
       minimumOveragePrice: null,
       vehicleRates: [],
+      locationRates: [],
     };
 
     beforeEach(() => {

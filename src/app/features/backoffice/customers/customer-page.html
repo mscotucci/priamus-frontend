@@ -129,7 +129,9 @@
                     {{ 'customers.contracts.column.rate' | translate }}
                   </th>
                   <th scope="col">{{ 'customers.contracts.column.night' | translate }}</th>
-                  <th scope="col">{{ 'customers.contracts.column.documents' | translate }}</th>
+                  <th scope="col" class="pt-text">
+                    {{ 'customers.contracts.column.documents' | translate }}
+                  </th>
                   <th scope="col">
                     <span class="sr-only">{{ 'customers.list.column.actions' | translate }}</span>
                   </th>
@@ -139,20 +141,15 @@
                 @for (contract of contracts.value(); track contract.id) {
                   <tr>
                     <td [id]="'contract-' + contract.id">
+                      <span class="block">{{
+                        'customers.contracts.validity.from'
+                          | translate: { from: (contract.validFrom | date: 'dd/MM/yyyy') }
+                      }}</span>&ngsp;
                       @if (contract.validTo) {
-                        {{
-                          'customers.contracts.validity.range'
-                            | translate
-                              : {
-                                  from: (contract.validFrom | date: 'dd/MM/yyyy'),
-                                  to: (contract.validTo | date: 'dd/MM/yyyy'),
-                                }
-                        }}
-                      } @else {
-                        {{
-                          'customers.contracts.validity.open'
-                            | translate: { from: (contract.validFrom | date: 'dd/MM/yyyy') }
-                        }}
+                        <span class="block">{{
+                          'customers.contracts.validity.to'
+                            | translate: { to: (contract.validTo | date: 'dd/MM/yyyy') }
+                        }}</span>
                       }
                     </td>
                     <td>
@@ -172,9 +169,9 @@
                           | translate
                       }}
                     </td>
-                    @let dayPrice = dayPriceOf(contract);
-                    <td class="pt-num" [class.pt-muted]="!dayPrice">
-                      {{ dayPrice ?? '—' }}
+                    @let rate = rateOf(contract);
+                    <td class="pt-num" [class.pt-muted]="!rate">
+                      {{ rate ?? '—' }}
                     </td>
                     <td>
                       {{

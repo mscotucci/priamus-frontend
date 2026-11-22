@@ -340,14 +340,17 @@ const checks = [
     },
   },
   {
-    name: 'the select has the box of an input in every size',
+    name: 'the select has the box of an input in every size and grows with a text that wraps',
     async run() {
       const rules = await componentRules();
-      return rules
-        .filter((r) => r.selectors.includes('select.pt-input'))
-        .flatMap((r) =>
-          ['height', 'min-height', 'padding'].filter((p) => declaration(r, p)).map((p) => `select.pt-input sets its own ${p}`),
-        );
+      return [
+        ...rules
+          .filter((r) => r.selectors.includes('select.pt-input'))
+          .flatMap((r) =>
+            ['height', 'padding'].filter((p) => declaration(r, p)).map((p) => `select.pt-input sets its own ${p}`),
+          ),
+        ...hasDeclaration(rules, 'select.pt-input', 'min-height', 'min-content'),
+      ];
     },
   },
   {

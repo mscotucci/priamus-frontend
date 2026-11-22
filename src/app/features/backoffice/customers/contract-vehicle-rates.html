@@ -34,135 +34,20 @@
   </label>
 </fieldset>
 
-<ng-template #amountFields let-block let-fields="fields">
-  <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-    @for (spec of fields; track spec.field) {
-      <div class="pt-field">
-        <label class="pt-label" [for]="'vr' + block.key + '-' + spec.field">{{
-          'contracts.form.field.' + spec.field + '.label' | translate
-        }}</label>
-        <span class="pt-input-group">
-          <input
-            class="pt-input"
-            [id]="'vr' + block.key + '-' + spec.field"
-            inputmode="decimal"
-            [value]="block.drafts[spec.field]"
-            [attr.aria-invalid]="block.errors[spec.field] ? 'true' : null"
-            [attr.aria-describedby]="describedBy(block, spec)"
-            (input)="setDraft(block.key, spec.field, $any($event.target).value)"
-          />
-          <span class="pt-input-group__addon">{{ unit(spec) | translate }}</span>
-        </span>
-        @if (spec.field === 'callFee') {
-          <span class="pt-field__hint" [id]="'vr' + block.key + '-' + spec.field + '-hint'">{{
-            'contracts.form.field.callFee.hint' | translate
-          }}</span>
-        }
-        @if (block.errors[spec.field]; as error) {
-          <span class="pt-field__error" [id]="'vr' + block.key + '-' + spec.field + '-error'">{{
-            error | translate
-          }}</span>
-        }
-      </div>
-    }
-  </div>
-</ng-template>
-
 @if (choice() === 'yes') {
-  @for (block of blocks(); track block.key; let index = $index) {
-    <div class="pt-card flex flex-col gap-3 p-4">
-      <div class="flex items-center justify-between">
-        <p class="pt-label">
-          {{ 'contracts.form.vehicleRates.block' | translate: { number: index + 1 } }}
-          @if (decommissioned(block)) {
-            <span class="pt-pill pt-pill--warn">{{
-              'contracts.form.vehicleRates.decommissioned' | translate
-            }}</span>
-          }
-        </p>
-        <button
-          type="button"
-          class="pt-btn pt-btn--sm pt-btn--icon"
-          [attr.aria-label]="
-            'contracts.form.vehicleRates.remove' | translate: { number: index + 1 }
-          "
-          (click)="removeBlock(block.key)"
-        >
-          <app-icon name="close" size="sm" />
-        </button>
-      </div>
-      <div class="pt-field md:max-w-sm">
-        <label class="pt-label" [for]="'vr' + block.key + '-vehicle'">{{
-          'contracts.form.vehicleRates.vehicle.label' | translate
-        }}</label>
-        <select
-          class="pt-input"
-          [id]="'vr' + block.key + '-vehicle'"
-          [disabled]="loading()"
-          [attr.aria-invalid]="block.vehicleError ? 'true' : null"
-          [attr.aria-describedby]="
-            block.vehicleError || failed() ? 'vr' + block.key + '-vehicle-note' : null
-          "
-          (change)="setVehicle(block.key, $any($event.target).value)"
-        >
-          <option value="" [selected]="block.vehicleId === ''">
-            {{ 'contracts.form.vehicleRates.vehicle.placeholder' | translate }}
-          </option>
-          @for (option of options(block); track option.id) {
-            <option [value]="option.id" [selected]="option.id === block.vehicleId">
-              {{ option.label }}
-            </option>
-          }
-        </select>
-        @if (failed()) {
-          <span class="pt-field__error" [id]="'vr' + block.key + '-vehicle-note'">{{
-            'contracts.form.vehicleRates.vehicle.loadFailed' | translate
-          }}</span>
-        } @else if (block.vehicleError) {
-          <span class="pt-field__error" [id]="'vr' + block.key + '-vehicle-note'">{{
-            'contracts.form.vehicleRates.vehicle.required' | translate
-          }}</span>
-        }
-      </div>
-      <ng-container
-        *ngTemplateOutlet="amountFields; context: { $implicit: block, fields: rateFieldsOf() }"
-      />
-      @if (withMinimum()) {
-        <fieldset class="flex flex-col gap-3">
-          <legend class="pt-label mb-2">
-            {{ 'contracts.form.vehicleRates.minimum' | translate }}
-          </legend>
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-            @for (option of minimumKinds; track option.kind) {
-              <label class="pt-choice">
-                <input
-                  type="radio"
-                  [name]="'vr' + block.key + '-minimum'"
-                  [checked]="block.kind === option.kind"
-                  (click)="pickKind(block.key, option.kind)"
-                />
-                <span>
-                  <strong>{{
-                    'contracts.form.minimum.' + option.key + '.title' | translate
-                  }}</strong>
-                </span>
-              </label>
-            }
-          </div>
-          @if (minimumFieldsOf(block).length > 0) {
-            <ng-container
-              *ngTemplateOutlet="
-                amountFields;
-                context: { $implicit: block, fields: minimumFieldsOf(block) }
-              "
-            />
-          }
-        </fieldset>
-      }
-    </div>
+  @if (rows().length > 0) {
+    <app-contract-rate-rows
+      [rows]="rows()"
+      (edit)="edit($event)"
+      (removed)="remove($event)"
+      (focusAdd)="focusAdd()"
+    />
+  }
+  @if (notice(); as notice) {
+    <span class="pt-field__error" role="alert">{{ notice | translate }}</span>
   }
   <div class="flex flex-wrap gap-2">
-    <button type="button" class="pt-btn pt-btn--sm" data-add (click)="addBlock()">
+    <button type="button" class="pt-btn pt-btn--sm" data-add (click)="add()">
       <app-icon name="plus" size="sm" /> {{ 'contracts.form.vehicleRates.add' | translate }}
     </button>
     <button type="button" class="pt-btn pt-btn--primary pt-btn--sm" (click)="confirm()">
@@ -178,3 +63,17 @@
   </div>
 }
 <app-contract-keys [byButton]="choice() === 'yes'" [cancellable]="cancellable()" />
+@if (dialog(); as state) {
+  <app-contract-rate-dialog
+    [editing]="state.entry !== null"
+    [line]="line()"
+    icon="truck"
+    [night]="night()"
+    [mode]="mode()"
+    [subjects]="subjects()"
+    [rate]="state.entry?.rate ?? null"
+    [minimum]="state.entry?.minimum ?? null"
+    (confirmed)="onConfirmed($event)"
+    (cancelled)="dialog.set(null)"
+  />
+}

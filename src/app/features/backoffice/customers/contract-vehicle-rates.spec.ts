@@ -2,6 +2,8 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { TranslateService } from '@ngx-translate/core';
 import { provideTestI18n } from '../../../core/i18n/i18n-testing';
+import { stubModalDialog } from '../../../core/testing/dom-testing';
+import { settle } from '../../../core/testing/interaction-testing';
 import italian from '../../../../../public/i18n/it.json';
 import type { RateableVehicle } from '../vehicles/vehicles-api';
 import type { PricingMode } from './contracts-api';
@@ -28,6 +30,19 @@ const DISMESSO: VehicleRateAnswer = {
   minimum: { kind: 'None', amount: null, threshold: null, overage: null },
 };
 
+const rateOf = (
+  vehicle: RateableVehicle,
+  overrides: Partial<VehicleRateAnswer> = {},
+): VehicleRateAnswer => ({
+  vehicleId: vehicle.id,
+  licensePlate: vehicle.licensePlate,
+  description: vehicle.description,
+  decommissioned: false,
+  rate: { day: 55, night: 70, callFee: 40 },
+  minimum: { kind: 'FixedMinimum', amount: 120, threshold: null, overage: null },
+  ...overrides,
+});
+
 @Component({
   imports: [ContractVehicleRates],
   template: `
@@ -35,12 +50,12 @@ const DISMESSO: VehicleRateAnswer = {
       [night]="night()"
       [mode]="mode()"
       [rateable]="rateable()"
-      [loading]="loading()"
       [failed]="failed()"
       [answer]="answer()"
       [cancellable]="cancellable()"
       (confirmed)="confirmed.push($event)"
       (cancelled)="cancelled = cancelled + 1"
+      (retry)="retried = retried + 1"
     />
   `,
 })
@@ -48,297 +63,298 @@ class Host {
   readonly night = signal(false);
   readonly mode = signal<PricingMode>('ByHour');
   readonly rateable = signal<RateableVehicle[] | null>([AUTOSPURGO, GRU, FLOOR]);
-  readonly loading = signal(false);
   readonly failed = signal(false);
   readonly answer = signal<VehicleRateAnswer[] | null>(null);
   readonly cancellable = signal(false);
   readonly confirmed: VehicleRateAnswer[][] = [];
   cancelled = 0;
+  retried = 0;
 }
 
 describe('ContractVehicleRates', () => {
-  const render = () => {
+  const render = (setup: (host: Host) => void = () => undefined) => {
+    stubModalDialog();
     TestBed.configureTestingModule({ providers: [provideTestI18n()] });
     TestBed.inject(TranslateService).use('it');
     const fixture = TestBed.createComponent(Host);
+    document.body.appendChild(fixture.nativeElement);
+    setup(fixture.componentInstance);
     fixture.detectChanges();
+    TestBed.tick();
     const element = fixture.nativeElement as HTMLElement;
     const host = fixture.componentInstance;
 
-    const radios = () =>
-      Array.from(element.querySelectorAll<HTMLInputElement>('input[name="vehicle-rates"]'));
-    const blocks = () => Array.from(element.querySelectorAll<HTMLElement>('.pt-card'));
-    const button = (label: string) =>
-      Array.from(element.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
-        b.textContent?.includes(label),
-      )!;
     const text = (node: Element | null | undefined) =>
       node?.textContent?.replace(/\s+/g, ' ').trim();
-    const settle = () => fixture.detectChanges();
-    const yes = () => {
-      radios()[1].click();
-      settle();
-    };
-    const choose = (block: number, vehicleId: string) => {
-      const select = blocks()[block].querySelector('select')!;
-      select.value = vehicleId;
-      select.dispatchEvent(new Event('change'));
-      settle();
-    };
-    const type = (block: number, field: string, value: string) => {
-      const input = blocks()[block].querySelector<HTMLInputElement>(`input[id$="-${field}"]`)!;
+    const radios = () =>
+      Array.from(element.querySelectorAll<HTMLInputElement>('input[name="vehicle-rates"]'));
+    const button = (label: string) =>
+      Array.from(element.querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => text(b) === label,
+      )!;
+    const rows = () => Array.from(element.querySelectorAll('app-contract-rate-rows li'));
+    const rowTitles = () =>
+      Array.from(element.querySelectorAll('app-contract-rate-rows li strong')).map((s) => text(s));
+    const rowTerms = () =>
+      Array.from(element.querySelectorAll('app-contract-rate-rows li .pt-muted')).map((s) =>
+        text(s),
+      );
+    const dialogOpen = () => element.querySelector('app-contract-rate-dialog') !== null;
+    const rateForm = () => element.querySelector<HTMLFormElement>('form[id^="rate-dialog-"]')!;
+    const select = () => rateForm().querySelector('select')!;
+    const optionLabels = () =>
+      Array.from(select().querySelectorAll('option'))
+        .slice(1)
+        .map((option) => text(option));
+    const field = (name: string) =>
+      element.querySelector<HTMLInputElement>(`form[id^="rate-dialog-"] input[id$="-${name}"]`)!;
+    const type = (name: string, value: string) => {
+      const input = field(name);
       input.value = value;
       input.dispatchEvent(new Event('input'));
-      settle();
+      fixture.detectChanges();
     };
-    const optionLabels = (block: number) =>
-      Array.from(blocks()[block].querySelectorAll('option'))
-        .slice(1)
-        .map((o) => text(o));
-    const errors = (block: number) =>
-      Array.from(blocks()[block].querySelectorAll('.pt-field__error')).map((e) => text(e));
-    const confirm = () => {
-      button('Conferma').click();
-      settle();
+    const choose = (id: string) => {
+      select().value = id;
+      select().dispatchEvent(new Event('change'));
+      fixture.detectChanges();
     };
-    const fill = (block: number, vehicleId: string, day = '55') => {
-      choose(block, vehicleId);
-      type(block, 'day', day);
+    const submit = async () => {
+      rateForm().dispatchEvent(new Event('submit', { cancelable: true }));
+      await settle(fixture);
     };
+    const open = async (label: string, index = 0) => {
+      Array.from(element.querySelectorAll<HTMLButtonElement>('button'))
+        .filter((b) => text(b) === label)
+        [index].click();
+      await settle(fixture);
+    };
+    const yes = () => {
+      radios()[1].click();
+      fixture.detectChanges();
+    };
+    const notice = () => text(element.querySelector('.pt-field__error[role="alert"]'));
     return {
       fixture,
       element,
       host,
-      radios,
-      blocks,
-      button,
       text,
-      settle,
-      yes,
-      choose,
-      type,
+      radios,
+      button,
+      rows,
+      rowTitles,
+      rowTerms,
+      dialogOpen,
+      rateForm,
+      select,
       optionLabels,
-      errors,
-      confirm,
-      fill,
+      field,
+      type,
+      choose,
+      submit,
+      open,
+      yes,
+      notice,
     };
   };
 
-  it('"Sì" shows "Mezzo 1" with a remove button, the select "<plate> · <description>", the day price with its unit, the minimum rules, "Aggiungi un mezzo" and "Conferma"', () => {
-    const { element, blocks, yes, text, optionLabels, button } = render();
+  afterEach(() => document.body.replaceChildren());
 
-    expect(text(element.querySelector('legend'))).toBe('Ci sono mezzi con una tariffa diversa?');
-    expect(element.textContent).toContain('Stessa tariffa per tutti i mezzi');
-    expect(element.textContent).toContain('Alcuni mezzi hanno una tariffa propria');
-    expect(blocks().length).toBe(0);
+  it('"Sì" shows no rows at first, then "Aggiungi un mezzo" and "Conferma"', () => {
+    const r = render();
 
-    yes();
-
-    expect(blocks().length).toBe(1);
-    const block = blocks()[0];
-    expect(text(block.querySelector('p.pt-label'))).toBe('Mezzo 1');
-    expect(block.querySelector('button')!.getAttribute('aria-label')).toBe('Togli il mezzo 1');
-    expect(optionLabels(0)).toEqual([
-      'AB123CD · Autospurgo Scania P410',
-      'GH456JK · Gru mobile 15t',
-      'EF789LM · Walking floor 30t',
-    ]);
-    expect(text(block.querySelector('.pt-input-group__addon'))).toBe('€/h');
-    expect(block.querySelectorAll('input[id$="-night"], input[id$="-callFee"]').length).toBe(0);
-    expect(text(block.querySelector('fieldset'))).toContain('Nessun minimo');
-    expect(text(block.querySelector('fieldset'))).toContain('Minimo fisso');
-    expect(text(block.querySelector('fieldset'))).toContain('Scaglione con eccesso');
-    expect(button('Aggiungi un mezzo')).toBeTruthy();
-    expect(button('Conferma')).toBeTruthy();
-  });
-
-  it('the night price and the night call fee show only with the night surcharge, each with its unit', () => {
-    const { host, fixture, blocks, yes } = render();
-    host.night.set(true);
-    fixture.detectChanges();
-    yes();
-
-    const units = Array.from(blocks()[0].querySelectorAll('.pt-input-group__addon')).map((u) =>
-      u.textContent?.trim(),
+    expect(r.text(r.element.querySelector('legend'))).toBe(
+      'Ci sono mezzi con una tariffa diversa?',
     );
-    expect(units).toEqual(['€/h', '€/h', '€']);
-    expect(blocks()[0].querySelector('input[id$="-night"]')).not.toBeNull();
-    expect(blocks()[0].querySelector('input[id$="-callFee"]')).not.toBeNull();
+    expect(r.element.textContent).toContain('Stessa tariffa per tutti i mezzi');
+    expect(r.element.textContent).toContain('Alcuni mezzi hanno una tariffa propria');
+    expect(r.button('Aggiungi un mezzo')).toBeUndefined();
+
+    r.yes();
+
+    expect(r.rows().length).toBe(0);
+    expect(r.dialogOpen()).toBe(false);
+    expect(r.button('Aggiungi un mezzo')).toBeTruthy();
+    expect(r.button('Conferma')).toBeTruthy();
   });
 
-  it('a contract priced by trip shows no minimum in the block', () => {
-    const { host, fixture, blocks, yes, text } = render();
-    host.mode.set('ByTrip');
-    fixture.detectChanges();
-    yes();
+  it('each vehicle rate is a row with the plate in monospace, the description above the terms, "Modifica" and "Togli"', () => {
+    const r = render((host) => {
+      host.night.set(true);
+      host.answer.set([rateOf(AUTOSPURGO), DISMESSO]);
+    });
 
-    expect(blocks()[0].querySelector('fieldset')).toBeNull();
-    expect(text(blocks()[0].querySelector('.pt-input-group__addon'))).toBe('€');
+    expect(r.rows().length).toBe(2);
+    expect(r.rowTitles()).toEqual([
+      'AB123CD Autospurgo Scania P410',
+      'ZZ999ZZ Vecchia cisterna Dismesso',
+    ]);
+    expect(r.rows()[0].querySelector('strong .pt-mono')?.textContent).toBe('AB123CD');
+    expect(r.rowTerms()).toEqual([
+      '55,00 €/h di giorno · 70,00 €/h di notte · chiamata 40,00 € · minimo 120,00 €',
+      '48,00 €/h · nessun minimo',
+    ]);
+    expect(r.rows()[0].querySelector('.pt-pill')).toBeNull();
+    expect(r.text(r.rows()[1].querySelector('.pt-pill--warn'))).toBe('Dismesso');
+    for (const row of r.rows()) {
+      expect(Array.from(row.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([
+        'Modifica',
+        'Togli',
+      ]);
+    }
   });
 
-  it('the select offers only the rateable vehicles and never one chosen in another block', () => {
-    const { button, settle, yes, choose, optionLabels } = render();
-    yes();
-    choose(0, 'v-1');
-    button('Aggiungi un mezzo').click();
-    settle();
+  it('"Aggiungi un mezzo" opens "Nuova tariffa" with the line, a vehicle select and no "Nuovo mezzo"', async () => {
+    const r = render((host) => {
+      host.night.set(true);
+      host.mode.set('ByWeight');
+    });
+    r.yes();
 
-    expect(optionLabels(1)).toEqual(['GH456JK · Gru mobile 15t', 'EF789LM · Walking floor 30t']);
-    expect(optionLabels(0)).toEqual([
+    await r.open('Aggiungi un mezzo');
+
+    expect(r.text(r.element.querySelector('app-dialog .pt-title'))).toBe('Nuova tariffa');
+    expect(r.text(r.element.querySelector('app-dialog .pt-dialog__head .pt-muted'))).toBe(
+      'Forfettario · a peso · con maggiorazione notturna',
+    );
+    expect(r.text(r.rateForm().querySelector('label.pt-label'))).toBe('Mezzo');
+    expect(r.optionLabels()).toEqual([
+      'AB123CD · Autospurgo Scania P410',
+      'GH456JK · Gru mobile 15t',
+      'EF789LM · Walking floor 30t',
+    ]);
+    expect(r.element.textContent).not.toContain('Nuovo mezzo');
+    expect(r.element.textContent).not.toContain('Nuovo luogo');
+    expect(r.field('night')).not.toBeNull();
+  });
+
+  it('"Aggiungi" with a vehicle and a price adds the row, and the vehicle is not offered again', async () => {
+    const r = render();
+    r.yes();
+    await r.open('Aggiungi un mezzo');
+    r.choose('v-2');
+    r.type('day', '48');
+
+    await r.submit();
+
+    expect(r.dialogOpen()).toBe(false);
+    expect(r.rowTitles()).toEqual(['GH456JK Gru mobile 15t']);
+    expect(r.host.confirmed).toEqual([]);
+
+    await r.open('Aggiungi un mezzo');
+    expect(r.optionLabels()).toEqual([
+      'AB123CD · Autospurgo Scania P410',
+      'EF789LM · Walking floor 30t',
+    ]);
+  });
+
+  it('the dialog without a vehicle shows "Scegli un mezzo." under the select and adds nothing', async () => {
+    const r = render();
+    r.yes();
+    await r.open('Aggiungi un mezzo');
+    r.type('day', '48');
+
+    await r.submit();
+
+    expect(r.dialogOpen()).toBe(true);
+    expect(r.text(r.rateForm().querySelector('.pt-field > .pt-field__error'))).toBe(
+      'Scegli un mezzo.',
+    );
+    expect(r.rows().length).toBe(0);
+  });
+
+  it('"Modifica" opens "Modifica tariffa" prefilled, and "Salva" replaces the row', async () => {
+    const r = render((host) => host.answer.set([rateOf(AUTOSPURGO)]));
+
+    await r.open('Modifica');
+
+    expect(r.text(r.element.querySelector('app-dialog .pt-title'))).toBe('Modifica tariffa');
+    expect(r.select().value).toBe('v-1');
+    expect(r.field('day').value).toBe('55');
+    expect(r.field('amount').value).toBe('120');
+    expect(r.optionLabels()).toEqual([
       'AB123CD · Autospurgo Scania P410',
       'GH456JK · Gru mobile 15t',
       'EF789LM · Walking floor 30t',
     ]);
 
-    choose(1, 'v-2');
-    expect(optionLabels(0)).toEqual([
-      'AB123CD · Autospurgo Scania P410',
-      'EF789LM · Walking floor 30t',
-    ]);
+    r.choose('v-2');
+    r.type('day', '60');
+    await r.submit();
+
+    expect(r.rowTitles()).toEqual(['GH456JK Gru mobile 15t']);
+    expect(r.rowTerms()[0]).toContain('60,00 €/h');
   });
 
-  it('a decommissioned vehicle of the answer stays in its block with the mark and is not offered to other blocks', () => {
-    const { host, fixture, blocks, button, settle, optionLabels, text } = render();
-    host.answer.set([DISMESSO]);
-    fixture.detectChanges();
+  it('saving a row moved to another vehicle gives the focus to the "Modifica" of its new row', async () => {
+    const r = render((host) => host.answer.set([rateOf(AUTOSPURGO)]));
+    await r.open('Modifica');
+    r.choose(GRU.id);
+    await r.submit();
 
-    expect(blocks().length).toBe(1);
-    expect(text(blocks()[0].querySelector('p.pt-label'))).toBe('Mezzo 1 Dismesso');
-    const select = blocks()[0].querySelector('select')!;
-    expect(text(select.selectedOptions[0])).toBe('ZZ999ZZ · Vecchia cisterna');
-    expect(blocks()[0].querySelector<HTMLInputElement>('input[id$="-day"]')!.value).toBe('48');
+    expect(r.rowTitles().length).toBe(1);
+    expect(document.activeElement).toBe(r.element.querySelector('[data-edit]'));
+  });
 
-    button('Aggiungi un mezzo').click();
-    settle();
+  it('a decommissioned vehicle of the answer stays selectable on its own row and is not offered to the other rows', async () => {
+    const r = render((host) => host.answer.set([DISMESSO, rateOf(AUTOSPURGO)]));
 
-    expect(optionLabels(1)).not.toContain('ZZ999ZZ · Vecchia cisterna');
-    expect(optionLabels(1).length).toBe(3);
+    await r.open('Aggiungi un mezzo');
+    expect(r.optionLabels()).not.toContain('ZZ999ZZ · Vecchia cisterna');
+    r.button('Annulla').click();
+    await settle(r.fixture);
+
+    await r.open('Modifica');
+    expect(r.optionLabels()).not.toContain('ZZ999ZZ · Vecchia cisterna');
+    r.button('Annulla').click();
+    await settle(r.fixture);
+
+    await r.open('Modifica', 1);
+    expect(r.optionLabels()[0]).toBe('ZZ999ZZ · Vecchia cisterna');
+    expect(r.select().value).toBe('v-9');
+    expect(r.field('day').value).toBe('48');
   });
 
   it('confirming keeps the decommissioned vehicle with its rate unchanged', () => {
-    const { host, fixture, confirm } = render();
-    host.answer.set([DISMESSO]);
-    fixture.detectChanges();
+    const r = render((host) => host.answer.set([DISMESSO]));
 
-    confirm();
+    r.button('Conferma').click();
+    r.fixture.detectChanges();
 
-    expect(host.confirmed).toEqual([[DISMESSO]]);
+    expect(r.host.confirmed).toEqual([[DISMESSO]]);
   });
 
-  it.each([
-    {
-      night: false,
-      mode: 'ByHour' as PricingMode,
-      day: '',
-      expected: ['Inserisci il prezzo diurno.'],
-    },
-    {
-      night: false,
-      mode: 'ByHour' as PricingMode,
-      day: '0',
-      expected: ['Inserisci un importo maggiore di zero.'],
-    },
-    {
-      night: false,
-      mode: 'ByHour' as PricingMode,
-      day: '10,123',
-      expected: ['Usa al massimo due decimali.'],
-    },
-    {
-      night: true,
-      mode: 'ByHour' as PricingMode,
-      day: '55',
-      expected: ['Inserisci il prezzo notturno.', 'Inserisci la chiamata notturna.'],
-    },
-  ])(
-    'the day and night fields of a block are validated under the field ($day, night $night)',
-    ({ night, mode, day, expected }) => {
-      const { host, fixture, blocks, yes, fill, confirm, errors } = render();
-      host.night.set(night);
-      host.mode.set(mode);
-      fixture.detectChanges();
-      yes();
-      fill(0, 'v-1', day);
-
-      confirm();
-
-      expect(errors(0)).toEqual(expected);
-      expect(host.confirmed).toEqual([]);
-      expect(blocks()[0].querySelectorAll('input[aria-invalid="true"]').length).toBe(
-        expected.length,
-      );
-    },
-  );
-
-  it.each([
-    {
-      night: '49,99',
-      expected: ['Il prezzo notturno non può essere più basso del prezzo diurno.'],
-    },
-    { night: '50', expected: [] },
-  ])(
-    'a vehicle block refuses a night price below its day price and accepts an equal one (night $night)',
-    ({ night, expected }) => {
-      const { host, fixture, yes, fill, type, confirm, errors } = render();
+  it('rows holding night prices are told and confirmed without them once the contract has no night surcharge', () => {
+    const r = render((host) => {
       host.night.set(true);
-      fixture.detectChanges();
-      yes();
-      fill(0, 'v-1', '50');
-      type(0, 'night', night);
-      type(0, 'callFee', '10');
+      host.answer.set([rateOf(AUTOSPURGO)]);
+    });
+    expect(r.rowTerms()[0]).toContain('di notte');
 
-      confirm();
+    r.host.night.set(false);
+    r.fixture.detectChanges();
+    expect(r.rowTerms()[0]).not.toContain('di notte');
 
-      expect(errors(0)).toEqual(expected);
-      expect(host.confirmed.length).toBe(expected.length === 0 ? 1 : 0);
-    },
-  );
+    r.button('Conferma').click();
+    r.fixture.detectChanges();
 
-  it('the minimum of a block is validated: a fixed minimum needs its amount, a tiered one its three values', () => {
-    const { blocks, yes, fill, confirm, errors, settle } = render();
-    yes();
-    fill(0, 'v-1');
-
-    blocks()[0].querySelectorAll<HTMLInputElement>('fieldset input[type="radio"]')[1].click();
-    settle();
-    confirm();
-    expect(errors(0)).toEqual(["Inserisci l'importo minimo."]);
-
-    blocks()[0].querySelectorAll<HTMLInputElement>('fieldset input[type="radio"]')[2].click();
-    settle();
-    confirm();
-    expect(errors(0)).toEqual([
-      "Inserisci l'importo minimo.",
-      'Inserisci la soglia.',
-      "Inserisci il costo dell'eccedenza.",
+    expect(r.host.confirmed[0].map((entry) => entry.rate)).toEqual([
+      { day: 55, night: null, callFee: null },
     ]);
   });
 
-  it('picking another minimum keeps the error of a price still invalid and drops those of the minimum fields', () => {
-    const { blocks, yes, fill, confirm, errors, settle } = render();
-    yes();
-    fill(0, 'v-1', '');
-    blocks()[0].querySelectorAll<HTMLInputElement>('fieldset input[type="radio"]')[1].click();
-    settle();
-    confirm();
-    expect(errors(0)).toEqual(['Inserisci il prezzo diurno.', "Inserisci l'importo minimo."]);
+  it('a rate under a trip price confirms with no minimum', async () => {
+    const r = render((host) => host.mode.set('ByTrip'));
+    r.yes();
+    await r.open('Aggiungi un mezzo');
+    r.choose('v-1');
+    r.type('day', '120,5');
+    await r.submit();
 
-    blocks()[0].querySelectorAll<HTMLInputElement>('fieldset input[type="radio"]')[0].click();
-    settle();
+    r.button('Conferma').click();
+    r.fixture.detectChanges();
 
-    expect(errors(0)).toEqual(['Inserisci il prezzo diurno.']);
-  });
-
-  it('a contract priced by trip confirms the vehicle rate with no minimum', () => {
-    const { host, fixture, yes, fill, confirm } = render();
-    host.mode.set('ByTrip');
-    fixture.detectChanges();
-    yes();
-    fill(0, 'v-1', '120,5');
-
-    confirm();
-
-    expect(host.confirmed).toEqual([
+    expect(r.host.confirmed).toEqual([
       [
         {
           vehicleId: 'v-1',
@@ -352,177 +368,198 @@ describe('ContractVehicleRates', () => {
     ]);
   });
 
-  it('confirming with an empty select shows "Scegli un mezzo." under it and confirms nothing', () => {
-    const { host, blocks, yes, type, confirm, errors } = render();
-    yes();
-    type(0, 'day', '55');
+  it('"Conferma" without rows shows "Aggiungi almeno un mezzo." and confirms nothing', async () => {
+    const r = render();
+    r.yes();
 
-    confirm();
+    r.button('Conferma').click();
+    await settle(r.fixture);
 
-    expect(errors(0)).toEqual(['Scegli un mezzo.']);
-    expect(blocks()[0].querySelector('select')!.getAttribute('aria-invalid')).toBe('true');
-    expect(host.confirmed).toEqual([]);
+    expect(r.notice()).toBe('Aggiungi almeno un mezzo.');
+    expect(r.host.confirmed).toEqual([]);
+    expect(document.activeElement).toBe(r.button('Aggiungi un mezzo'));
   });
 
-  it('every block must be complete, and a complete answer is confirmed with the vehicles, rates and minimum entered', () => {
-    const { host, fixture, blocks, button, settle, yes, fill, type, confirm, errors } = render();
-    host.night.set(true);
-    fixture.detectChanges();
-    yes();
-    fill(0, 'v-1');
-    type(0, 'night', '70');
-    type(0, 'callFee', '0');
-    button('Aggiungi un mezzo').click();
-    settle();
-    expect(blocks().length).toBe(2);
+  it('the message goes away with the first row added', async () => {
+    const r = render();
+    r.yes();
+    r.button('Conferma').click();
+    r.fixture.detectChanges();
+    await r.open('Aggiungi un mezzo');
+    r.choose('v-1');
+    r.type('day', '55');
 
-    confirm();
-    expect(errors(0)).toEqual([]);
-    expect(errors(1)).toEqual([
-      'Scegli un mezzo.',
-      'Inserisci il prezzo diurno.',
-      'Inserisci il prezzo notturno.',
-      'Inserisci la chiamata notturna.',
+    await r.submit();
+
+    expect(r.notice()).toBeUndefined();
+  });
+
+  it('the rows are sorted by plate, and "Conferma" emits them in that order', () => {
+    const r = render((host) =>
+      host.answer.set([rateOf(GRU), rateOf(FLOOR), rateOf(AUTOSPURGO), DISMESSO]),
+    );
+
+    expect(r.rowTitles().map((title) => title?.split(' ')[0])).toEqual([
+      'AB123CD',
+      'EF789LM',
+      'GH456JK',
+      'ZZ999ZZ',
     ]);
-    expect(host.confirmed).toEqual([]);
 
-    fill(1, 'v-2', '48');
-    type(1, 'night', '60');
-    type(1, 'callFee', '40');
-    blocks()[1].querySelectorAll<HTMLInputElement>('fieldset input[type="radio"]')[1].click();
-    settle();
-    type(1, 'amount', '120');
-    confirm();
+    r.button('Conferma').click();
+    r.fixture.detectChanges();
 
-    expect(host.confirmed).toEqual([
-      [
-        {
-          vehicleId: 'v-1',
-          licensePlate: 'AB123CD',
-          description: 'Autospurgo Scania P410',
-          decommissioned: false,
-          rate: { day: 55, night: 70, callFee: 0 },
-          minimum: { kind: 'None', amount: null, threshold: null, overage: null },
-        },
-        {
-          vehicleId: 'v-2',
-          licensePlate: 'GH456JK',
-          description: 'Gru mobile 15t',
-          decommissioned: false,
-          rate: { day: 48, night: 60, callFee: 40 },
-          minimum: { kind: 'FixedMinimum', amount: 120, threshold: null, overage: null },
-        },
-      ],
+    expect(r.host.confirmed[0].map((entry) => entry.licensePlate)).toEqual([
+      'AB123CD',
+      'EF789LM',
+      'GH456JK',
+      'ZZ999ZZ',
     ]);
   });
 
-  it('removing the last block leaves the question unanswered', () => {
-    const { host, radios, blocks, yes, settle, element } = render();
-    yes();
+  it('a row added later takes its place by plate', async () => {
+    const r = render((host) => host.answer.set([rateOf(GRU)]));
+    await r.open('Aggiungi un mezzo');
+    r.choose('v-1');
+    r.type('day', '30');
 
-    blocks()[0].querySelector('button')!.click();
-    settle();
+    await r.submit();
 
-    expect(blocks().length).toBe(0);
-    expect(radios().every((radio) => !radio.checked)).toBe(true);
-    expect(element.textContent).not.toContain('Conferma');
-    expect(host.confirmed).toEqual([]);
+    expect(r.rowTitles()).toEqual(['AB123CD Autospurgo Scania P410', 'GH456JK Gru mobile 15t']);
+  });
+
+  it('"Togli" removes the row at once, and removing the last one leaves "Sì" chosen with the list empty', async () => {
+    const r = render((host) => host.answer.set([rateOf(AUTOSPURGO), rateOf(GRU)]));
+
+    r.element.querySelector<HTMLButtonElement>('button[data-remove]')!.click();
+    r.fixture.detectChanges();
+    expect(r.rowTitles()).toEqual(['GH456JK Gru mobile 15t']);
+    expect(r.host.confirmed).toEqual([]);
+
+    r.element.querySelector<HTMLButtonElement>('button[data-remove]')!.click();
+    await settle(r.fixture);
+
+    expect(r.rows().length).toBe(0);
+    expect(r.radios()[1].checked).toBe(true);
+    expect(r.button('Conferma')).toBeTruthy();
+    expect(document.activeElement).toBe(r.button('Aggiungi un mezzo'));
+    expect(r.host.confirmed).toEqual([]);
   });
 
   it('changing the answer to "No" confirms an empty answer and clears the vehicle rates entered', () => {
-    const { host, radios, blocks, settle, yes, fill } = render();
-    yes();
-    fill(0, 'v-1');
+    const r = render((host) => host.answer.set([rateOf(AUTOSPURGO)]));
 
-    radios()[0].click();
-    settle();
+    r.radios()[0].click();
+    r.fixture.detectChanges();
 
-    expect(host.confirmed).toEqual([[]]);
-    expect(blocks().length).toBe(0);
+    expect(r.host.confirmed).toEqual([[]]);
+    expect(r.rows().length).toBe(0);
 
-    yes();
-    expect(blocks().length).toBe(1);
-    expect(blocks()[0].querySelector('select')!.value).toBe('');
-    expect(blocks()[0].querySelector<HTMLInputElement>('input[id$="-day"]')!.value).toBe('');
+    r.yes();
+    expect(r.rows().length).toBe(0);
   });
 
   it('an arrow key moves to "No" without confirming it, and "Sì" is never confirmed by a choice', () => {
-    const { host, radios, blocks, settle } = render();
-    const no = radios()[0];
+    const r = render();
+    const no = r.radios()[0];
 
     no.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
     no.click();
     no.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowLeft', bubbles: true }));
-    settle();
-    expect(host.confirmed).toEqual([]);
+    r.fixture.detectChanges();
+    expect(r.host.confirmed).toEqual([]);
 
     no.click();
-    settle();
-    expect(host.confirmed).toEqual([[]]);
+    r.fixture.detectChanges();
+    expect(r.host.confirmed).toEqual([[]]);
 
-    radios()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    settle();
-    expect(host.confirmed).toEqual([[]]);
-    expect(blocks().length).toBe(1);
+    r.radios()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    r.fixture.detectChanges();
+    expect(r.host.confirmed).toEqual([[]]);
+    expect(r.button('Conferma')).toBeTruthy();
 
     no.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
     no.click();
     no.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowUp', bubbles: true }));
-    settle();
-    expect(host.confirmed).toEqual([[]]);
-    expect(blocks().length).toBe(0);
+    r.fixture.detectChanges();
+    expect(r.host.confirmed).toEqual([[]]);
+    expect(r.button('Conferma')).toBeUndefined();
   });
 
-  it('tells Enter or Space while "No" and "Sì" are the question, Tab then "Conferma" once the blocks are open', () => {
-    const { fixture, yes } = render();
+  it('tells Enter or Space while "No" and "Sì" are the question, Tab then "Conferma" once the rows are open', () => {
+    const r = render();
     const keys = () =>
-      Array.from(fixture.nativeElement.querySelectorAll('.pt-keys') as NodeListOf<Element>, (p) =>
+      Array.from(r.element.querySelectorAll('.pt-keys'), (p) =>
         Array.from(p.children, (group) => group.textContent?.replace(/\s+/g, ' ').trim()).join(
           ' · ',
         ),
       );
 
     expect(keys()).toEqual(['↑ ↓ scegli · Invio o Spazio conferma']);
-    yes();
+    r.yes();
     expect(keys()).toEqual(['↑ ↓ scegli · Tab vai ai campi, poi «Conferma»']);
   });
 
   it('a reopened question offers "Annulla modifica" under the actions, with Esc in the keys under it', () => {
-    const { fixture, yes } = render();
-    const element = fixture.nativeElement as HTMLElement;
-    fixture.componentInstance.cancellable.set(true);
-    fixture.detectChanges();
-    yes();
+    const r = render((host) => host.cancellable.set(true));
+    r.yes();
 
-    const keys = element.querySelector('.pt-keys')!;
+    const keys = r.element.querySelector('.pt-keys')!;
     expect(keys.textContent).toContain('annulla la modifica');
     const cancel = keys
       .closest('app-contract-keys')!
       .previousElementSibling!.querySelector('button')!;
     expect(cancel.textContent?.trim()).toBe('Annulla modifica');
     cancel.click();
-    expect(fixture.componentInstance.cancelled).toBe(1);
+    expect(r.host.cancelled).toBe(1);
   });
 
-  it('when the vehicles could not be read the block shows the message under the select', () => {
-    const { host, fixture, blocks, yes, text } = render();
-    host.rateable.set(null);
-    host.failed.set(true);
-    fixture.detectChanges();
-    yes();
+  it('while the vehicles are being read the select is disabled, and a failed read says so under it', async () => {
+    const r = render((host) => host.rateable.set(null));
+    r.yes();
+    await r.open('Aggiungi un mezzo');
+    expect(r.select().disabled).toBe(true);
 
-    expect(text(blocks()[0].querySelector('.pt-field__error'))).toBe(
-      'Non è stato possibile leggere i mezzi. Ricarica la pagina per riprovare.',
+    r.host.failed.set(true);
+    r.fixture.detectChanges();
+
+    expect(r.select().disabled).toBe(false);
+    expect(r.text(r.rateForm().querySelector('.pt-field__error'))).toBe(
+      'Non è stato possibile leggere i mezzi. Chiudi e riapri la finestra per riprovare.',
     );
   });
 
-  it('no text of the component uses the internal term', () => {
-    const { host, fixture, element, yes } = render();
-    host.night.set(true);
-    fixture.detectChanges();
-    yes();
+  it('opening the dialog asks to read the vehicles again only after a failed read', async () => {
+    const r = render();
+    r.yes();
+    await r.open('Aggiungi un mezzo');
+    expect(r.host.retried).toBe(0);
+    await r.open('Annulla');
 
-    expect(element.textContent!.toLowerCase()).not.toContain('override');
+    r.host.failed.set(true);
+    r.fixture.detectChanges();
+    await r.open('Aggiungi un mezzo');
+
+    expect(r.host.retried).toBe(1);
+  });
+
+  it('Escape in the dialog does not reach the question that holds it', async () => {
+    const r = render();
+    r.yes();
+    await r.open('Aggiungi un mezzo');
+    let reached = false;
+    r.element.parentElement!.addEventListener('keydown', () => (reached = true));
+
+    r.rateForm().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(reached).toBe(false);
+  });
+
+  it('no text of the component uses the internal term', () => {
+    const r = render();
+    r.yes();
+
+    expect(r.element.textContent!.toLowerCase()).not.toContain('override');
     expect(JSON.stringify(italian.contracts.form.vehicleRates).toLowerCase()).not.toContain(
       'override',
     );

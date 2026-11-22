@@ -1,0 +1,47 @@
+@if (rows().length > 0) {
+  <app-contract-rate-rows
+    [rows]="rows()"
+    (edit)="edit($event)"
+    (removed)="remove($event)"
+    (focusAdd)="focusAdd()"
+  />
+} @else {
+  <div class="pt-empty">
+    <p class="pt-title">{{ 'contracts.form.locationRates.none' | translate }}</p>
+    <p class="pt-muted">{{ 'contracts.form.locationRates.' + key() + '.empty' | translate }}</p>
+  </div>
+}
+@if (notice(); as notice) {
+  <span class="pt-field__error" role="alert">{{ notice.key | translate: notice.params }}</span>
+}
+<div class="flex flex-wrap gap-2">
+  <button type="button" class="pt-btn pt-btn--sm" data-add (click)="add()">
+    <app-icon name="plus" size="sm" /> {{ 'contracts.form.locationRates.add' | translate }}
+  </button>
+  <button type="button" class="pt-btn pt-btn--primary pt-btn--sm" (click)="confirm()">
+    {{ 'contracts.form.locationRates.confirm' | translate }}
+  </button>
+</div>
+@if (cancellable()) {
+  <div>
+    <button type="button" class="pt-btn pt-btn--sm" (click)="cancelled.emit()">
+      {{ 'contracts.form.cancelModify' | translate }}
+    </button>
+  </div>
+}
+@if (dialog(); as state) {
+  <app-contract-rate-dialog
+    [editing]="state.entry !== null"
+    [line]="line()"
+    icon="pin"
+    [night]="night()"
+    [mode]="mode()"
+    [subjects]="subjects()"
+    [rate]="state.entry?.rate ?? null"
+    [minimum]="state.entry?.minimum ?? null"
+    [check]="check()"
+    (confirmed)="onConfirmed($event)"
+    (cancelled)="dialog.set(null)"
+    (locationCreated)="onCreated($event)"
+  />
+}

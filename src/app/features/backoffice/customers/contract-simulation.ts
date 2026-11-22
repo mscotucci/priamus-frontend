@@ -12,16 +12,32 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { fieldErrors, noticeOf, type NoticeContent } from '../../../core/api/api-error';
 import { Notice } from '../../../shared/components/notice/notice';
 import { CustomersFacade } from './customers-facade';
+import { locationLabel } from '../locations/location-label';
 import {
   formatAmount,
   formatDuration,
   formatKilometres,
   formatTons,
+  locationRateLabel,
   minimumSummary,
+  sortLocationRates,
+  sortVehicleRates,
 } from './contract-labels';
 import { rateMembers, unitKey, type Minimum, type Rate } from './contract-rate';
+import {
+  LEVEL_KEY,
+  locationRateRequestOf,
+  locationRatesKey,
+  rowKey,
+  type LocationRateAnswer,
+} from './contract-location-rates';
 import type { VehicleRateAnswer } from './contract-vehicle-rates';
-import { type PriceSimulation, type PricingMode, type SimulatePriceRequest } from './contracts-api';
+import {
+  type BillingLevel,
+  type PriceSimulation,
+  type PricingMode,
+  type SimulatePriceRequest,
+} from './contracts-api';
 
 /** The fields of the sample trip, as the back office typed them. */
 interface Trip {
@@ -79,14 +95,19 @@ export class ContractSimulation {
   readonly mode = input.required<PricingMode>();
   /** The contract has the night surcharge. */
   readonly night = input.required<boolean>();
-  readonly rate = input.required<Rate>();
+  /** Null on a location contract: its rates are the location rates. */
+  readonly rate = input.required<Rate | null>();
   /** Null when the contract is priced `ByTrip`. */
   readonly minimum = input.required<Minimum | null>();
   readonly vehicleRates = input.required<VehicleRateAnswer[]>();
+  readonly level = input.required<BillingLevel>();
+  /** The rates of a location contract as written on the page; empty for a flat rate. */
+  readonly locationRates = input.required<LocationRateAnswer[]>();
   /** A question is still open: the contract cannot be tried until it is confirmed. */
   readonly blocked = input.required<boolean>();
 
   private readonly vehicle = signal('');
+  private readonly location = signal('');
   /** The typed fields start empty again when the pricing mode changes: the fields shown are not the same. */
   protected readonly trip = linkedSignal<PricingMode, Trip>({
     source: this.mode,
@@ -104,6 +125,35 @@ export class ContractSimulation {
     this.vehicleRates().some((entry) => entry.vehicleId === this.vehicle()) ? this.vehicle() : '',
   );
 
+  protected readonly flat = computed(() => this.level() === 'FlatRate');
+
+  /** The label of the location select: the location's own text, or the pair's. */
+  protected readonly locationLabelKey = computed(() => {
+    const level = this.level();
+    const key = level === 'FlatRate' ? 'both' : LEVEL_KEY[level];
+    return key === 'both'
+      ? 'contracts.form.simulation.location.both'
+      : `contracts.form.locationRates.location.${key}`;
+  });
+
+  protected readonly locationOptions = computed(() =>
+    sortLocationRates(this.locationRates()).map((entry) => ({
+      id: rowKey(entry),
+      label: locationRateLabel(entry),
+    })),
+  );
+
+  /** The chosen location rate; one removed on the page falls back to the first. */
+  private readonly locationChoice = computed(() => {
+    const rates = sortLocationRates(this.locationRates());
+    return rates.find((entry) => rowKey(entry) === this.location()) ?? rates[0] ?? null;
+  });
+
+  protected readonly locationId = computed(() => {
+    const choice = this.locationChoice();
+    return choice === null ? '' : rowKey(choice);
+  });
+
   /** Everything the amount depends on: a result is shown only while this equals the key it was computed from. */
   private readonly key = computed(() => {
     const trip = this.trip();
@@ -111,6 +161,7 @@ export class ContractSimulation {
     return JSON.stringify({
       mode,
       night: this.night(),
+      level: this.level(),
       rate: this.rate(),
       minimum: this.minimum(),
       vehicleRates: this.vehicleRates().map(({ vehicleId, rate, minimum }) => ({
@@ -119,6 +170,8 @@ export class ContractSimulation {
         minimum,
       })),
       vehicle: this.vehicleId(),
+      locationRates: locationRatesKey(this.locationRates()),
+      location: this.locationId(),
       start: trip.start,
       end: mode === 'ByHour' ? trip.end : null,
       kilograms: mode === 'ByWeight' ? trip.kilograms.trim() : null,
@@ -152,11 +205,15 @@ export class ContractSimulation {
   });
 
   protected readonly vehicleOptions = computed(() =>
-    this.vehicleRates().map((entry) => ({
+    sortVehicleRates(this.vehicleRates()).map((entry) => ({
       id: entry.vehicleId,
       label: `${entry.licensePlate} · ${entry.description}`,
     })),
   );
+
+  protected pickLocation(id: string): void {
+    this.location.set(id);
+  }
 
   protected pickVehicle(vehicleId: string): void {
     this.vehicle.set(vehicleId);
@@ -249,20 +306,40 @@ export class ContractSimulation {
   private request(): SimulatePriceRequest {
     const trip = this.trip();
     const mode = this.mode();
+    const flat = this.flat();
+    const choice = this.locationChoice();
     return {
       pricingMode: mode,
       nightSurcharge: this.night(),
-      ...rateMembers(true, this.rate(), this.minimum()),
-      vehicleRates: this.vehicleRates().map(({ vehicleId, rate, minimum }) => ({
-        vehicleId,
-        ...rateMembers(true, rate, minimum),
-      })),
+      ...rateMembers(flat, this.rate(), this.minimum()),
+      vehicleRates: flat
+        ? this.vehicleRates().map(({ vehicleId, rate, minimum }) => ({
+            vehicleId,
+            ...rateMembers(true, rate, minimum),
+          }))
+        : [],
       vehicleId: this.vehicleId() === '' ? null : this.vehicleId(),
+      billingLevel: this.level(),
+      locationRates: flat ? [] : this.locationRates().map(locationRateRequestOf),
+      pickupLocationId: flat ? null : (choice?.pickup?.id ?? null),
+      deliveryLocationId: flat ? null : (choice?.delivery?.id ?? null),
       startTime: trip.start,
       endTime: mode === 'ByHour' ? trip.end : null,
       kilograms: mode === 'ByWeight' ? Number(trip.kilograms.trim()) : null,
       kilometres: mode === 'ByDistance' ? Number(trip.kilometres.trim()) : null,
     };
+  }
+
+  private rateSourceText(source: PriceSimulation['rateSource']): string {
+    const t = (name: string, params?: object): string =>
+      this.translate.instant(`contracts.form.simulation.result.${name}`, params);
+    const choice = this.locationChoice();
+    if (choice === null || source === 'Contract' || source === 'Vehicle') {
+      return t('contractRate');
+    }
+    return source === 'Location'
+      ? t('locationRate', { location: locationLabel((choice.pickup ?? choice.delivery)!) })
+      : t('pairRate', { pair: locationRateLabel(choice) });
   }
 
   private linesOf(result: PriceSimulation, mode: PricingMode, start: string): Line[] {
@@ -276,7 +353,7 @@ export class ContractSimulation {
           ? t('night', { start, from, to })
           : t('nightNoSurcharge');
     const vehicle =
-      result.rateSource === 'Contract'
+      result.rateSource !== 'Vehicle'
         ? undefined
         : this.vehicleRates().find((entry) => entry.vehicleId === result.vehicleId);
     const quantity = result.quantity;
@@ -299,7 +376,7 @@ export class ContractSimulation {
       { label: t('band'), text: band },
       vehicle
         ? { label: t('rate'), text: t('vehicleRate'), plate: vehicle.licensePlate }
-        : { label: t('rate'), text: t('contractRate') },
+        : { label: t('rate'), text: this.rateSourceText(result.rateSource) },
       { label: t('base'), text: base, mono: true },
     ];
     const kind = result.minimumRule ?? 'None';

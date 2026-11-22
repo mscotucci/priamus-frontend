@@ -430,6 +430,9 @@ select.pt-input::picker(select) {
   appearance: base-select;
 }
 select.pt-input {
+  /* the height of an input until the chosen text wraps, then it grows with it */
+  min-height: min-content;
+  padding-block: var(--space-1-5);
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -438,6 +441,7 @@ select.pt-input {
 }
 select.pt-input::picker-icon {
   content: '';
+  flex: none;
   width: var(--icon-xs);
   height: var(--icon-xs);
   background: var(--text-muted);

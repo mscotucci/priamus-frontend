@@ -1,8 +1,16 @@
 import { TranslateService } from '@ngx-translate/core';
 import { LANGUAGE } from '../../../core/i18n/i18n';
 import { Minimum, Rate, rateOfContract, unitKey } from './contract-rate';
+import { locationLabel } from '../locations/location-label';
+import type { LocationRateAnswer } from './contract-location-rates';
 import type { VehicleRateAnswer } from './contract-vehicle-rates';
-import { Contract, ContractStatus, PricingMode, RequiredDocument } from './contracts-api';
+import {
+  BillingLevel,
+  Contract,
+  ContractStatus,
+  PricingMode,
+  RequiredDocument,
+} from './contracts-api';
 
 export const CONTRACT_STATUS_PILL: Record<ContractStatus, string> = {
   Current: 'pt-pill--success',
@@ -77,8 +85,18 @@ export function rateSummary(rate: Rate, mode: PricingMode, translate: TranslateS
       });
 }
 
-/** "30,00 €/h": the day price with the unit of the pricing mode; null when the contract has no rate. */
-export function dayPriceSummary(contract: Contract, translate: TranslateService): string | null {
+/**
+ * The "Tariffa" column: "30,00 €/h", the day price with the unit of the pricing mode, or "3 luoghi" /
+ * "1 coppia" on a location contract; null when the contract has no rate at all.
+ */
+export function rateColumnSummary(contract: Contract, translate: TranslateService): string | null {
+  const count = contract.locationRates.length;
+  if (count > 0) {
+    return translate.instant(
+      `customers.contracts.rateCount.${contract.billingLevel === 'PerLocationPair' ? 'pair' : 'location'}.${count === 1 ? 'one' : 'other'}`,
+      { count },
+    );
+  }
   const rate = rateOfContract(contract);
   return rate === null
     ? null
@@ -131,9 +149,9 @@ export function tieredExample(
   });
 }
 
-/** "55,00 €/h di giorno · 70,00 €/h di notte · chiamata 40,00 € · minimo 120,00 €": the terms of a vehicle rate; no minimum under a trip price. */
-export function vehicleRateTerms(
-  answer: VehicleRateAnswer,
+/** "55,00 €/h di giorno · 70,00 €/h di notte · chiamata 40,00 € · minimo 120,00 €": the terms of a rate; no minimum under a trip price. */
+export function rateTerms(
+  answer: { rate: Rate; minimum: Minimum | null },
   mode: PricingMode,
   translate: TranslateService,
 ): string {
@@ -144,3 +162,53 @@ export function vehicleRateTerms(
   const minimum = minimumSummary(answer.minimum, mode, translate);
   return `${rate} · ${minimum.charAt(0).toLowerCase()}${minimum.slice(1)}`;
 }
+
+/** The location of a location rate, or "<pickup> → <delivery>" for a pair rate. */
+export const locationRateLabel = (
+  answer: Pick<LocationRateAnswer, 'pickup' | 'delivery'>,
+): string =>
+  [answer.pickup, answer.delivery]
+    .filter((side) => side !== null)
+    .map(locationLabel)
+    .join(' → ');
+
+/** The rates by pickup name and municipality, then delivery name and municipality, with Italian collation. */
+export function sortLocationRates<T extends Pick<LocationRateAnswer, 'pickup' | 'delivery'>>(
+  rates: readonly T[],
+): T[] {
+  const keys = (rate: T) => [
+    rate.pickup?.name ?? '',
+    rate.pickup?.municipality ?? '',
+    rate.delivery?.name ?? '',
+    rate.delivery?.municipality ?? '',
+  ];
+  return [...rates].sort((a, b) => {
+    const left = keys(a);
+    const right = keys(b);
+    for (let at = 0; at < left.length; at++) {
+      const order = left[at].localeCompare(right[at], 'it');
+      if (order !== 0) {
+        return order;
+      }
+    }
+    return 0;
+  });
+}
+
+/** The vehicle rates by licence plate, with Italian collation. */
+export const sortVehicleRates = <T extends Pick<VehicleRateAnswer, 'licensePlate'>>(
+  rates: readonly T[],
+): T[] => [...rates].sort((a, b) => a.licensePlate.localeCompare(b.licensePlate, 'it'));
+
+/** The line of the rate dialog: "<level> · <mode> · <con/senza maggiorazione notturna>". */
+export const rateDialogLine = (
+  level: BillingLevel,
+  mode: PricingMode,
+  night: boolean,
+  translate: TranslateService,
+): string =>
+  translate.instant('contracts.form.rateDialog.line', {
+    level: translate.instant(`customers.contracts.billing.${level.toLowerCase()}`),
+    mode: translate.instant(`customers.contracts.pricing.${mode.toLowerCase()}`).toLowerCase(),
+    night: translate.instant(`contracts.form.rateDialog.night.${night ? 'yes' : 'no'}`),
+  });

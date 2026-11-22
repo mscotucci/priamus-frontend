@@ -351,6 +351,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/locations/rateable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListRateableLocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/registry/locations/{id}": {
         parameters: {
             query?: never;
@@ -517,6 +533,7 @@ export interface components {
             changeFrom: null | string;
             /** Format: double */
             dayPrice: number | null;
+            locationRates: null | components["schemas"]["ContractLocationRateRequest"][];
             /** Format: double */
             minimumAmount: number | null;
             /** Format: double */
@@ -558,6 +575,8 @@ export interface components {
              * @description The contract's identifier.
              */
             id: string;
+            /** @description The location rates, ordered by pickup then delivery location; empty when the contract has none. */
+            locationRates: components["schemas"]["ContractLocationRateDto"][];
             /**
              * Format: double
              * @description The minimum amount M; `null` unless the rule has one.
@@ -609,6 +628,71 @@ export interface components {
              * @description Version the client sends back with its next write on this contract.
              */
             version: number;
+        };
+        /**
+         * @description A location rate of a contract as the API returns it, with the locations it is for. A side the
+         *     billing level does not use is `null`.
+         */
+        ContractLocationRateDto: {
+            /**
+             * Format: double
+             * @description The day price.
+             */
+            dayPrice: number;
+            delivery: null | components["schemas"]["RatedLocationDto"];
+            /**
+             * Format: double
+             * @description The minimum amount M; `null` unless the rule has one.
+             */
+            minimumAmount: number | null;
+            /**
+             * Format: double
+             * @description The overage price Y; `null` unless the rule is tiered overage.
+             */
+            minimumOveragePrice: number | null;
+            /** @description The kind of minimum rule. */
+            minimumRule: components["schemas"]["MinimumRuleKind"];
+            /**
+             * Format: double
+             * @description The threshold X; `null` unless the rule is tiered overage.
+             */
+            minimumThreshold: number | null;
+            /**
+             * Format: double
+             * @description The night call fee; `null` without the night surcharge.
+             */
+            nightCallFee: number | null;
+            /**
+             * Format: double
+             * @description The night price; `null` without the night surcharge.
+             */
+            nightPrice: number | null;
+            pickup: null | components["schemas"]["RatedLocationDto"];
+        };
+        /**
+         * @description One location rate of a contract request: the pickup and the delivery location the billing level
+         *     uses and the seven rate members, as sent. Every member is optional here so that a missing or
+         *     misplaced value is reported by ContractRequestValidation on its own key,
+         *     `LocationRates[i].Member`.
+         */
+        ContractLocationRateRequest: {
+            /** Format: double */
+            dayPrice: number | null;
+            /** Format: uuid */
+            deliveryLocationId: null | string;
+            /** Format: double */
+            minimumAmount: number | null;
+            /** Format: double */
+            minimumOveragePrice: number | null;
+            minimumRule: null | components["schemas"]["MinimumRuleKind"];
+            /** Format: double */
+            minimumThreshold: number | null;
+            /** Format: double */
+            nightCallFee: number | null;
+            /** Format: double */
+            nightPrice: number | null;
+            /** Format: uuid */
+            pickupLocationId: null | string;
         };
         /**
          * @description Where a day falls against the validity of a Contract; derived, never stored
@@ -686,15 +770,18 @@ export interface components {
         };
         /**
          * @description Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).
-         *     Every member but the end of the validity, the seven rate members and the vehicle rates is required; an empty set
-         *     of documents is valid and duplicates collapse. The rate members are required for a flat-rate
-         *     contract (the night ones with the night surcharge, the minimum ones as its rule asks) and must
-         *     be absent for any other billing level, as must the vehicle rates, an absent list being an empty one.
+         *     Every member but the end of the validity, the seven rate members, the vehicle rates and the
+         *     location rates is required; an empty set of documents is valid and duplicates collapse. The
+         *     rate members are required for a flat-rate contract (the night ones with the night surcharge,
+         *     the minimum ones as its rule asks) and must be absent for any other billing level, as must the
+         *     vehicle rates. The location rates are required, at least one, for any other billing level and
+         *     must be absent for a flat-rate contract. An absent list is an empty one.
          */
         CreateContractRequest: {
             billingLevel: null | components["schemas"]["BillingLevel"];
             /** Format: double */
             dayPrice: number | null;
+            locationRates: null | components["schemas"]["ContractLocationRateRequest"][];
             /** Format: double */
             minimumAmount: number | null;
             /** Format: double */
@@ -1269,7 +1356,7 @@ export interface components {
              * @description Minutes, kilograms or kilometres; `null` for a trip priced by trip.
              */
             quantity: number | null;
-            /** @description Whether the rate is the contract's or a vehicle's. */
+            /** @description Where the rate came from. */
             rateSource: components["schemas"]["RateSource"];
             /**
              * Format: double
@@ -1304,7 +1391,19 @@ export interface components {
          * @description Where the rate of a computation came from.
          * @enum {unknown}
          */
-        RateSource: "Contract" | "Vehicle";
+        RateSource: "Contract" | "Vehicle" | "Location" | "LocationPair";
+        /** @description A location that can be given a location rate in a contract. */
+        RateableLocationDto: {
+            /**
+             * Format: uuid
+             * @description The location's identifier.
+             */
+            id: string;
+            /** @description The town the location is in. */
+            municipality: string;
+            /** @description What people call the place. */
+            name: string;
+        };
         /** @description A vehicle that can be given a vehicle rate in a contract. */
         RateableVehicleDto: {
             /** @description The description. */
@@ -1316,6 +1415,20 @@ export interface components {
             id: string;
             /** @description The plate in normal form. */
             licensePlate: string;
+        };
+        /** @description A location a rate of a contract is for, as the API returns it. */
+        RatedLocationDto: {
+            /**
+             * Format: uuid
+             * @description The location's identifier.
+             */
+            id: string;
+            /** @description The location's municipality. */
+            municipality: string;
+            /** @description The location's name. */
+            name: string;
+            /** @description The location's status: a deactivated location keeps its rate. */
+            status: components["schemas"]["LocationStatus"];
         };
         /**
          * @description Request body for `POST /api/registry/customers/{id}/reactivate`. `Version` is the version
@@ -1381,22 +1494,29 @@ export interface components {
             refreshToken: string;
         };
         /**
-         * @description Request body for `POST /api/registry/contracts/simulation`: the terms of a flat-rate contract as
-         *     written on the page, saved or not, and a sample trip. The rate members and the vehicle rates follow the
-         *     contract requests; `StartTime` and `EndTime` are `HH:mm`. The end is for a trip by hour
+         * @description Request body for `POST /api/registry/contracts/simulation`: the terms of a contract as
+         *     written on the page, saved or not, and a sample trip. The billing level, the rate members, the vehicle
+         *     rates and the location rates follow the contract requests; `StartTime` and `EndTime` are
+         *     `HH:mm`. The end is for a trip by hour
          *     only, `Kilograms` for a trip by weight only and `Kilometres` for a trip by distance only;
          *     the quantities are whole numbers, read as numbers so that a fraction is reported on its own member.
-         *     `VehicleId` is the trip's vehicle: `null`, or a vehicle without a vehicle rate, uses the
-         *     contract's rate.
+         *     `VehicleId` is the trip's vehicle on a flat-rate contract: `null`, or a vehicle without a
+         *     vehicle rate, uses the contract's rate. `PickupLocationId` and `DeliveryLocationId` are the
+         *     trip's locations: each is required when the billing level uses it, refused when it does not, and must
+         *     have a rate among the written location rates.
          */
         SimulatePriceRequest: {
+            billingLevel: null | components["schemas"]["BillingLevel"];
             /** Format: double */
             dayPrice: number | null;
+            /** Format: uuid */
+            deliveryLocationId: null | string;
             endTime: null | string;
             /** Format: double */
             kilograms: number | null;
             /** Format: double */
             kilometres: number | null;
+            locationRates: null | components["schemas"]["ContractLocationRateRequest"][];
             /** Format: double */
             minimumAmount: number | null;
             /** Format: double */
@@ -1409,6 +1529,8 @@ export interface components {
             /** Format: double */
             nightPrice: number | null;
             nightSurcharge: null | boolean;
+            /** Format: uuid */
+            pickupLocationId: null | string;
             pricingMode: null | components["schemas"]["PricingMode"];
             startTime: string;
             /** Format: uuid */
@@ -1439,6 +1561,7 @@ export interface components {
             billingLevel: null | components["schemas"]["BillingLevel"];
             /** Format: double */
             dayPrice: number | null;
+            locationRates: null | components["schemas"]["ContractLocationRateRequest"][];
             /** Format: double */
             minimumAmount: number | null;
             /** Format: double */
@@ -3439,6 +3562,44 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListRateableLocations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RateableLocationDto"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

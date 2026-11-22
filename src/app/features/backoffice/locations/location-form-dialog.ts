@@ -18,7 +18,7 @@ import { ApiError, fieldErrors, noticeOf } from '../../../core/api/api-error';
 import { Dialog } from '../../../shared/components/dialog/dialog';
 import { Notice } from '../../../shared/components/notice/notice';
 import { LocationListItem } from './locations-api';
-import { LocationsFacade } from './locations-facade';
+import { LocationsFacade, SavedLocation } from './locations-facade';
 
 const MAX_NAME = 100;
 const MAX_MUNICIPALITY = 100;
@@ -37,6 +37,8 @@ export class LocationFormDialog {
   protected readonly facade = inject(LocationsFacade);
   /** The location being edited; absent when creating. */
   readonly location = input<LocationListItem | null>(null);
+  /** The location that was created or updated, emitted before `closed`. */
+  readonly saved = output<SavedLocation>();
   readonly closed = output<void>();
   private readonly injector = inject(Injector);
   private readonly nameInput = viewChild.required<ElementRef<HTMLInputElement>>('name');
@@ -124,9 +126,13 @@ export class LocationFormDialog {
       municipality: municipality.trim(),
       address: address.trim() === '' ? null : address.trim(),
     });
-    if (outcome === 'saved') {
+    if (outcome === 'ignored') {
+      return;
+    }
+    if ('id' in outcome) {
+      this.saved.emit(outcome);
       this.closed.emit();
-    } else if (outcome !== 'ignored') {
+    } else {
       this.refusal.set(outcome);
       // the focused button was disabled during the save; the fields are enabled again only after the next render
       afterNextRender(() => this.nameInput().nativeElement.focus(), {

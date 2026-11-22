@@ -8,12 +8,15 @@ import {
   formatDuration,
   formatKilometres,
   formatTons,
+  locationRateLabel,
   minimumSummary,
   rateSummary,
+  rateTerms,
+  sortLocationRates,
   tieredExample,
-  vehicleRateTerms,
 } from './contract-labels';
 import type { Minimum } from './contract-rate';
+import type { LocationRateAnswer } from './contract-location-rates';
 import type { VehicleRateAnswer } from './contract-vehicle-rates';
 import type { PricingMode } from './contracts-api';
 
@@ -113,7 +116,7 @@ describe('contract labels', () => {
     expect(dayBefore('2026-01-01')).toBe('2025-12-31');
   });
 
-  describe('vehicleRateTerms', () => {
+  describe('rateTerms', () => {
     const vehicle: VehicleRateAnswer = {
       vehicleId: 'v1',
       licensePlate: 'AB123CD',
@@ -126,11 +129,11 @@ describe('contract labels', () => {
     it('tells the rate and the minimum with its first letter in lower case', () => {
       const service = translate();
 
-      expect(vehicleRateTerms(vehicle, 'ByHour', service)).toBe(
+      expect(rateTerms(vehicle, 'ByHour', service)).toBe(
         '55,00 €/h di giorno · 70,00 €/h di notte · chiamata 40,00 € · minimo 120,00 €',
       );
       expect(
-        vehicleRateTerms(
+        rateTerms(
           {
             ...vehicle,
             rate: { day: 48, night: null, callFee: null },
@@ -144,12 +147,72 @@ describe('contract labels', () => {
 
     it('tells the rate alone under a trip price, which has no minimum', () => {
       expect(
-        vehicleRateTerms(
+        rateTerms(
           { ...vehicle, rate: { day: 90, night: null, callFee: null }, minimum: null },
           'ByTrip',
           translate(),
         ),
       ).toBe('90,00 €');
+    });
+  });
+
+  describe('location rates', () => {
+    const place = (name: string, municipality: string) => ({
+      id: `${name}-${municipality}`,
+      name,
+      municipality,
+      deactivated: false,
+    });
+    const rate = (
+      pickup: LocationRateAnswer['pickup'],
+      delivery: LocationRateAnswer['delivery'],
+    ): LocationRateAnswer => ({
+      pickup,
+      delivery,
+      rate: { day: 30, night: null, callFee: null },
+      minimum: null,
+    });
+
+    it('a location rate is told by its location, a pair rate by "<pickup> → <delivery>"', () => {
+      const magazzino = place('Magazzino centrale', 'Pescara');
+      const cantiere = place('Cantiere A14', 'Chieti Scalo');
+
+      expect(locationRateLabel(rate(null, cantiere))).toBe('Cantiere A14, Chieti Scalo');
+      expect(locationRateLabel(rate(magazzino, null))).toBe('Magazzino centrale, Pescara');
+      expect(locationRateLabel(rate(magazzino, cantiere))).toBe(
+        'Magazzino centrale, Pescara → Cantiere A14, Chieti Scalo',
+      );
+    });
+
+    it('rates are sorted by location name with Italian collation, then municipality', () => {
+      const labels = (rates: LocationRateAnswer[]) =>
+        sortLocationRates(rates).map((entry) => locationRateLabel(entry));
+
+      expect(
+        labels([
+          rate(null, place('Zeta', 'Roma')),
+          rate(null, place('Àncora', 'Roma')),
+          rate(null, place('Cantiere', 'Vasto')),
+          rate(null, place('Cantiere', 'Chieti')),
+        ]),
+      ).toEqual(['Àncora, Roma', 'Cantiere, Chieti', 'Cantiere, Vasto', 'Zeta, Roma']);
+    });
+
+    it('pairs are sorted by pickup, then by delivery', () => {
+      const a = place('A', 'Pescara');
+      const b = place('B', 'Chieti');
+      const c = place('C', 'Lanciano');
+
+      expect(
+        sortLocationRates([rate(b, a), rate(a, c), rate(a, b), rate(b, b)]).map((entry) =>
+          locationRateLabel(entry),
+        ),
+      ).toEqual([
+        'A, Pescara → B, Chieti',
+        'A, Pescara → C, Lanciano',
+        'B, Chieti → A, Pescara',
+        'B, Chieti → B, Chieti',
+      ]);
     });
   });
 

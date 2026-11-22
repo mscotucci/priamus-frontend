@@ -39,6 +39,15 @@
               "string"
             ]
           },
+          "locationRates": {
+            "items": {
+              "$ref": "#/components/schemas/ContractLocationRateRequest"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
           "minimumAmount": {
             "format": "double",
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
@@ -167,6 +176,7 @@
           "minimumThreshold",
           "minimumOveragePrice",
           "vehicleRates",
+          "locationRates",
           "version",
           "changeFrom"
         ],
@@ -198,6 +208,13 @@
             "description": "The contract's identifier.",
             "format": "uuid",
             "type": "string"
+          },
+          "locationRates": {
+            "description": "The location rates, ordered by pickup then delivery location; empty when the contract has none.",
+            "items": {
+              "$ref": "#/components/schemas/ContractLocationRateDto"
+            },
+            "type": "array"
           },
           "minimumAmount": {
             "description": "The minimum amount M; `null` unless the rule has one.",
@@ -327,7 +344,205 @@
           "minimumThreshold",
           "minimumOveragePrice",
           "vehicleRates",
+          "locationRates",
           "version"
+        ],
+        "type": "object"
+      },
+      "ContractLocationRateDto": {
+        "description": "A location rate of a contract as the API returns it, with the locations it is for. A side the\r\nbilling level does not use is `null`.",
+        "properties": {
+          "dayPrice": {
+            "description": "The day price.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "delivery": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RatedLocationDto",
+                "description": "The delivery location; `null` when the billing level does not use it."
+              }
+            ]
+          },
+          "minimumAmount": {
+            "description": "The minimum amount M; `null` unless the rule has one.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumOveragePrice": {
+            "description": "The overage price Y; `null` unless the rule is tiered overage.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumRule": {
+            "$ref": "#/components/schemas/MinimumRuleKind",
+            "description": "The kind of minimum rule."
+          },
+          "minimumThreshold": {
+            "description": "The threshold X; `null` unless the rule is tiered overage.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightCallFee": {
+            "description": "The night call fee; `null` without the night surcharge.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightPrice": {
+            "description": "The night price; `null` without the night surcharge.",
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "pickup": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RatedLocationDto",
+                "description": "The pickup location; `null` when the billing level does not use it."
+              }
+            ]
+          }
+        },
+        "required": [
+          "pickup",
+          "delivery",
+          "dayPrice",
+          "nightPrice",
+          "nightCallFee",
+          "minimumRule",
+          "minimumAmount",
+          "minimumThreshold",
+          "minimumOveragePrice"
+        ],
+        "type": "object"
+      },
+      "ContractLocationRateRequest": {
+        "description": "One location rate of a contract request: the pickup and the delivery location the billing level\r\nuses and the seven rate members, as sent. Every member is optional here so that a missing or\r\nmisplaced value is reported by ContractRequestValidation on its own key,\r\n`LocationRates[i].Member`.",
+        "properties": {
+          "dayPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "deliveryLocationId": {
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "minimumAmount": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumOveragePrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "minimumRule": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MinimumRuleKind"
+              }
+            ]
+          },
+          "minimumThreshold": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightCallFee": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "nightPrice": {
+            "format": "double",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ]
+          },
+          "pickupLocationId": {
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "pickupLocationId",
+          "deliveryLocationId",
+          "dayPrice",
+          "nightPrice",
+          "nightCallFee",
+          "minimumRule",
+          "minimumAmount",
+          "minimumThreshold",
+          "minimumOveragePrice"
         ],
         "type": "object"
       },
@@ -526,7 +741,7 @@
         "type": "object"
       },
       "CreateContractRequest": {
-        "description": "Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).\r\nEvery member but the end of the validity, the seven rate members and the vehicle rates is required; an empty set\r\nof documents is valid and duplicates collapse. The rate members are required for a flat-rate\r\ncontract (the night ones with the night surcharge, the minimum ones as its rule asks) and must\r\nbe absent for any other billing level, as must the vehicle rates, an absent list being an empty one.",
+        "description": "Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).\r\nEvery member but the end of the validity, the seven rate members, the vehicle rates and the\r\nlocation rates is required; an empty set of documents is valid and duplicates collapse. The\r\nrate members are required for a flat-rate contract (the night ones with the night surcharge,\r\nthe minimum ones as its rule asks) and must be absent for any other billing level, as must the\r\nvehicle rates. The location rates are required, at least one, for any other billing level and\r\nmust be absent for a flat-rate contract. An absent list is an empty one.",
         "properties": {
           "billingLevel": {
             "oneOf": [
@@ -545,6 +760,15 @@
               "null",
               "number",
               "string"
+            ]
+          },
+          "locationRates": {
+            "items": {
+              "$ref": "#/components/schemas/ContractLocationRateRequest"
+            },
+            "type": [
+              "null",
+              "array"
             ]
           },
           "minimumAmount": {
@@ -665,7 +889,8 @@
           "minimumAmount",
           "minimumThreshold",
           "minimumOveragePrice",
-          "vehicleRates"
+          "vehicleRates",
+          "locationRates"
         ],
         "type": "object"
       },
@@ -1876,7 +2101,7 @@
           },
           "rateSource": {
             "$ref": "#/components/schemas/RateSource",
-            "description": "Whether the rate is the contract's or a vehicle's."
+            "description": "Where the rate came from."
           },
           "total": {
             "description": "The amount: AmountAfterMinimum plus NightCallFee.",
@@ -1976,8 +2201,34 @@
         "description": "Where the rate of a computation came from.",
         "enum": [
           "Contract",
-          "Vehicle"
+          "Vehicle",
+          "Location",
+          "LocationPair"
         ]
+      },
+      "RateableLocationDto": {
+        "description": "A location that can be given a location rate in a contract.",
+        "properties": {
+          "id": {
+            "description": "The location's identifier.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "municipality": {
+            "description": "The town the location is in.",
+            "type": "string"
+          },
+          "name": {
+            "description": "What people call the place.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "municipality"
+        ],
+        "type": "object"
       },
       "RateableVehicleDto": {
         "description": "A vehicle that can be given a vehicle rate in a contract.",
@@ -2000,6 +2251,35 @@
           "id",
           "licensePlate",
           "description"
+        ],
+        "type": "object"
+      },
+      "RatedLocationDto": {
+        "description": "A location a rate of a contract is for, as the API returns it.",
+        "properties": {
+          "id": {
+            "description": "The location's identifier.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "municipality": {
+            "description": "The location's municipality.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The location's name.",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LocationStatus",
+            "description": "The location's status: a deactivated location keeps its rate."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "municipality",
+          "status"
         ],
         "type": "object"
       },
@@ -2139,14 +2419,31 @@
         "type": "object"
       },
       "SimulatePriceRequest": {
-        "description": "Request body for `POST /api/registry/contracts/simulation`: the terms of a flat-rate contract as\r\nwritten on the page, saved or not, and a sample trip. The rate members and the vehicle rates follow the\r\ncontract requests; `StartTime` and `EndTime` are `HH:mm`. The end is for a trip by hour\r\nonly, `Kilograms` for a trip by weight only and `Kilometres` for a trip by distance only;\r\nthe quantities are whole numbers, read as numbers so that a fraction is reported on its own member.\r\n`VehicleId` is the trip's vehicle: `null`, or a vehicle without a vehicle rate, uses the\r\ncontract's rate.",
+        "description": "Request body for `POST /api/registry/contracts/simulation`: the terms of a contract as\r\nwritten on the page, saved or not, and a sample trip. The billing level, the rate members, the vehicle\r\nrates and the location rates follow the contract requests; `StartTime` and `EndTime` are\r\n`HH:mm`. The end is for a trip by hour\r\nonly, `Kilograms` for a trip by weight only and `Kilometres` for a trip by distance only;\r\nthe quantities are whole numbers, read as numbers so that a fraction is reported on its own member.\r\n`VehicleId` is the trip's vehicle on a flat-rate contract: `null`, or a vehicle without a\r\nvehicle rate, uses the contract's rate. `PickupLocationId` and `DeliveryLocationId` are the\r\ntrip's locations: each is required when the billing level uses it, refused when it does not, and must\r\nhave a rate among the written location rates.",
         "properties": {
+          "billingLevel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillingLevel"
+              }
+            ]
+          },
           "dayPrice": {
             "format": "double",
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
               "number",
+              "string"
+            ]
+          },
+          "deliveryLocationId": {
+            "format": "uuid",
+            "type": [
+              "null",
               "string"
             ]
           },
@@ -2172,6 +2469,15 @@
               "null",
               "number",
               "string"
+            ]
+          },
+          "locationRates": {
+            "items": {
+              "$ref": "#/components/schemas/ContractLocationRateRequest"
+            },
+            "type": [
+              "null",
+              "array"
             ]
           },
           "minimumAmount": {
@@ -2235,6 +2541,13 @@
               "boolean"
             ]
           },
+          "pickupLocationId": {
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "pricingMode": {
             "oneOf": [
               {
@@ -2266,6 +2579,7 @@
           }
         },
         "required": [
+          "billingLevel",
           "pricingMode",
           "nightSurcharge",
           "dayPrice",
@@ -2276,7 +2590,10 @@
           "minimumThreshold",
           "minimumOveragePrice",
           "vehicleRates",
+          "locationRates",
           "vehicleId",
+          "pickupLocationId",
+          "deliveryLocationId",
           "startTime",
           "endTime",
           "kilograms",
@@ -2336,6 +2653,15 @@
               "null",
               "number",
               "string"
+            ]
+          },
+          "locationRates": {
+            "items": {
+              "$ref": "#/components/schemas/ContractLocationRateRequest"
+            },
+            "type": [
+              "null",
+              "array"
             ]
           },
           "minimumAmount": {
@@ -2466,6 +2792,7 @@
           "minimumThreshold",
           "minimumOveragePrice",
           "vehicleRates",
+          "locationRates",
           "version"
         ],
         "type": "object"
@@ -5086,6 +5413,49 @@
               }
             },
             "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Registry.Locations"
+        ]
+      }
+    },
+    "/api/registry/locations/rateable": {
+      "get": {
+        "operationId": "ListRateableLocations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RateableLocationDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
           }
         },
         "tags": [

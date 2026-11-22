@@ -50,6 +50,7 @@ describe('LocationsFacade', () => {
     TestBed.inject(TranslateService).use('it');
     http = TestBed.inject(HttpTestingController);
     facade = TestBed.inject(LocationsFacade);
+    facade.loadList();
   });
 
   const lastRequest = () => {
@@ -225,6 +226,7 @@ describe('LocationsFacade', () => {
     expect(sessionStorage.length).toBe(0);
 
     const fresh = TestBed.runInInjectionContext(() => new LocationsFacade());
+    fresh.loadList();
     TestBed.tick();
     const request = http.expectOne((r) => r.url === URL);
 
@@ -241,6 +243,90 @@ describe('LocationsFacade', () => {
     facade.reload();
 
     expect(params(lastRequest())).toEqual({ ...defaults, search: 'ab' });
+  });
+
+  it('the list is not read until the list page asks for it', () => {
+    lastRequest().flush(page(1));
+    const fresh = TestBed.runInInjectionContext(() => new LocationsFacade());
+    TestBed.tick();
+    http.expectNone((r) => r.url === URL);
+    expect(fresh.loaded()).toBe(false);
+
+    fresh.loadList();
+    TestBed.tick();
+
+    http.expectOne((r) => r.url === URL);
+  });
+
+  describe('rateable locations', () => {
+    const RATEABLE = `${URL}/rateable`;
+    const rateableRequest = () => {
+      TestBed.tick();
+      return http.expectOne((r) => r.url === RATEABLE);
+    };
+    const created = { id: '9', name: 'Cantiere A14', municipality: 'Chieti' };
+    const values = { name: 'Cantiere A14', municipality: 'Chieti', address: null };
+
+    beforeEach(() => {
+      lastRequest().flush(page(1));
+    });
+
+    it('are not read until asked, then exposed with the failed flag', async () => {
+      TestBed.tick();
+      http.expectNone((r) => r.url === RATEABLE);
+      expect(facade.rateable()).toBeNull();
+
+      facade.loadRateable();
+      const request = rateableRequest();
+      expect(request.request.method).toBe('GET');
+      request.flush([{ id: '1', name: 'Cava Nord', municipality: 'Spoltore' }]);
+      await settle();
+
+      expect(facade.rateable()).toEqual([{ id: '1', name: 'Cava Nord', municipality: 'Spoltore' }]);
+      expect(facade.rateableFailed()).toBe(false);
+    });
+
+    it('a failed read is reported and asking again reads them again', async () => {
+      facade.loadRateable();
+      rateableRequest().flush(null, { status: 500, statusText: 'Error' });
+      await settle();
+      expect(facade.rateableFailed()).toBe(true);
+      expect(facade.rateable()).toBeNull();
+
+      facade.loadRateable();
+      rateableRequest().flush([{ id: '1', name: 'Cava Nord', municipality: 'Spoltore' }]);
+      await settle();
+
+      expect(facade.rateableFailed()).toBe(false);
+      expect(facade.rateable()).toHaveLength(1);
+    });
+
+    it('a successful create reads them again, a refused one does not', async () => {
+      facade.loadRateable();
+      rateableRequest().flush([]);
+      await settle();
+
+      const refused = facade.save(null, values);
+      http
+        .match((r) => r.url === URL && r.method === 'POST')[0]
+        .flush(
+          { errorCode: 'Registry.Location.Taken', detail: 'x' },
+          { status: 400, statusText: 'Bad' },
+        );
+      await refused;
+      TestBed.tick();
+      http.expectNone((r) => r.url === RATEABLE);
+
+      const outcome = facade.save(null, values);
+      http
+        .match((r) => r.url === URL && r.method === 'POST')[0]
+        .flush({ ...page(1).data[0], ...created }, { status: 201, statusText: 'Created' });
+      await outcome;
+
+      rateableRequest().flush([created]);
+      await settle();
+      expect(facade.rateable()).toEqual([created]);
+    });
   });
 
   describe('save', () => {
@@ -262,7 +348,7 @@ describe('LocationsFacade', () => {
         { status: 201, statusText: 'Created' },
       );
 
-      expect(await outcome).toBe('saved');
+      expect(await outcome).toEqual({ id: '9', name: 'Cantiere A14', municipality: 'Chieti' });
       expect(facade.saving()).toBe(false);
       expect(TestBed.inject(Toast).current()).toBe('Luogo Cantiere A14, Chieti creato');
       lastRequest();
@@ -278,7 +364,7 @@ describe('LocationsFacade', () => {
       expect(put.request.body).toEqual({ ...values, version: 7 });
       put.flush(null, { status: 204, statusText: 'No Content' });
 
-      expect(await outcome).toBe('saved');
+      expect(await outcome).toEqual({ id: '1', name: 'Cantiere A14', municipality: 'Chieti' });
       expect(TestBed.inject(Toast).current()).toBe('Luogo Cantiere A14, Chieti modificato');
       lastRequest();
     });

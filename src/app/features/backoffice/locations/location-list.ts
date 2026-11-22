@@ -69,6 +69,7 @@ export class LocationList {
   ];
 
   constructor() {
+    this.facade.loadList();
     this.destroyRef.onDestroy(() => clearTimeout(this.searchTimer));
   }
 

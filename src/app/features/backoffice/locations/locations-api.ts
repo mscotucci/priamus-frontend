@@ -10,6 +10,7 @@ export type LocationListItem = Schemas['LocationListItemDto'];
 export type CreateLocationRequest = Schemas['CreateLocationRequest'];
 export type CreatedLocation = Schemas['CreateLocationResponse'];
 export type UpdateLocationRequest = Schemas['UpdateLocationRequest'];
+export type RateableLocation = Schemas['RateableLocationDto'];
 export type LocationListPage = Schemas['PagedResponseOfLocationListItemDto'];
 export type SortColumn = 'name' | 'municipality' | 'lastModifiedAt';
 export type SortDirection = NonNullable<Schemas['SortDirection']>;
@@ -44,6 +45,10 @@ export class LocationsApi {
       params['search'] = query.search;
     }
     return { url: URL, params };
+  }
+
+  rateable(): HttpResourceRequest {
+    return { url: `${URL}/rateable` };
   }
 
   create(request: CreateLocationRequest): Observable<CreatedLocation> {

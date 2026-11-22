@@ -7,8 +7,9 @@ import { provideTestI18n } from '../../../core/i18n/i18n-testing';
 import type { Minimum, Rate } from './contract-rate';
 import { CustomersFacade } from './customers-facade';
 import { ContractSimulation } from './contract-simulation';
+import type { LocationRateAnswer } from './contract-location-rates';
 import type { VehicleRateAnswer } from './contract-vehicle-rates';
-import type { PriceSimulation, PricingMode } from './contracts-api';
+import type { BillingLevel, PriceSimulation, PricingMode } from './contracts-api';
 
 const URL = '/api/registry/contracts/simulation';
 
@@ -20,6 +21,28 @@ const AUTOSPURGO: VehicleRateAnswer = {
   rate: { day: 55, night: 70, callFee: 40 },
   minimum: { kind: 'FixedMinimum', amount: 120, threshold: null, overage: null },
 };
+
+const place = (id: string, name: string, municipality: string) => ({
+  id,
+  name,
+  municipality,
+  deactivated: false,
+});
+
+const locationRate = (
+  pickup: LocationRateAnswer['pickup'],
+  delivery: LocationRateAnswer['delivery'],
+  day: number,
+): LocationRateAnswer => ({
+  pickup,
+  delivery,
+  rate: { day, night: null, callFee: null },
+  minimum: null,
+});
+
+const SPOLTORE = place('l-3', 'Cantiere SP49', 'Spoltore');
+const LANCIANO = { ...place('l-1', 'Discarica Cerratina', 'Lanciano'), deactivated: true };
+const CHIETI = place('l-2', 'Cantiere A14', 'Chieti Scalo');
 
 const FIXED_30: Minimum = { kind: 'FixedMinimum', amount: 30, threshold: null, overage: null };
 const NO_MINIMUM: Minimum = { kind: 'None', amount: null, threshold: null, overage: null };
@@ -53,6 +76,8 @@ const result = (change: Partial<PriceSimulation> = {}): PriceSimulation => ({
       [rate]="rate()"
       [minimum]="minimum()"
       [vehicleRates]="vehicleRates()"
+      [level]="level()"
+      [locationRates]="locationRates()"
       [blocked]="blocked()"
     />
   `,
@@ -60,9 +85,11 @@ const result = (change: Partial<PriceSimulation> = {}): PriceSimulation => ({
 class Host {
   readonly mode = signal<PricingMode>('ByHour');
   readonly night = signal(true);
-  readonly rate = signal<Rate>({ day: 30, night: 42, callFee: 35 });
+  readonly rate = signal<Rate | null>({ day: 30, night: 42, callFee: 35 });
   readonly minimum = signal<Minimum | null>(FIXED_30);
   readonly vehicleRates = signal<VehicleRateAnswer[]>([AUTOSPURGO]);
+  readonly level = signal<BillingLevel>('FlatRate');
+  readonly locationRates = signal<LocationRateAnswer[]>([]);
   readonly blocked = signal(false);
 }
 
@@ -213,6 +240,22 @@ describe('ContractSimulation', () => {
     expect(options).toEqual(['Un mezzo senza tariffa propria', 'AB123CD · Autospurgo Scania P410']);
   });
 
+  it('the vehicle options are sorted by plate', () => {
+    const { host, fixture, element, text } = render();
+    host.vehicleRates.set([
+      { ...AUTOSPURGO, vehicleId: 'v-3', licensePlate: 'GH456JK', description: 'Gru mobile 15t' },
+      { ...AUTOSPURGO, vehicleId: 'v-4', licensePlate: 'EF789LM', description: 'Walking floor' },
+      AUTOSPURGO,
+    ]);
+    fixture.detectChanges();
+
+    expect(Array.from(element.querySelectorAll('option')).map(text).slice(1)).toEqual([
+      'AB123CD · Autospurgo Scania P410',
+      'EF789LM · Walking floor',
+      'GH456JK · Gru mobile 15t',
+    ]);
+  });
+
   it('sends the contract as written and shows the day result: band, rate, formula, minimum, total', async () => {
     const { type, press, answer, rows, element, text } = render();
     type('start', '09:00');
@@ -243,6 +286,10 @@ describe('ContractSimulation', () => {
           minimumOveragePrice: null,
         },
       ],
+      billingLevel: 'FlatRate',
+      locationRates: [],
+      pickupLocationId: null,
+      deliveryLocationId: null,
       vehicleId: null,
       startTime: '09:00',
       endTime: '11:20',
@@ -559,21 +606,18 @@ describe('ContractSimulation', () => {
     ['ByDistance', 'kilometres', '2.5', 'Inserisci un numero intero maggiore di zero.'],
     ['ByWeight', 'kilograms', '100000', 'Al massimo 99.999 kg.'],
     ['ByDistance', 'kilometres', '10000', 'Al massimo 9.999 km.'],
-  ] as const)(
-    '%s refuses %s "%s" under the field with "%s"',
-    async (mode, id, typed, message) => {
-      const { host, fixture, type, press, errors, http } = render();
-      host.mode.set(mode);
-      fixture.detectChanges();
-      type('start', '09:00');
-      type(id, typed);
+  ] as const)('%s refuses %s "%s" under the field with "%s"', async (mode, id, typed, message) => {
+    const { host, fixture, type, press, errors, http } = render();
+    host.mode.set(mode);
+    fixture.detectChanges();
+    type('start', '09:00');
+    type(id, typed);
 
-      await press();
+    await press();
 
-      expect(errors()).toEqual([message]);
-      http.expectNone(URL);
-    },
-  );
+    expect(errors()).toEqual([message]);
+    http.expectNone(URL);
+  });
 
   it('accepts the bounds 99.999 kg and 9.999 km', async () => {
     const { host, fixture, type, press, answer, errors } = render();
@@ -738,6 +782,135 @@ describe('ContractSimulation', () => {
       await answer(result());
 
       expect(element.querySelector('.pt-calc')).toBeNull();
+    });
+  });
+
+  describe('location contract', () => {
+    const renderLocation = (level: BillingLevel, rates: LocationRateAnswer[]) => {
+      const view = render();
+      view.host.level.set(level);
+      view.host.rate.set(null);
+      view.host.minimum.set(null);
+      view.host.vehicleRates.set([]);
+      view.host.locationRates.set(rates);
+      view.fixture.detectChanges();
+      const choose = (id: string) => {
+        const select = view.field('location') as unknown as HTMLSelectElement;
+        select.value = id;
+        select.dispatchEvent(new Event('change'));
+        view.fixture.detectChanges();
+      };
+      const options = () =>
+        Array.from((view.field('location') as unknown as HTMLSelectElement).options, (option) =>
+          view.text(option),
+        );
+      return { ...view, choose, options };
+    };
+
+    const byDelivery = () => [
+      locationRate(null, SPOLTORE, 30),
+      locationRate(null, LANCIANO, 38),
+      locationRate(null, CHIETI, 34),
+    ];
+
+    it('asks for the location of the level in place of the vehicle', () => {
+      const { labels, field } = renderLocation('PerDeliveryLocation', byDelivery());
+
+      expect(labels()).toEqual(['Luogo di consegna', 'Ora di inizio', 'Ora di fine']);
+      expect(field('vehicle')).toBeNull();
+    });
+
+    it.each([
+      ['PerPickupLocation', 'Luogo di partenza'],
+      ['PerDeliveryLocation', 'Luogo di consegna'],
+      ['PerLocationPair', 'Coppia di luoghi'],
+    ] as const)('the select of %s is labelled "%s"', (level, label) => {
+      const { labels } = renderLocation(level, byDelivery());
+
+      expect(labels()[0]).toBe(label);
+    });
+
+    it('the select lists the rates sorted, deactivated ones included, the first chosen', async () => {
+      const { options, field, type, press, answer } = renderLocation(
+        'PerDeliveryLocation',
+        byDelivery(),
+      );
+
+      expect(options()).toEqual([
+        'Cantiere A14, Chieti Scalo',
+        'Cantiere SP49, Spoltore',
+        'Discarica Cerratina, Lanciano',
+      ]);
+      expect((field('location') as unknown as HTMLSelectElement).value).toBe('|l-2');
+
+      type('start', '10:00');
+      type('end', '13:00');
+      await press();
+      const body = await answer(result({ rateSource: 'Location' }));
+
+      expect(body).toMatchObject({
+        billingLevel: 'PerDeliveryLocation',
+        dayPrice: null,
+        minimumRule: null,
+        vehicleRates: [],
+        vehicleId: null,
+        pickupLocationId: null,
+        deliveryLocationId: 'l-2',
+      });
+      expect(body['locationRates']).toHaveLength(3);
+    });
+
+    it('names the location rate used and the location chosen', async () => {
+      const { choose, type, press, answer, rows } = renderLocation(
+        'PerDeliveryLocation',
+        byDelivery(),
+      );
+      choose('|l-1');
+      type('start', '10:00');
+      type('end', '13:00');
+
+      await press();
+      const body = await answer(result({ rateSource: 'Location' }));
+
+      expect(body['deliveryLocationId']).toBe('l-1');
+      expect(rows()[1]).toBe('Tariffa Del luogo Discarica Cerratina, Lanciano');
+    });
+
+    it('names the pair rate used and sends both locations', async () => {
+      const { type, press, answer, rows } = renderLocation('PerLocationPair', [
+        locationRate(CHIETI, LANCIANO, 40),
+      ]);
+      type('start', '10:00');
+      type('end', '13:00');
+
+      await press();
+      const body = await answer(result({ rateSource: 'LocationPair' }));
+
+      expect(body).toMatchObject({ pickupLocationId: 'l-2', deliveryLocationId: 'l-1' });
+      expect(rows()[1]).toBe(
+        'Tariffa Della coppia Cantiere A14, Chieti Scalo → Discarica Cerratina, Lanciano',
+      );
+    });
+
+    it('a rate removed on the page falls back to the first and a result for another location is not shown', async () => {
+      const { host, fixture, choose, type, press, answer, element, field } = renderLocation(
+        'PerDeliveryLocation',
+        byDelivery(),
+      );
+      choose('|l-3');
+      type('start', '10:00');
+      type('end', '13:00');
+      await press();
+      await answer(result({ rateSource: 'Location' }));
+      expect(element.querySelector('.pt-calc')).not.toBeNull();
+
+      choose('|l-1');
+      expect(element.querySelector('.pt-calc')).toBeNull();
+      expect(element.textContent).toContain('Qualcosa è cambiato');
+
+      host.locationRates.set([locationRate(null, SPOLTORE, 30), locationRate(null, CHIETI, 34)]);
+      fixture.detectChanges();
+      expect((field('location') as unknown as HTMLSelectElement).value).toBe('|l-2');
     });
   });
 

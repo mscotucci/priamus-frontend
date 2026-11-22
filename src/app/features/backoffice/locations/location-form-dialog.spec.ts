@@ -8,7 +8,7 @@ import { settle } from '../../../core/testing/interaction-testing';
 import { Toast } from '../../../core/toast/toast';
 import type { LocationListItem } from './locations-api';
 import { LocationFormDialog } from './location-form-dialog';
-import { LocationsFacade } from './locations-facade';
+import { LocationsFacade, SavedLocation } from './locations-facade';
 
 const URL = '/api/registry/locations';
 
@@ -37,14 +37,17 @@ describe('LocationFormDialog', () => {
     });
     TestBed.inject(TranslateService).use('it');
     http = TestBed.inject(HttpTestingController);
+    TestBed.inject(LocationsFacade).loadList();
     const fixture = TestBed.createComponent(LocationFormDialog);
     fixture.componentRef.setInput('location', location);
     let closed = 0;
     fixture.componentInstance.closed.subscribe(() => closed++);
+    const saved: SavedLocation[] = [];
+    fixture.componentInstance.saved.subscribe((location) => saved.push(location));
     fixture.detectChanges();
     TestBed.tick();
     const element = fixture.nativeElement as HTMLElement;
-    return { fixture, element, closedCount: () => closed };
+    return { fixture, element, closedCount: () => closed, saved };
   };
 
   const writes = () => http.match((r) => r.url.startsWith(URL) && r.method !== 'GET');
@@ -394,6 +397,55 @@ describe('LocationFormDialog', () => {
     expect(closedCount()).toBe(1);
     expect(TestBed.inject(Toast).current()).toBe('Luogo Cantiere A14, Chieti creato');
     http.expectOne((r) => r.url === URL && r.method === 'GET');
+  });
+
+  it('a created location is reported as saved with its id, name and municipality, before the dialog closes', async () => {
+    const { fixture, element, saved } = render();
+    http.expectOne((r) => r.url === URL && r.method === 'GET').flush({ data: [], totalCount: 0 });
+    await settle(fixture);
+    const order: string[] = [];
+    fixture.componentInstance.saved.subscribe(() => order.push('saved'));
+    fixture.componentInstance.closed.subscribe(() => order.push('closed'));
+    fill(element, {});
+    await submit(fixture);
+
+    http
+      .match((r) => r.method === 'POST')[0]
+      .flush(
+        {
+          id: '9',
+          name: 'Cantiere A14',
+          municipality: 'Chieti',
+          address: null,
+          status: 'Active',
+          lastModifiedAt: '2026-11-16T08:00:00Z',
+          version: 1,
+        },
+        { status: 201, statusText: 'Created' },
+      );
+    await settle(fixture);
+
+    expect(saved).toEqual([{ id: '9', name: 'Cantiere A14', municipality: 'Chieti' }]);
+    expect(order).toEqual(['saved', 'closed']);
+    http.match(() => true);
+  });
+
+  it('a refused save and Annulla report no location', async () => {
+    const { fixture, element, saved } = render();
+    fill(element, {});
+    await submit(fixture);
+    http
+      .match((r) => r.method === 'POST')[0]
+      .flush(
+        { errorCode: 'Registry.Location.Taken', detail: 'Il luogo esiste già.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+    await settle(fixture);
+
+    element.querySelector<HTMLButtonElement>('.pt-dialog__actions button')!.click();
+
+    expect(saved).toEqual([]);
+    http.match(() => true);
   });
 
   it('a successful edit toasts "modificato" with the label', async () => {

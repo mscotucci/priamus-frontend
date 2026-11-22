@@ -47,6 +47,7 @@ describe('LocationDeactivateDialog', () => {
     });
     TestBed.inject(TranslateService).use('it');
     http = TestBed.inject(HttpTestingController);
+    TestBed.inject(LocationsFacade).loadList();
     const fixture = TestBed.createComponent(LocationDeactivateDialog);
     fixture.componentRef.setInput('location', LOCATION);
     let closed = 0;

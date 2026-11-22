@@ -131,6 +131,10 @@ export function readFields(
   return { values, errors };
 }
 
+/** The entry as "Conferma" emits it: a night price and call fee only with the night surcharge. */
+export const forNight = <T extends { rate: Rate }>(entry: T, night: boolean): T =>
+  night ? entry : { ...entry, rate: { day: entry.rate.day, night: null, callFee: null } };
+
 export function toRate(values: Partial<Record<AmountField, number>>): Rate {
   return { day: values.day!, night: values.night ?? null, callFee: values.callFee ?? null };
 }

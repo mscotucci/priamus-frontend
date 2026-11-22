@@ -18,11 +18,18 @@ import {
   LocationStatus,
   LocationsApi,
   LocationsQuery,
+  RateableLocation,
   SortColumn,
   SortDirection,
 } from './locations-api';
 
-export type SaveOutcome = 'saved' | 'ignored' | ApiError;
+/** The location a save created or updated. */
+export interface SavedLocation {
+  id: string;
+  name: string;
+  municipality: string;
+}
+export type SaveOutcome = SavedLocation | 'ignored' | ApiError;
 export type DeactivateOutcome = 'deactivated' | 'ignored' | ApiError;
 
 @Injectable()
@@ -60,7 +67,20 @@ export class LocationsFacade {
   private readonly reactivateNoticeState = signal<NoticeContent | null>(null);
   readonly reactivateNotice = this.reactivateNoticeState.asReadonly();
 
-  private readonly list = httpResource<LocationListPage>(() => this.api.list(this.query()));
+  private readonly listNeeded = signal(false);
+  private readonly list = httpResource<LocationListPage>(() =>
+    this.listNeeded() ? this.api.list(this.query()) : undefined,
+  );
+
+  private readonly rateableNeeded = signal(false);
+  private readonly rateableResource = httpResource<RateableLocation[]>(() =>
+    this.rateableNeeded() ? this.api.rateable() : undefined,
+  );
+  /** The active locations that can receive a rate; `null` until they are read. */
+  readonly rateable = computed<RateableLocation[] | null>(() =>
+    this.rateableResource.hasValue() ? this.rateableResource.value() : null,
+  );
+  readonly rateableFailed = computed(() => this.rateableResource.status() === 'error');
 
   readonly items = computed<LocationListItem[]>(() =>
     this.list.hasValue() ? this.list.value().data : [],
@@ -109,6 +129,20 @@ export class LocationsFacade {
     this.reactivateNoticeState.set(null);
   }
 
+  /** The list page asks for the list; until then it is not read. */
+  loadList(): void {
+    this.listNeeded.set(true);
+  }
+
+  /** Reads the rateable locations; called again after a failure it reads them again. */
+  loadRateable(): void {
+    if (this.rateableNeeded()) {
+      this.rateableResource.reload();
+    } else {
+      this.rateableNeeded.set(true);
+    }
+  }
+
   reload(): void {
     this.list.reload();
   }
@@ -132,15 +166,16 @@ export class LocationsFacade {
     }
     this.savingState.set(true);
     try {
-      let saved: { name: string; municipality: string };
+      let saved: SavedLocation;
       try {
         if (location === null) {
-          saved = await firstValueFrom(this.api.create(values));
+          const created = await firstValueFrom(this.api.create(values));
+          saved = { id: created.id, name: created.name, municipality: created.municipality };
         } else {
           await firstValueFrom(
             this.api.update(location.id, { ...values, version: location.version }),
           );
-          saved = values;
+          saved = { id: location.id, name: values.name, municipality: values.municipality };
         }
       } catch (error) {
         return this.refused(error);
@@ -152,7 +187,10 @@ export class LocationsFacade {
         ),
       );
       this.reload();
-      return 'saved';
+      if (location === null && this.rateableNeeded()) {
+        this.rateableResource.reload();
+      }
+      return saved;
     } finally {
       this.savingState.set(false);
     }

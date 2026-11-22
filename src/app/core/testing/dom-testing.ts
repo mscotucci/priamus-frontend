@@ -10,6 +10,13 @@ export function stubModalDialog(): void {
   };
 }
 
+/** jsdom does not lay anything out: it has no scrolling. */
+export function stubScrollIntoView(onScroll: (element: Element) => void = () => undefined): void {
+  Element.prototype.scrollIntoView = function (this: Element) {
+    onScroll(this);
+  };
+}
+
 /** jsdom has no popover API: the native methods are stood in for, the component is not changed. */
 export function stubPopover(onHide: () => void = () => undefined): void {
   HTMLElement.prototype.hidePopover = onHide;

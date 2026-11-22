@@ -294,6 +294,16 @@
         "title": "Nessun contratto",
         "hint": "Aggiungi il primo con \"Nuovo contratto\"."
       },
+      "rateCount": {
+        "location": {
+          "one": "{{count}} luogo",
+          "other": "{{count}} luoghi"
+        },
+        "pair": {
+          "one": "{{count}} coppia",
+          "other": "{{count}} coppie"
+        }
+      },
       "column": {
         "validity": "Validità",
         "status": "Stato",
@@ -304,8 +314,8 @@
         "documents": "Documenti obbligatori"
       },
       "validity": {
-        "range": "{{from}} – {{to}}",
-        "open": "dal {{from}}"
+        "from": "dal {{from}}",
+        "to": "al {{to}}"
       },
       "status": {
         "current": "In vigore",
@@ -489,7 +499,6 @@
         "hint": "Tariffa unica, valida per tutti i viaggi del contratto.",
         "hintNight": "Tariffa unica, valida per tutti i viaggi del contratto. La chiamata notturna si aggiunge a ogni viaggio che inizia di notte.",
         "confirm": "Conferma",
-        "notice": "Le tariffe per luogo si configureranno con l'anagrafica dei luoghi. Il contratto si può salvare anche senza.",
         "answer": {
           "day": "{{day}} {{unit}}",
           "night": "{{day}} {{unit}} di giorno · {{night}} {{unit}} di notte · chiamata {{callFee}} €"
@@ -578,6 +587,63 @@
           "bydistance": "km"
         }
       },
+      "rateDialog": {
+        "new": "Nuova tariffa",
+        "edit": "Modifica tariffa",
+        "add": "Aggiungi",
+        "save": "Salva",
+        "newLocation": "Nuovo luogo",
+        "line": "{{level}} · {{mode}} · {{night}}",
+        "night": {
+          "yes": "con maggiorazione notturna",
+          "no": "senza maggiorazione notturna"
+        },
+        "minimum": "Minimo fatturabile"
+      },
+      "rateRows": {
+        "remove": "Togli"
+      },
+      "locationRates": {
+        "pickup": {
+          "title": "Quali sono le tariffe per luogo di partenza?",
+          "hint": "Un viaggio usa la tariffa del suo luogo di partenza. Il cliente può partire solo dai luoghi con una tariffa.",
+          "empty": "Aggiungi la tariffa di ogni luogo di partenza del cliente."
+        },
+        "delivery": {
+          "title": "Quali sono le tariffe per luogo di consegna?",
+          "hint": "Un viaggio usa la tariffa del suo luogo di consegna. Il cliente può consegnare solo nei luoghi con una tariffa.",
+          "empty": "Aggiungi la tariffa di ogni luogo di consegna del cliente."
+        },
+        "both": {
+          "title": "Quali sono le tariffe per coppia di luoghi?",
+          "hint": "Un viaggio usa la tariffa della sua partenza e della sua consegna, in quel verso.",
+          "empty": "Aggiungi la tariffa di ogni coppia di luoghi del cliente."
+        },
+        "none": "Nessuna tariffa",
+        "answer": {
+          "location": {
+            "one": "1 luogo con tariffa",
+            "many": "{{count}} luoghi con tariffa"
+          },
+          "pair": {
+            "one": "1 coppia con tariffa",
+            "many": "{{count}} coppie con tariffa"
+          }
+        },
+        "add": "Aggiungi tariffa",
+        "confirm": "Conferma",
+        "required": "Aggiungi almeno una tariffa.",
+        "nightIncomplete": "Completa i prezzi notturni: {{label}}.",
+        "duplicatePair": "Questa coppia ha già una tariffa.",
+        "deactivated": "Disattivato",
+        "location": {
+          "pickup": "Luogo di partenza",
+          "delivery": "Luogo di consegna",
+          "placeholder": "Scegli un luogo",
+          "required": "Scegli un luogo.",
+          "loadFailed": "Non è stato possibile leggere i luoghi. Chiudi e riapri la finestra per riprovare."
+        }
+      },
       "vehicleRates": {
         "title": "Ci sono mezzi con una tariffa diversa?",
         "hint": "Per esempio autospurghi, gru o walking floor. Un viaggio fatto con uno di questi mezzi usa la sua tariffa al posto di quella del cliente.",
@@ -594,16 +660,14 @@
           "one": "1 mezzo con tariffa propria",
           "many": "{{count}} mezzi con tariffa propria"
         },
-        "block": "Mezzo {{number}}",
-        "remove": "Togli il mezzo {{number}}",
+        "required": "Aggiungi almeno un mezzo.",
         "decommissioned": "Dismesso",
         "vehicle": {
           "label": "Mezzo",
           "placeholder": "Scegli un mezzo",
           "required": "Scegli un mezzo.",
-          "loadFailed": "Non è stato possibile leggere i mezzi. Ricarica la pagina per riprovare."
+          "loadFailed": "Non è stato possibile leggere i mezzi. Chiudi e riapri la finestra per riprovare."
         },
-        "minimum": "Minimo fatturabile",
         "add": "Aggiungi un mezzo",
         "confirm": "Conferma"
       },
@@ -633,6 +697,9 @@
       "simulation": {
         "title": "Prova la configurazione",
         "intro": "Scrivi un viaggio di esempio per vedere quanto costerebbe con il contratto com'è adesso, anche prima di salvarlo.",
+        "location": {
+          "both": "Coppia di luoghi"
+        },
         "vehicle": "Mezzo",
         "ownRate": "Un mezzo senza tariffa propria",
         "start": "Ora di inizio",
@@ -665,6 +732,8 @@
           "nightNoSurcharge": "Di notte · il contratto non ha la maggiorazione notturna: vale il prezzo di giorno",
           "contractRate": "Del cliente",
           "vehicleRate": "Propria del mezzo",
+          "locationRate": "Del luogo {{location}}",
+          "pairRate": "Della coppia {{pair}}",
           "formula": "{{quantity}} × {{price}} {{unit}} = {{amount}} €",
           "formulaTrip": "{{price}} € a viaggio",
           "callFeeAdded": "+ {{fee}} € = {{amount}} €",

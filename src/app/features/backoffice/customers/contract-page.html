@@ -281,45 +281,67 @@
     @if (visible(6)) {
       <app-contract-question
         [number]="6"
-        [title]="'contracts.form.rate.title' | translate"
-        [hint]="
-          flat()
-            ? ((radio().night === 'yes'
-                ? 'contracts.form.rate.hintNight'
-                : 'contracts.form.rate.hint'
-              ) | translate)
-            : undefined
-        "
-        [open]="flat() && open(6)"
+        [title]="rateKeys().title | translate"
+        [hint]="rateKeys().hint | translate"
+        [open]="open(6)"
         [current]="current(6)"
-        [answer]="rateAnswer()"
+        [answer]="flat() ? rateAnswer() : locationRatesAnswer()"
+        [detailed]="!flat() && locationRates().length > 0"
         [busy]="saving()"
         [locked]="readOnly()"
         [cancellable]="editing() === 6"
         (modify)="edit(6)"
         (cancelled)="cancelEdit()"
       >
-        @if (!flat()) {
-          <div note class="pt-notice pt-notice--info">
-            {{ 'contracts.form.rate.notice' | translate }}
-          </div>
+        @for (line of locationRateLines(); track line.key) {
+          <span detail>
+            @for (side of line.sides; track $index; let last = $last) {
+              {{ side.name }}, {{ side.municipality }}
+              @if (side.deactivated) {
+                <span class="pt-pill pt-pill--danger">{{
+                  'contracts.form.locationRates.deactivated' | translate
+                }}</span>
+              }
+              @if (!last) {
+                →
+              }
+            }
+            · {{ line.terms }}
+          </span>
         }
-        <ng-container
-          *ngTemplateOutlet="
-            amountFields;
-            context: { $implicit: rateFieldSpecs(), prefix: 'rate-' }
-          "
-        />
-        <div class="flex flex-wrap gap-2">
-          <button type="button" class="pt-btn pt-btn--primary pt-btn--sm" (click)="confirmRate()">
-            {{ 'contracts.form.rate.confirm' | translate }}
-          </button>
-          @if (editing() === 6) {
-            <button type="button" class="pt-btn pt-btn--sm" (click)="cancelEdit()">
-              {{ 'contracts.form.cancelModify' | translate }}
+        @if (flat()) {
+          <ng-container
+            *ngTemplateOutlet="
+              amountFields;
+              context: { $implicit: rateFieldSpecs(), prefix: 'rate-' }
+            "
+          />
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="pt-btn pt-btn--primary pt-btn--sm" (click)="confirmRate()">
+              {{ 'contracts.form.rate.confirm' | translate }}
             </button>
+            @if (editing() === 6) {
+              <button type="button" class="pt-btn pt-btn--sm" (click)="cancelEdit()">
+                {{ 'contracts.form.cancelModify' | translate }}
+              </button>
+            }
+          </div>
+        } @else if (open(6)) {
+          @if (locationLevel(); as level) {
+            <app-contract-location-rates
+              [level]="level"
+              [night]="radio().night === 'yes'"
+              [mode]="radio().mode!"
+              [rateable]="locations.rateable()"
+              [failed]="locations.rateableFailed()"
+              [answer]="locationRates()"
+              [cancellable]="editing() === 6"
+              (confirmed)="confirmLocationRates($event)"
+              (cancelled)="cancelEdit()"
+              (retry)="loadRateableLocations()"
+            />
           }
-        </div>
+        }
       </app-contract-question>
     }
 
@@ -405,7 +427,7 @@
         (modify)="edit(8)"
         (cancelled)="cancelEdit()"
       >
-        @for (entry of vehicleRates() ?? []; track entry.vehicleId) {
+        @for (entry of sortedVehicleRates(); track entry.vehicleId) {
           <span detail>
             <span class="pt-mono">{{ entry.licensePlate }}</span> {{ entry.description }}
             @if (entry.decommissioned) {
@@ -421,12 +443,12 @@
             [night]="radio().night === 'yes'"
             [mode]="radio().mode!"
             [rateable]="facade.rateableVehiclesLoading() ? null : facade.rateableVehicles()"
-            [loading]="facade.rateableVehiclesLoading()"
             [failed]="facade.rateableVehiclesFailed()"
             [answer]="vehicleRates()"
             [cancellable]="editing() === 8"
             (confirmed)="confirmVehicleRates($event)"
             (cancelled)="cancelEdit()"
+            (retry)="loadRateable()"
           />
         }
       </app-contract-question>
@@ -487,9 +509,11 @@
       <app-contract-simulation
         [mode]="radio().mode!"
         [night]="radio().night === 'yes'"
-        [rate]="rate()!"
+        [rate]="flat() ? rate() : null"
         [minimum]="radio().mode === 'ByTrip' ? null : minimum()"
         [vehicleRates]="vehicleRates() ?? []"
+        [level]="billingLevel()!"
+        [locationRates]="locationRates()"
         [blocked]="editing() !== null"
       />
     }

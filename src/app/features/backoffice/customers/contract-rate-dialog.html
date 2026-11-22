@@ -1,0 +1,122 @@
+<ng-template #amountFields let-fields>
+  <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+    @for (spec of fields; track spec.field) {
+      <div class="pt-field">
+        <label class="pt-label" [for]="formId + '-' + spec.field">{{
+          'contracts.form.field.' + spec.field + '.label' | translate
+        }}</label>
+        <span class="pt-input-group">
+          <input
+            class="pt-input"
+            [id]="formId + '-' + spec.field"
+            inputmode="decimal"
+            [value]="draft(spec.field)"
+            [attr.aria-invalid]="error(spec.field) ? 'true' : null"
+            [attr.aria-describedby]="describedBy(spec)"
+            (input)="setDraft(spec.field, $any($event.target).value)"
+          />
+          <span class="pt-input-group__addon">{{ unit(spec) | translate }}</span>
+        </span>
+        @if (spec.field === 'callFee') {
+          <span class="pt-field__hint" [id]="formId + '-' + spec.field + '-hint'">{{
+            'contracts.form.field.callFee.hint' | translate
+          }}</span>
+        }
+        @if (error(spec.field); as error) {
+          <span class="pt-field__error" [id]="formId + '-' + spec.field + '-error'">{{
+            error | translate
+          }}</span>
+        }
+      </div>
+    }
+  </div>
+</ng-template>
+
+<app-dialog
+  [icon]="icon()"
+  tone="primary"
+  [title]="
+    (editing() ? 'contracts.form.rateDialog.edit' : 'contracts.form.rateDialog.new') | translate
+  "
+  [line]="line()"
+  (closeRequested)="cancelled.emit()"
+>
+  <form [id]="formId" class="flex flex-col gap-3" novalidate (submit)="submit($event)">
+    @for (subject of subjects(); track $index; let index = $index) {
+      <div class="pt-field">
+        <label class="pt-label" [for]="formId + '-subject' + index">{{
+          subject.label | translate
+        }}</label>
+        <div class="flex gap-2">
+          <select
+            class="pt-input flex-1"
+            [id]="formId + '-subject' + index"
+            [disabled]="subject.loading"
+            [attr.aria-invalid]="invalid(index) ? 'true' : null"
+            [attr.aria-describedby]="note(index) ? formId + '-subject' + index + '-note' : null"
+            (change)="choose(index, $any($event.target).value)"
+          >
+            <option value="" [selected]="chosen()[index] === ''">
+              {{ subject.placeholder | translate }}
+            </option>
+            @for (option of options(index); track option.id) {
+              <option [value]="option.id" [selected]="option.id === chosen()[index]">
+                {{ option.label }}
+              </option>
+            }
+          </select>
+          @if (subject.canCreate) {
+            <button type="button" class="pt-btn pt-btn--outline" (click)="creating.set(index)">
+              <app-icon name="plus" size="sm" />
+              {{ 'contracts.form.rateDialog.newLocation' | translate }}
+            </button>
+          }
+        </div>
+        @if (note(index); as note) {
+          <span class="pt-field__error" [id]="formId + '-subject' + index + '-note'">{{
+            note | translate
+          }}</span>
+        }
+      </div>
+    }
+    <ng-container *ngTemplateOutlet="amountFields; context: { $implicit: rateFieldsOf() }" />
+    @if (withMinimum()) {
+      <fieldset class="flex flex-col gap-3">
+        <legend class="pt-label mb-2">
+          {{ 'contracts.form.rateDialog.minimum' | translate }}
+        </legend>
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+          @for (option of minimumKinds; track option.kind) {
+            <label class="pt-choice">
+              <input
+                type="radio"
+                [name]="formId + '-minimum'"
+                [checked]="kind() === option.kind"
+                (click)="pickKind(option.kind)"
+              />
+              <span>
+                <strong>{{ 'contracts.form.minimum.' + option.key + '.title' | translate }}</strong>
+              </span>
+            </label>
+          }
+        </div>
+        @if (minimumFieldsOf().length > 0) {
+          <ng-container
+            *ngTemplateOutlet="amountFields; context: { $implicit: minimumFieldsOf() }"
+          />
+        }
+      </fieldset>
+    }
+  </form>
+  <button actions type="button" class="pt-btn pt-btn--outline" (click)="cancelled.emit()">
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button actions type="submit" [attr.form]="formId" class="pt-btn pt-btn--primary">
+    {{
+      (editing() ? 'contracts.form.rateDialog.save' : 'contracts.form.rateDialog.add') | translate
+    }}
+  </button>
+</app-dialog>
+@if (creating() !== null) {
+  <app-location-form-dialog (saved)="onCreated($event)" (closed)="creating.set(null)" />
+}
