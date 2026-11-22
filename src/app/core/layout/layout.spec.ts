@@ -24,6 +24,7 @@ function render(user: CurrentUser) {
         { path: 'customers', children: [] },
         { path: 'drivers', children: [] },
         { path: 'vehicles', children: [] },
+        { path: 'locations', children: [] },
       ]),
       { provide: Session, useValue: { user: signal(user).asReadonly(), signOut } },
     ],
@@ -51,13 +52,13 @@ describe('Layout', () => {
     expect(sidebar.querySelector('button[aria-label="Esci"]')).not.toBeNull();
   });
 
-  it('an Admin sees the group "Anagrafiche" with "Clienti", "Autisti", "Mezzi" in that order, then the group "Sistema" with "Utenti" and "Impostazioni", and nothing is shown disabled', () => {
+  it('an Admin sees the group "Anagrafiche" with "Clienti", "Autisti", "Mezzi", "Luoghi" in that order, then the group "Sistema" with "Utenti" and "Impostazioni", and nothing is shown disabled', () => {
     const { sidebar } = render(admin);
 
     const groups = [...sidebar.querySelectorAll('.pt-nav__group')].map((g) => g.textContent);
     expect(groups).toEqual(['Anagrafiche', 'Sistema']);
     const items = sidebar.querySelectorAll('nav a');
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(6);
     expect(items[0].getAttribute('href')).toBe('/customers');
     expect(items[0].textContent?.trim()).toBe('Clienti');
     expect(items[0].querySelector('use')?.getAttribute('href')).toBe('icons.svg#building');
@@ -65,26 +66,38 @@ describe('Layout', () => {
     expect(items[1].textContent?.trim()).toBe('Autisti');
     expect(items[1].querySelector('use')?.getAttribute('href')).toBe('icons.svg#users');
     expect(items[2].getAttribute('href')).toBe('/vehicles');
-    expect(items[3].getAttribute('href')).toBe('/users');
-    expect(items[4].getAttribute('href')).toBe('/settings');
-    expect(items[4].textContent?.trim()).toBe('Impostazioni');
-    expect(items[4].querySelector('use')?.getAttribute('href')).toBe('icons.svg#settings');
+    expect(items[3].getAttribute('href')).toBe('/locations');
+    expect(items[3].textContent?.trim()).toBe('Luoghi');
+    expect(items[3].querySelector('use')?.getAttribute('href')).toBe('icons.svg#pin');
+    expect(items[4].getAttribute('href')).toBe('/users');
+    expect(items[5].getAttribute('href')).toBe('/settings');
+    expect(items[5].textContent?.trim()).toBe('Impostazioni');
+    expect(items[5].querySelector('use')?.getAttribute('href')).toBe('icons.svg#settings');
     expect(sidebar.querySelector('[disabled], [aria-disabled="true"]')).toBeNull();
   });
 
-  it('a BackOffice user sees "Clienti", "Autisti", "Mezzi" under "Anagrafiche", with no "Utenti" or "Impostazioni" item and no "Sistema" group', () => {
+  it('a BackOffice user sees "Clienti", "Autisti", "Mezzi", "Luoghi" under "Anagrafiche", with no "Utenti" or "Impostazioni" item and no "Sistema" group', () => {
     const { sidebar, drawer } = render(backOffice);
 
     const items = sidebar.querySelectorAll('nav a');
-    expect(items).toHaveLength(3);
+    expect(items).toHaveLength(4);
     expect(items[0].getAttribute('href')).toBe('/customers');
     expect(items[1].getAttribute('href')).toBe('/drivers');
     expect(items[2].getAttribute('href')).toBe('/vehicles');
+    expect(items[3].getAttribute('href')).toBe('/locations');
     expect(sidebar.querySelectorAll('.pt-nav__group')).toHaveLength(1);
     expect(sidebar.querySelector('.pt-nav__group')?.textContent).toBe('Anagrafiche');
     expect(drawer.textContent).not.toContain('Utenti');
     expect(drawer.textContent).not.toContain('Impostazioni');
     expect(drawer.textContent).not.toContain('Sistema');
+  });
+
+  it('the "Luoghi" item draws the pin icon of the icon set', () => {
+    const { sidebar } = render(admin);
+
+    expect(sidebar.querySelector('nav a[href="/locations"] use')?.getAttribute('href')).toBe(
+      'icons.svg#pin',
+    );
   });
 
   it('the item of the open page is marked as the current one', async () => {

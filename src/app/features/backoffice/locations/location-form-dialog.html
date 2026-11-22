@@ -1,0 +1,111 @@
+<app-dialog
+  icon="pin"
+  tone="primary"
+  [title]="(location() ? 'locations.form.edit.title' : 'locations.form.create.title') | translate"
+  [line]="
+    (location()
+      ? 'locations.form.edit.line.' + location()!.status.toLowerCase()
+      : 'locations.form.create.line'
+    ) | translate
+  "
+  [busy]="facade.saving()"
+  (closeRequested)="close()"
+>
+  <form id="location-form" class="flex flex-col gap-3" novalidate (submit)="onSubmit($event)">
+    @if (notice(); as notice) {
+      <app-notice [notice]="notice" />
+    }
+    <div class="pt-field">
+      <label class="pt-label" for="location-name">{{
+        'locations.form.name.label' | translate
+      }}</label>
+      <input
+        #name
+        class="pt-input"
+        id="location-name"
+        autocomplete="off"
+        [placeholder]="'locations.form.name.placeholder' | translate"
+        [formField]="locationForm.name"
+        [attr.aria-invalid]="nameError() ? 'true' : null"
+        aria-describedby="location-name-note"
+      />
+      @if (nameError(); as error) {
+        <span class="pt-field__error" id="location-name-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="location-name-note">{{
+          'locations.form.name.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="location-municipality">{{
+        'locations.form.municipality.label' | translate
+      }}</label>
+      <input
+        class="pt-input"
+        id="location-municipality"
+        autocomplete="off"
+        [placeholder]="'locations.form.municipality.placeholder' | translate"
+        [formField]="locationForm.municipality"
+        [attr.aria-invalid]="municipalityError() ? 'true' : null"
+        aria-describedby="location-municipality-note"
+      />
+      @if (municipalityError(); as error) {
+        <span class="pt-field__error" id="location-municipality-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="location-municipality-note">{{
+          'locations.form.municipality.hint' | translate
+        }}</span>
+      }
+    </div>
+    <div class="pt-field">
+      <label class="pt-label" for="location-address">{{
+        'locations.form.address.label' | translate
+      }}</label>
+      <input
+        class="pt-input"
+        id="location-address"
+        autocomplete="off"
+        [placeholder]="'locations.form.address.placeholder' | translate"
+        [formField]="locationForm.address"
+        [attr.aria-invalid]="addressError() ? 'true' : null"
+        aria-describedby="location-address-note"
+      />
+      @if (addressError(); as error) {
+        <span class="pt-field__error" id="location-address-note">{{
+          'key' in error ? (error.key | translate) : error.text
+        }}</span>
+      } @else {
+        <span class="pt-field__hint" id="location-address-note">{{
+          'locations.form.address.hint' | translate
+        }}</span>
+      }
+    </div>
+  </form>
+  <button
+    actions
+    type="button"
+    class="pt-btn pt-btn--outline"
+    [disabled]="facade.saving()"
+    (click)="close()"
+  >
+    {{ 'common.actions.cancel' | translate }}
+  </button>
+  <button
+    actions
+    type="submit"
+    form="location-form"
+    class="pt-btn pt-btn--primary"
+    [disabled]="facade.saving()"
+  >
+    {{
+      facade.saving()
+        ? ('locations.form.pending' | translate)
+        : ((location() ? 'locations.form.edit.submit' : 'locations.form.create.submit') | translate)
+    }}
+  </button>
+</app-dialog>

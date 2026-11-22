@@ -335,6 +335,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListLocations"];
+        put?: never;
+        post: operations["CreateLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/locations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateLocation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/locations/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DeactivateLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/locations/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReactivateLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/registry/night-band": {
         parameters: {
             query?: never;
@@ -704,6 +768,43 @@ export interface components {
             /** Format: uuid */
             userId: null | string;
         };
+        /**
+         * @description Request body for `POST /api/registry/locations` (PRD §5.1, RF-23). The name and the
+         *     municipality are required; an empty address is stored as none. All three are measured once
+         *     trimmed, as the aggregate stores them, so their length is checked in `Validate` rather than
+         *     with a length attribute on the raw text.
+         */
+        CreateLocationRequest: {
+            address: null | string;
+            municipality: string;
+            name: string;
+        };
+        /** @description Response body for a successful `POST /api/registry/locations` request. */
+        CreateLocationResponse: {
+            /** @description The trimmed address, or `null`. */
+            address: null | string;
+            /**
+             * Format: uuid
+             * @description The newly created location's identifier.
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description UTC instant of the last change.
+             */
+            lastModifiedAt: string;
+            /** @description The trimmed municipality. */
+            municipality: string;
+            /** @description The trimmed name. */
+            name: string;
+            /** @description The status (always LocationStatus.Active on creation). */
+            status: components["schemas"]["LocationStatus"];
+            /**
+             * Format: int32
+             * @description Version the client sends back with its next write on this location.
+             */
+            version: number;
+        };
         /** @description Request body for `POST /api/identity/users`. */
         CreateUserRequest: {
             password: string;
@@ -813,6 +914,14 @@ export interface components {
             version: number | null;
         };
         /**
+         * @description Request body for `POST /api/registry/locations/{id}/deactivate`. `Version` is the version
+         *     the client read; the change is refused when the location has changed since.
+         */
+        DeactivateLocationRequest: {
+            /** Format: int32 */
+            version: number | null;
+        };
+        /**
          * @description Request body for `POST /api/registry/vehicles/{id}/decommission`. `Version` is the version
          *     the client read; the change is refused when the vehicle has changed since.
          */
@@ -901,6 +1010,37 @@ export interface components {
             /** @description The user's normalised user name. */
             username: string;
         };
+        /** @description A single item in the paginated list of locations. */
+        LocationListItemDto: {
+            /** @description The address, or `null`. */
+            address: null | string;
+            /**
+             * Format: uuid
+             * @description The location's identifier.
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description UTC instant of the last change.
+             */
+            lastModifiedAt: string;
+            /** @description The municipality. */
+            municipality: string;
+            /** @description The name. */
+            name: string;
+            /** @description The status. */
+            status: components["schemas"]["LocationStatus"];
+            /**
+             * Format: int32
+             * @description Version the client sends back with its next write on this location.
+             */
+            version: number;
+        };
+        /**
+         * @description Whether a Location can be chosen for new rates and trips (PRD §5.1).
+         * @enum {unknown}
+         */
+        LocationStatus: "Active" | "Deactivated";
         /** @description Request body for `POST /api/identity/auth/login`. */
         LoginRequest: {
             password: string;
@@ -970,6 +1110,35 @@ export interface components {
         PagedResponseOfDriverListItemDto: {
             /** @description The items returned in the current page. */
             data: components["schemas"]["DriverListItemDto"][];
+            /** @description True when there is a page after this one. */
+            hasNextPage?: boolean;
+            /** @description True when there is a page before this one. */
+            hasPreviousPage?: boolean;
+            /**
+             * Format: int32
+             * @description 1-based page number returned.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description Page size used to compute the result.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description Total number of items across all pages.
+             */
+            totalCount: number;
+            /**
+             * Format: int32
+             * @description Total number of pages, computed as `ceil(TotalCount / PageSize)`.
+             */
+            totalPages?: number;
+        };
+        /** @description Response envelope for a paginated query. Immutable record. */
+        PagedResponseOfLocationListItemDto: {
+            /** @description The items returned in the current page. */
+            data: components["schemas"]["LocationListItemDto"][];
             /** @description True when there is a page after this one. */
             hasNextPage?: boolean;
             /** @description True when there is a page before this one. */
@@ -1165,6 +1334,14 @@ export interface components {
             version: number | null;
         };
         /**
+         * @description Request body for `POST /api/registry/locations/{id}/reactivate`. `Version` is the version
+         *     the client read; the change is refused when the location has changed since.
+         */
+        ReactivateLocationRequest: {
+            /** Format: int32 */
+            version: number | null;
+        };
+        /**
          * @description Request body for `POST /api/registry/vehicles/{id}/reactivate`. `Version` is the version
          *     the client read; the change is refused when the vehicle has changed since.
          */
@@ -1307,6 +1484,17 @@ export interface components {
             phone: null | string;
             /** Format: uuid */
             userId: null | string;
+            /** Format: int32 */
+            version: number | null;
+        };
+        /**
+         * @description Request body for `PUT /api/registry/locations/{id}` (PRD §5.1, RF-23). `Version` is the
+         *     version the client read; the save is refused when the location has changed since.
+         */
+        UpdateLocationRequest: {
+            address: null | string;
+            municipality: string;
+            name: string;
             /** Format: int32 */
             version: number | null;
         };
@@ -3063,6 +3251,353 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ReactivateDriverRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListLocations: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Text matched, ignoring case, against part of the name, the municipality or the address.
+                 *     When null or whitespace, no search is applied.
+                 */
+                search?: string;
+                /** @description Filter by status. When null, all statuses are included. */
+                status?: components["schemas"]["LocationStatus"];
+                /**
+                 * @description 1-based page number. Optional on the wire; values below 1 are coerced to 1
+                 *     on the setter. Read via int PagedRequest.EffectivePage to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPage when null).
+                 */
+                page?: number;
+                /**
+                 * @description Page size between 1 and int PagedRequest.MaxPageSize. Optional on the wire;
+                 *     non-positive values are coerced to int PagedRequest.DefaultPageSize, values
+                 *     greater than int PagedRequest.MaxPageSize are clamped to int PagedRequest.MaxPageSize.
+                 *     Read via int PagedRequest.EffectivePageSize to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPageSize when null).
+                 */
+                pageSize?: number;
+                /**
+                 * @description Name of the column to sort by. Optional; handlers fall back to a default
+                 *     safe column when this is null or not in their whitelist.
+                 */
+                sortColumn?: string;
+                /**
+                 * @description Sort direction. Optional on the wire; readers should use
+                 *     bool PagedRequest.IsAscending which resolves null to
+                 *     SortDirection.Ascending.
+                 */
+                sortDirection?: components["schemas"]["SortDirection"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfLocationListItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateLocationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeactivateLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeactivateLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReactivateLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReactivateLocationRequest"];
             };
         };
         responses: {

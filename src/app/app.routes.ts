@@ -30,6 +30,14 @@ export const routes: Routes = [
           import('./features/backoffice/customers/customers.routes').then((m) => m.customersRoutes),
       },
       {
+        path: 'locations',
+        canActivate: [roleGuard('BackOffice', 'Admin')],
+        loadComponent: () =>
+          import('./features/backoffice/locations/locations').then((m) => m.Locations),
+        loadChildren: () =>
+          import('./features/backoffice/locations/locations.routes').then((m) => m.locationsRoutes),
+      },
+      {
         path: 'drivers',
         canActivate: [roleGuard('BackOffice', 'Admin')],
         loadComponent: () => import('./features/backoffice/drivers/drivers').then((m) => m.Drivers),

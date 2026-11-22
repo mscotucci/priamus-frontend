@@ -1,0 +1,196 @@
+<app-topbar
+  [crumbs]="[{ label: 'shell.nav.registry' | translate }]"
+  [title]="'locations.list.title' | translate"
+  [line]="
+    facade.loaded()
+      ? ((facade.total() === 1 ? 'locations.list.count.one' : 'locations.list.count.other')
+        | translate: { count: facade.total() })
+      : undefined
+  "
+>
+  <button type="button" class="pt-btn pt-btn--primary" (click)="openForm(null)">
+    {{ 'locations.list.new' | translate }}
+  </button>
+</app-topbar>
+<main class="flex flex-col gap-4 p-8">
+  @if (facade.reactivateNotice(); as notice) {
+    <app-notice [notice]="notice" />
+  }
+  @if (!registryEmpty()) {
+    <div class="pt-card flex flex-wrap items-center gap-2">
+      <label class="pt-search pt-search--sm max-w-full">
+        <app-icon name="search" size="sm" />
+        <input
+          #searchField
+          class="w-80 min-w-0"
+          type="search"
+          maxlength="100"
+          [placeholder]="'locations.list.search.placeholder' | translate"
+          [attr.aria-label]="'locations.list.search.label' | translate"
+          (input)="searchFor(searchField.value)"
+        />
+      </label>
+      <app-filter-menu
+        labelKey="locations.list.filter.status"
+        [options]="statuses"
+        [value]="facade.status()"
+        (valueChange)="facade.setStatus($event)"
+      />
+      @if (filtered()) {
+        <button
+          type="button"
+          class="pt-btn pt-btn--outline pt-btn--sm"
+          (click)="clearFilters(searchField)"
+        >
+          {{ 'locations.list.clear' | translate }}
+        </button>
+      }
+      @if (facade.reloading()) {
+        <span class="pt-spinner pt-spinner--sm ml-auto" role="status"
+          ><span class="sr-only">{{ 'common.refreshing' | translate }}</span></span
+        >
+      }
+    </div>
+  }
+  @if (facade.loading()) {
+    <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'locations.list.loading' | translate }}</span>
+    </div>
+  } @else if (facade.failed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="facade.reload()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (facade.total() === 0) {
+    <div class="pt-card pt-empty">
+      @if (filtered()) {
+        <p class="pt-title">{{ 'locations.list.nomatch.title' | translate }}</p>
+        <p class="pt-muted">{{ 'locations.list.nomatch.hint' | translate }}</p>
+      } @else {
+        <p class="pt-title">{{ 'locations.list.empty.title' | translate }}</p>
+        <p class="pt-muted">{{ 'locations.list.empty.hint' | translate }}</p>
+      }
+    </div>
+  } @else {
+    <div class="pt-table-wrap">
+      <table class="pt-table" [attr.aria-busy]="facade.reloading() || null">
+        <thead>
+          <tr>
+            @for (column of columns; track column.suffix) {
+              @if (column.sortKey === null) {
+                <th scope="col">{{ 'locations.list.column.' + column.suffix | translate }}</th>
+              } @else {
+                <th
+                  scope="col"
+                  [attr.aria-sort]="
+                    facade.sortColumn() === column.sortKey
+                      ? facade.sortDirection() === 'Ascending'
+                        ? 'ascending'
+                        : 'descending'
+                      : null
+                  "
+                >
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1 uppercase"
+                    (click)="sortBy(column.sortKey)"
+                  >
+                    {{ 'locations.list.column.' + column.suffix | translate }}
+                    @if (facade.sortColumn() === column.sortKey) {
+                      <app-icon
+                        name="chevron"
+                        size="xs"
+                        [class.rotate-180]="facade.sortDirection() === 'Ascending'"
+                      />
+                    }
+                  </button>
+                </th>
+              }
+            }
+            <th scope="col">
+              <span class="sr-only">{{ 'locations.list.column.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (location of facade.items(); track location.id) {
+            <tr>
+              <td class="pt-text" [id]="'location-' + location.id">{{ location.name }}</td>
+              <td class="pt-text">{{ location.municipality }}</td>
+              @if (location.address) {
+                <td class="pt-text">{{ location.address }}</td>
+              } @else {
+                <td class="pt-muted">—</td>
+              }
+              <td>
+                <span
+                  class="pt-pill"
+                  [class.pt-pill--success]="location.status === 'Active'"
+                  [class.pt-pill--danger]="location.status === 'Deactivated'"
+                  >{{ 'locations.status.' + location.status.toLowerCase() | translate }}</span
+                >
+              </td>
+              <td>{{ location.lastModifiedAt | date: 'dd/MM/yyyy' }}</td>
+              <td class="text-right whitespace-nowrap">
+                <div class="inline-flex gap-1">
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-describedby]="'location-' + location.id"
+                    (click)="openForm(location)"
+                  >
+                    {{ 'locations.list.edit' | translate }}
+                  </button>
+                  <!-- one button for both statuses: it survives the status change, and so does its focus -->
+                  <button
+                    type="button"
+                    class="pt-btn pt-btn--outline pt-btn--sm"
+                    [attr.aria-describedby]="'location-' + location.id"
+                    [attr.aria-disabled]="
+                      (location.status !== 'Active' && facade.reactivatingId() !== null) || null
+                    "
+                    (click)="
+                      location.status === 'Active'
+                        ? openDeactivate(location)
+                        : facade.reactivate(location)
+                    "
+                  >
+                    {{
+                      (location.status === 'Active'
+                        ? 'locations.list.deactivate'
+                        : facade.reactivatingId() === location.id
+                          ? 'locations.reactivate.pending'
+                          : 'locations.list.reactivate'
+                      ) | translate
+                    }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td [attr.colspan]="columns.length + 1">
+              <app-paging
+                [page]="facade.page()"
+                [pageSize]="pageSize"
+                [total]="facade.total()"
+                rangeKey="locations.list.range"
+                (pageChange)="facade.setPage($event)"
+              />
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  }
+</main>
+@if (formTarget(); as target) {
+  <app-location-form-dialog [location]="target.location" (closed)="formTarget.set(null)" />
+}
+@if (deactivateTarget(); as location) {
+  <app-location-deactivate-dialog [location]="location" (closed)="deactivateTarget.set(null)" />
+}

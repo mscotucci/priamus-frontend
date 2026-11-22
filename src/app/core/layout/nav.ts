@@ -37,6 +37,12 @@ export const NAV: NavGroup[] = [
         path: '/vehicles',
         roles: ['BackOffice', 'Admin'],
       },
+      {
+        labelKey: 'shell.nav.locations',
+        icon: 'pin',
+        path: '/locations',
+        roles: ['BackOffice', 'Admin'],
+      },
     ],
   },
   {

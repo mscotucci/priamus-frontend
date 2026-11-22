@@ -15,7 +15,8 @@ export type IconName =
   | 'chevron'
   | 'check'
   | 'alert'
-  | 'settings';
+  | 'settings'
+  | 'pin';
 
 @Component({
   selector: 'app-icon',

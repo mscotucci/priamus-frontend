@@ -232,6 +232,42 @@ describe('App routes', () => {
     },
   );
 
+  it.each<[CurrentUser['role'], string]>([
+    ['Driver', '/login'],
+    ['BackOffice', '/locations'],
+    ['Admin', '/locations'],
+  ])(
+    'the locations route admits BackOffice and Admin only: a %s opening it ends on %s',
+    async (role, landing) => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([{ path: 'login', component: Stub }, ...routes]),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideTestI18n(),
+          {
+            provide: Session,
+            useValue: {
+              wait: () => Promise.resolve(),
+              user: signal<CurrentUser | null>({
+                id: '1',
+                username: 'ada',
+                role,
+                driverId: null,
+              }).asReadonly(),
+              signOut: vi.fn(),
+            },
+          },
+        ],
+      });
+      TestBed.inject(TranslateService).use('it');
+
+      await RouterTestingHarness.create('/locations');
+
+      expect(TestBed.inject(Router).url).toBe(landing);
+    },
+  );
+
   it('sends an unknown address opened by nobody signed in to the login', async () => {
     configure(null);
 

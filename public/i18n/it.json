@@ -53,7 +53,8 @@
       "drivers": "Autisti",
       "users": "Utenti",
       "settings": "Impostazioni",
-      "vehicles": "Mezzi"
+      "vehicles": "Mezzi",
+      "locations": "Luoghi"
     },
     "signout": "Esci",
     "breadcrumb": "Percorso"
@@ -782,6 +783,100 @@
       "requirestrailer": {
         "label": "Richiede rimorchio",
         "hint": "I viaggi con questa motrice dovranno indicare il rimorchio agganciato."
+      }
+    }
+  },
+  "locations": {
+    "list": {
+      "title": "Luoghi",
+      "new": "Nuovo luogo",
+      "loading": "Caricamento…",
+      "range": "Luoghi {{from}}–{{to}} di {{total}}",
+      "count": {
+        "one": "{{count}} luogo",
+        "other": "{{count}} luoghi"
+      },
+      "column": {
+        "name": "Nome",
+        "municipality": "Comune",
+        "address": "Indirizzo",
+        "status": "Stato",
+        "modified": "Ultima modifica",
+        "actions": "Azioni"
+      },
+      "search": {
+        "label": "Cerca nome, comune o indirizzo",
+        "placeholder": "Cerca nome, comune o indirizzo…"
+      },
+      "filter": {
+        "status": "Stato:"
+      },
+      "clear": "Azzera filtri",
+      "edit": "Modifica",
+      "deactivate": "Disattiva",
+      "reactivate": "Riattiva",
+      "empty": {
+        "title": "Nessun luogo in anagrafica",
+        "hint": "Aggiungi il primo con \"Nuovo luogo\"."
+      },
+      "nomatch": {
+        "title": "Nessun luogo trovato",
+        "hint": "Prova a cambiare la ricerca o i filtri."
+      }
+    },
+    "status": {
+      "active": "Attivo",
+      "deactivated": "Disattivato"
+    },
+    "deactivate": {
+      "title": "Disattivare il luogo {{label}}?",
+      "text": "Non sarà più selezionabile su nuove tariffe e nuovi viaggi. Potrai riattivarlo in qualsiasi momento.",
+      "submit": {
+        "idle": "Disattiva",
+        "pending": "Disattivazione…"
+      },
+      "done": "Luogo {{label}} disattivato"
+    },
+    "reactivate": {
+      "pending": "Riattivazione…",
+      "done": "Luogo {{label}} riattivato"
+    },
+    "form": {
+      "create": {
+        "title": "Nuovo luogo",
+        "line": "Nome e comune sono obbligatori.",
+        "submit": "Crea luogo",
+        "done": "Luogo {{label}} creato"
+      },
+      "edit": {
+        "title": "Modifica luogo",
+        "line": {
+          "active": "Attivo: selezionabile su nuove tariffe e nuovi viaggi.",
+          "deactivated": "Disattivato: non selezionabile su nuove tariffe e nuovi viaggi."
+        },
+        "submit": "Salva modifiche",
+        "done": "Luogo {{label}} modificato"
+      },
+      "pending": "Salvataggio in corso…",
+      "name": {
+        "label": "Nome",
+        "placeholder": "Es. Cantiere A14",
+        "hint": "Come lo chiamano autisti e segreteria. Massimo 100 caratteri.",
+        "required": "Inserisci il nome.",
+        "toolong": "Il nome può avere al massimo 100 caratteri."
+      },
+      "municipality": {
+        "label": "Comune",
+        "placeholder": "Es. Chieti",
+        "hint": "Distingue due luoghi con lo stesso nome. Massimo 100 caratteri.",
+        "required": "Inserisci il comune.",
+        "toolong": "Il comune può avere al massimo 100 caratteri."
+      },
+      "address": {
+        "label": "Indirizzo",
+        "placeholder": "Es. Via Erasmo Piaggio, uscita Chieti-Pescara",
+        "hint": "Facoltativo, su una riga. Massimo 200 caratteri.",
+        "toolong": "L'indirizzo può avere al massimo 200 caratteri."
       }
     }
   },
