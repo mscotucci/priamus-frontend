@@ -94,6 +94,12 @@ describe('LocationFormDialog', () => {
     expect(element.querySelector('.pt-tile use')?.getAttribute('href')).toBe('icons.svg#pin');
   });
 
+  it('the new location dialog keeps the standard size', () => {
+    const { element } = render();
+
+    expect(element.querySelector('dialog')!.classList.contains('pt-dialog--lg')).toBe(false);
+  });
+
   it('a muted line states the rule under each field', () => {
     const { element } = render();
 

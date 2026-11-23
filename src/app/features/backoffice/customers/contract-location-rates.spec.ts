@@ -8,15 +8,17 @@ import { stubModalDialog } from '../../../core/testing/dom-testing';
 import { settle } from '../../../core/testing/interaction-testing';
 import type { RateableLocation } from '../locations/locations-api';
 import { LocationsFacade } from '../locations/locations-facade';
+import { locationRateAnswerOf } from './contract-labels';
 import {
   ContractLocationRates,
-  locationRateAnswerOf,
   locationRateRequestOf,
   locationRatesKey,
+  type ConfirmedLocationRates,
   type LocationRateAnswer,
   type LocationRateLevel,
   type RatedLocation,
 } from './contract-location-rates';
+import type { VehicleRateAnswer } from './contract-vehicle-rates';
 import type { ContractLocationRate, PricingMode } from './contracts-api';
 
 const MAGAZZINO: RateableLocation = {
@@ -65,6 +67,7 @@ const rateOf = (
       [rateable]="rateable()"
       [failed]="failed()"
       [answer]="answer()"
+      [vehicleRates]="vehicleRates()"
       [cancellable]="cancellable()"
       (confirmed)="confirmed.push($event)"
       (cancelled)="cancelled = cancelled + 1"
@@ -80,7 +83,8 @@ class Host {
   readonly failed = signal(false);
   readonly answer = signal<LocationRateAnswer[] | null>(null);
   readonly cancellable = signal(false);
-  readonly confirmed: LocationRateAnswer[][] = [];
+  readonly vehicleRates = signal<VehicleRateAnswer[]>([]);
+  readonly confirmed: ConfirmedLocationRates[] = [];
   cancelled = 0;
   retried = 0;
 }
@@ -624,7 +628,10 @@ describe('ContractLocationRates', () => {
     await settle(r.fixture);
 
     expect(r.host.confirmed).toEqual([
-      [rateOf(null, active(CANTIERE)), rateOf(null, active(MAGAZZINO))],
+      {
+        locationRates: [rateOf(null, active(CANTIERE)), rateOf(null, active(MAGAZZINO))],
+        vehicleRates: [],
+      },
     ]);
   });
 
@@ -636,7 +643,11 @@ describe('ContractLocationRates', () => {
     r.button('Conferma').click();
     await settle(r.fixture);
 
-    expect(r.host.confirmed[0][0].rate).toEqual({ day: 30, night: null, callFee: null });
+    expect(r.host.confirmed[0].locationRates[0].rate).toEqual({
+      day: 30,
+      night: null,
+      callFee: null,
+    });
   });
 
   it('adding the night surcharge keeps the rates and "Conferma" names the first row with no night price', async () => {
@@ -684,7 +695,7 @@ describe('ContractLocationRates', () => {
 
     r.button('Conferma').click();
     await settle(r.fixture);
-    expect(r.host.confirmed[0][0].rate).toEqual({ day: 30, night: 42, callFee: 35 });
+    expect(r.host.confirmed[0].locationRates[0].rate).toEqual({ day: 30, night: 42, callFee: 35 });
   });
 
   it.each([
@@ -834,6 +845,233 @@ describe('ContractLocationRates', () => {
     r.field('day').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
     expect(escaped).toBe(0);
+  });
+
+  describe('vehicle rates follow the rows', () => {
+    const vehicleOf = (
+      vehicleId: string,
+      licensePlate: string,
+      places: RatedLocation[],
+      pickup: RatedLocation | null = null,
+    ): VehicleRateAnswer => ({
+      vehicleId,
+      licensePlate,
+      description: 'Autospurgo',
+      decommissioned: false,
+      rate: { day: 55, night: 70, callFee: 40 },
+      minimum: null,
+      places: places.map((place) =>
+        pickup === null ? { pickup: null, delivery: place } : { pickup: place, delivery: pickup },
+      ),
+    });
+
+    const withVehicles = (host: Host) => {
+      host.answer.set([rateOf(null, active(CANTIERE)), rateOf(null, active(DISCARICA))]);
+      host.vehicleRates.set([
+        vehicleOf('v-1', 'XY123AB', [active(CANTIERE), active(DISCARICA)]),
+        vehicleOf('v-2', 'GH456JK', [active(CANTIERE)]),
+      ]);
+    };
+
+    const infoNotice = (r: ReturnType<typeof render>) =>
+      r.text(r.element.querySelector('.pt-notice'));
+
+    const deliveryIdsOf = (answers: VehicleRateAnswer[]) =>
+      answers.map((v) => [v.licensePlate, v.places.map((p) => p.delivery?.id)]);
+
+    it.each([
+      ['a single level', 'PerDeliveryLocation'],
+      ['a pair level', 'PerLocationPair'],
+    ] as const)('"Duplica" is on every row of %s', (_, level) => {
+      const r = render((host) => {
+        host.level.set(level);
+        host.answer.set(
+          level === 'PerLocationPair'
+            ? [
+                rateOf(active(MAGAZZINO), active(CANTIERE)),
+                rateOf(active(MAGAZZINO), active(DISCARICA)),
+              ]
+            : [rateOf(null, active(CANTIERE)), rateOf(null, active(DISCARICA))],
+        );
+      });
+
+      expect(r.element.querySelectorAll('button[data-duplicate]').length).toBe(2);
+    });
+
+    it('"Duplica" opens a new rate with the prices of the row, the location empty and the notice with the plates', async () => {
+      const r = render(withVehicles);
+
+      await r.open('Duplica');
+
+      expect(r.element.textContent).toContain('Nuova tariffa');
+      expect([r.field('day').value, r.field('night').value, r.field('callFee').value]).toEqual([
+        '30',
+        '42',
+        '35',
+      ]);
+      expect(r.selects()[0].value).toBe('');
+      expect(r.optionLabels(0)).not.toContain('Cantiere A14, Chieti Scalo');
+      expect(infoNotice(r)).toBe(
+        'Copia di Cantiere A14, Chieti Scalo: stessi prezzi e stesse tariffe dei mezzi (XY123AB, GH456JK). Scegli il luogo e cambia quello che serve.',
+      );
+      expect(r.button('Aggiungi')).toBeTruthy();
+    });
+
+    it('the notice has the short form when no vehicle rate applies on the row', async () => {
+      const r = render((host) => {
+        host.answer.set([rateOf(null, active(CANTIERE)), rateOf(null, active(MAGAZZINO))]);
+        host.vehicleRates.set([vehicleOf('v-1', 'XY123AB', [active(CANTIERE)])]);
+      });
+
+      await r.open('Duplica', 1);
+
+      expect(infoNotice(r)).toBe(
+        'Copia di Magazzino centrale, Pescara. Scegli il luogo e cambia quello che serve.',
+      );
+    });
+
+    it('"Aggiungi" gives the new location its rate and the vehicle rates of the duplicated one, emitted at "Conferma"', async () => {
+      const r = render(withVehicles);
+
+      await r.open('Duplica');
+      r.choose(0, MAGAZZINO.id);
+      await r.submit();
+
+      expect(r.host.confirmed).toEqual([]);
+      r.button('Conferma').click();
+      await settle(r.fixture);
+
+      const emitted = r.host.confirmed[0];
+      expect(emitted.locationRates.map((rate) => rate.delivery?.id)).toEqual([
+        CANTIERE.id,
+        DISCARICA.id,
+        MAGAZZINO.id,
+      ]);
+      expect(emitted.locationRates[2].rate).toEqual({ day: 30, night: 42, callFee: 35 });
+      expect(deliveryIdsOf(emitted.vehicleRates)).toEqual([
+        ['XY123AB', [CANTIERE.id, DISCARICA.id, MAGAZZINO.id]],
+        ['GH456JK', [CANTIERE.id, MAGAZZINO.id]],
+      ]);
+    });
+
+    it('on a pair "Duplica" leaves both selects empty and refuses the same pair', async () => {
+      const r = render((host) => {
+        host.level.set('PerLocationPair');
+        host.answer.set([rateOf(active(MAGAZZINO), active(CANTIERE))]);
+        host.vehicleRates.set([vehicleOf('v-1', 'XY123AB', [active(MAGAZZINO)], active(CANTIERE))]);
+      });
+
+      await r.open('Duplica');
+
+      expect(r.selects().map((select) => select.value)).toEqual(['', '']);
+      expect(infoNotice(r)).toBe(
+        'Copia di Magazzino centrale, Pescara → Cantiere A14, Chieti Scalo: stessi prezzi e stesse tariffe dei mezzi (XY123AB). Scegli i luoghi e cambia quello che serve.',
+      );
+      r.choose(0, MAGAZZINO.id);
+      r.choose(1, CANTIERE.id);
+      await r.submit();
+
+      expect(
+        Array.from(r.rateForm().querySelectorAll('.pt-field__error')).map((e) => r.text(e)),
+      ).toEqual(['Questa coppia ha già una tariffa.']);
+    });
+
+    it('"Annulla" on a copy changes nothing', async () => {
+      const r = render(withVehicles);
+
+      await r.open('Duplica');
+      await r.open('Annulla');
+      r.button('Conferma').click();
+      await settle(r.fixture);
+
+      expect(r.host.confirmed[0].locationRates.length).toBe(2);
+      expect(r.host.confirmed[0].vehicleRates).toEqual(r.host.vehicleRates());
+    });
+
+    it('"Togli" drops a vehicle rate left without places and keeps the others', async () => {
+      const r = render(withVehicles);
+
+      r.element.querySelector<HTMLButtonElement>('button[data-remove]')!.click();
+      r.fixture.detectChanges();
+      expect(r.host.confirmed).toEqual([]);
+      r.button('Conferma').click();
+      await settle(r.fixture);
+
+      const emitted = r.host.confirmed[0];
+      expect(emitted.locationRates.map((rate) => rate.delivery?.id)).toEqual([DISCARICA.id]);
+      expect(deliveryIdsOf(emitted.vehicleRates)).toEqual([['XY123AB', [DISCARICA.id]]]);
+    });
+
+    it('a changed location carries its vehicle rates, an unchanged one moves nothing', async () => {
+      const r = render(withVehicles);
+
+      await r.open('Modifica');
+      await r.submit();
+      r.button('Conferma').click();
+      await settle(r.fixture);
+      expect(r.host.confirmed[0].vehicleRates).toEqual(r.host.vehicleRates());
+
+      await r.open('Modifica');
+      r.choose(0, MAGAZZINO.id);
+      await r.submit();
+      r.button('Conferma').click();
+      await settle(r.fixture);
+
+      expect(deliveryIdsOf(r.host.confirmed[1].vehicleRates)).toEqual([
+        ['XY123AB', [MAGAZZINO.id, DISCARICA.id]],
+        ['GH456JK', [MAGAZZINO.id]],
+      ]);
+    });
+
+    it('an equal vehicle rate list re-emitted by the page does not reset the draft', () => {
+      const r = render(withVehicles);
+
+      r.element.querySelector<HTMLButtonElement>('button[data-remove]')!.click();
+      r.fixture.detectChanges();
+      r.host.vehicleRates.set([...r.host.vehicleRates()]);
+      r.fixture.detectChanges();
+
+      expect(r.rowTitles()).toEqual(['Discarica Cerratina, Lanciano']);
+    });
+
+    it.each([
+      [
+        'level',
+        (host: Host) => host.level.set('PerLocationPair'),
+        (r: ReturnType<typeof render>) => {
+          r.choose(0, MAGAZZINO.id);
+          r.choose(1, CANTIERE.id);
+        },
+      ],
+      [
+        'pricing mode',
+        (host: Host) => {
+          host.mode.set('ByTrip');
+          host.night.set(false);
+        },
+        (r: ReturnType<typeof render>) => r.choose(0, MAGAZZINO.id),
+      ],
+    ] as const)('a change of %s empties both drafts', async (_, change, choose) => {
+      const r = render(withVehicles);
+
+      r.element.querySelector<HTMLButtonElement>('button[data-remove]')!.click();
+      change(r.host);
+      r.fixture.detectChanges();
+      expect(r.rowTitles()).toEqual([]);
+      await r.open('Aggiungi tariffa');
+      choose(r);
+      r.type('day', '30');
+      if (r.host.night()) {
+        r.type('night', '42');
+        r.type('callFee', '35');
+      }
+      await r.submit();
+      r.button('Conferma').click();
+      await settle(r.fixture);
+
+      expect(r.host.confirmed[0].locationRates.length).toBe(1);
+      expect(r.host.confirmed[0].vehicleRates).toEqual([]);
+    });
   });
 });
 

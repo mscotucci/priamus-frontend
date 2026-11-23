@@ -700,13 +700,17 @@ export interface components {
          * @enum {unknown}
          */
         ContractStatus: "Current" | "Upcoming" | "Expired";
-        /** @description A vehicle rate of a contract as the API returns it, with the vehicle it is for. */
+        /**
+         * @description A vehicle rate of a contract as the API returns it, with the vehicle and the locations it is for. A
+         *     side the billing level does not use is `null`.
+         */
         ContractVehicleRateDto: {
             /**
              * Format: double
              * @description The day price.
              */
             dayPrice: number;
+            delivery: null | components["schemas"]["RatedLocationDto"];
             /** @description The vehicle's description. */
             description: string;
             /** @description The vehicle's license plate. */
@@ -738,6 +742,7 @@ export interface components {
              * @description The night price; `null` without the night surcharge.
              */
             nightPrice: number | null;
+            pickup: null | components["schemas"]["RatedLocationDto"];
             /**
              * Format: uuid
              * @description The vehicle the rate is for.
@@ -747,13 +752,16 @@ export interface components {
             vehicleStatus: components["schemas"]["VehicleStatus"];
         };
         /**
-         * @description One vehicle rate of a contract request: the vehicle and the seven rate members, as sent. Every
+         * @description One vehicle rate of a contract request: the vehicle, the pickup and the delivery location the billing
+         *     level uses (none on a flat-rate contract) and the seven rate members, as sent. Every
          *     member is optional here so that a missing or misplaced value is reported by
          *     ContractRequestValidation on its own key, `VehicleRates[i].Member`.
          */
         ContractVehicleRateRequest: {
             /** Format: double */
             dayPrice: number | null;
+            /** Format: uuid */
+            deliveryLocationId: null | string;
             /** Format: double */
             minimumAmount: number | null;
             /** Format: double */
@@ -766,6 +774,8 @@ export interface components {
             /** Format: double */
             nightPrice: number | null;
             /** Format: uuid */
+            pickupLocationId: null | string;
+            /** Format: uuid */
             vehicleId: null | string;
         };
         /**
@@ -773,9 +783,11 @@ export interface components {
          *     Every member but the end of the validity, the seven rate members, the vehicle rates and the
          *     location rates is required; an empty set of documents is valid and duplicates collapse. The
          *     rate members are required for a flat-rate contract (the night ones with the night surcharge,
-         *     the minimum ones as its rule asks) and must be absent for any other billing level, as must the
-         *     vehicle rates. The location rates are required, at least one, for any other billing level and
-         *     must be absent for a flat-rate contract. An absent list is an empty one.
+         *     the minimum ones as its rule asks) and must be absent for any other billing level. The location
+         *     rates are required, at least one, for any other billing level and must be absent for a flat-rate
+         *     contract. A vehicle rate carries no location on a flat-rate contract; on any other level it names
+         *     the pickup and delivery location the level uses, of one of the location rates. An absent list is
+         *     an empty one.
          */
         CreateContractRequest: {
             billingLevel: null | components["schemas"]["BillingLevel"];
@@ -1370,7 +1382,7 @@ export interface components {
             unitPrice: number;
             /**
              * Format: uuid
-             * @description The vehicle whose rate was used; `null` for the contract's rate.
+             * @description The vehicle whose rate was used; `null` when no vehicle rate was used.
              */
             vehicleId: null | string;
         };
@@ -1500,8 +1512,9 @@ export interface components {
          *     `HH:mm`. The end is for a trip by hour
          *     only, `Kilograms` for a trip by weight only and `Kilometres` for a trip by distance only;
          *     the quantities are whole numbers, read as numbers so that a fraction is reported on its own member.
-         *     `VehicleId` is the trip's vehicle on a flat-rate contract: `null`, or a vehicle without a
-         *     vehicle rate, uses the contract's rate. `PickupLocationId` and `DeliveryLocationId` are the
+         *     `VehicleId` is the trip's vehicle: `null`, or a vehicle without a vehicle rate on the trip's
+         *     location or pair, uses the contract's rate on a flat-rate contract and the rate of the location or pair
+         *     on a location level. `PickupLocationId` and `DeliveryLocationId` are the
          *     trip's locations: each is required when the billing level uses it, refused when it does not, and must
          *     have a rate among the written location rates.
          */

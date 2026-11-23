@@ -20,6 +20,7 @@ const AUTOSPURGO: VehicleRateAnswer = {
   decommissioned: false,
   rate: { day: 55, night: 70, callFee: 40 },
   minimum: { kind: 'FixedMinimum', amount: 120, threshold: null, overage: null },
+  places: [],
 };
 
 const place = (id: string, name: string, municipality: string) => ({
@@ -277,6 +278,8 @@ describe('ContractSimulation', () => {
       vehicleRates: [
         {
           vehicleId: 'v-1',
+          pickupLocationId: null,
+          deliveryLocationId: null,
           dayPrice: 55,
           nightPrice: 70,
           nightCallFee: 40,
@@ -711,6 +714,40 @@ describe('ContractSimulation', () => {
     expect(element.querySelector('.pt-calc')).toBeNull();
   });
 
+  it('flat rate: sends the vehicle rates without locations and shows the plate; 3 h at 55,00 €/h is 165,00 €', async () => {
+    const { host, pick, type, press, answer, rows } = render();
+    host.minimum.set(NO_MINIMUM);
+    host.vehicleRates.set([{ ...AUTOSPURGO, rate: { day: 55, night: null, callFee: null } }]);
+    pick('v-1');
+    type('start', '09:00');
+    type('end', '12:00');
+
+    await press();
+    const body = await answer(
+      result({
+        rateSource: 'Vehicle',
+        vehicleId: 'v-1',
+        quantity: 180,
+        unitPrice: 55,
+        baseAmount: 165,
+        amountAfterMinimum: 165,
+        minimumRule: 'None',
+        total: 165,
+      }),
+    );
+
+    expect(body['vehicleRates']).toMatchObject([
+      { vehicleId: 'v-1', pickupLocationId: null, deliveryLocationId: null, dayPrice: 55 },
+    ]);
+    expect(rows()).toEqual([
+      'Fascia Di giorno · inizia alle 09:00, fuori dalla fascia notturna 22:00–06:00',
+      'Tariffa Propria del mezzo AB123CD',
+      'Importo 3 h × 55,00 €/h = 165,00 €',
+      'Minimo Nessun minimo',
+      'Totale 165,00 €',
+    ]);
+  });
+
   describe('stale result', () => {
     const computed = async () => {
       const view = render();
@@ -786,12 +823,16 @@ describe('ContractSimulation', () => {
   });
 
   describe('location contract', () => {
-    const renderLocation = (level: BillingLevel, rates: LocationRateAnswer[]) => {
+    const renderLocation = (
+      level: BillingLevel,
+      rates: LocationRateAnswer[],
+      vehicleRates: VehicleRateAnswer[] = [],
+    ) => {
       const view = render();
       view.host.level.set(level);
       view.host.rate.set(null);
       view.host.minimum.set(null);
-      view.host.vehicleRates.set([]);
+      view.host.vehicleRates.set(vehicleRates);
       view.host.locationRates.set(rates);
       view.fixture.detectChanges();
       const choose = (id: string) => {
@@ -804,7 +845,11 @@ describe('ContractSimulation', () => {
         Array.from((view.field('location') as unknown as HTMLSelectElement).options, (option) =>
           view.text(option),
         );
-      return { ...view, choose, options };
+      const vehicleOptions = () =>
+        Array.from((view.field('vehicle') as unknown as HTMLSelectElement).options, (option) =>
+          view.text(option),
+        );
+      return { ...view, choose, options, vehicleOptions };
     };
 
     const byDelivery = () => [
@@ -813,11 +858,173 @@ describe('ContractSimulation', () => {
       locationRate(null, CHIETI, 34),
     ];
 
-    it('asks for the location of the level in place of the vehicle', () => {
+    it('asks for the location of the level and, beside it, for the vehicle', () => {
       const { labels, field } = renderLocation('PerDeliveryLocation', byDelivery());
 
-      expect(labels()).toEqual(['Luogo di consegna', 'Ora di inizio', 'Ora di fine']);
-      expect(field('vehicle')).toBeNull();
+      expect(labels()).toEqual(['Luogo di consegna', 'Mezzo', 'Ora di inizio', 'Ora di fine']);
+      expect(field('vehicle')).not.toBeNull();
+    });
+
+    const vehicleOn = (
+      vehicleId: string,
+      licensePlate: string,
+      places: LocationRateAnswer[],
+      day = 55,
+    ): VehicleRateAnswer => ({
+      ...AUTOSPURGO,
+      vehicleId,
+      licensePlate,
+      description: 'Autospurgo ' + licensePlate,
+      rate: { day, night: null, callFee: null },
+      minimum: NO_MINIMUM,
+      places: places.map(({ pickup, delivery }) => ({ pickup, delivery })),
+    });
+
+    const vehicleRatesByDelivery = () => [
+      vehicleOn('v-2', 'ZZ999ZZ', [byDelivery()[0]]),
+      vehicleOn('v-1', 'AB123CD', [byDelivery()[0], byDelivery()[2]]),
+      vehicleOn('v-1', 'AB123CD', [byDelivery()[1]], 60),
+    ];
+
+    it('the vehicle select lists, by plate and once, the vehicles whose rate applies on the chosen location, and follows the location', () => {
+      const { choose, vehicleOptions } = renderLocation(
+        'PerDeliveryLocation',
+        byDelivery(),
+        vehicleRatesByDelivery(),
+      );
+
+      // the first location is Cantiere A14 (l-2): only AB123CD has a rate there
+      expect(vehicleOptions()).toEqual([
+        'Un mezzo senza tariffa propria',
+        'AB123CD · Autospurgo AB123CD',
+      ]);
+
+      choose('|l-3');
+      expect(vehicleOptions()).toEqual([
+        'Un mezzo senza tariffa propria',
+        'AB123CD · Autospurgo AB123CD',
+        'ZZ999ZZ · Autospurgo ZZ999ZZ',
+      ]);
+
+      choose('|l-1');
+      expect(vehicleOptions()).toEqual([
+        'Un mezzo senza tariffa propria',
+        'AB123CD · Autospurgo AB123CD',
+      ]);
+    });
+
+    it('on a pair the vehicle select lists the vehicles whose rate applies on the chosen pair', () => {
+      const pairs = [locationRate(CHIETI, LANCIANO, 40), locationRate(SPOLTORE, LANCIANO, 44)];
+      const { choose, vehicleOptions } = renderLocation('PerLocationPair', pairs, [
+        vehicleOn('v-1', 'AB123CD', [pairs[1]]),
+      ]);
+
+      expect(vehicleOptions()).toEqual(['Un mezzo senza tariffa propria']);
+
+      choose('l-3|l-1');
+      expect(vehicleOptions()).toEqual([
+        'Un mezzo senza tariffa propria',
+        'AB123CD · Autospurgo AB123CD',
+      ]);
+    });
+
+    it('a chosen vehicle without a rate on the new location falls back to "Un mezzo senza tariffa propria" and sends no vehicle', async () => {
+      const { choose, pick, field, type, press, answer } = renderLocation(
+        'PerDeliveryLocation',
+        byDelivery(),
+        vehicleRatesByDelivery(),
+      );
+      choose('|l-3');
+      pick('v-2');
+      expect((field('vehicle') as unknown as HTMLSelectElement).value).toBe('v-2');
+
+      choose('|l-2');
+      expect((field('vehicle') as unknown as HTMLSelectElement).value).toBe('');
+
+      type('start', '10:00');
+      type('end', '13:00');
+      await press();
+      const body = await answer(result({ rateSource: 'Location' }));
+      expect(body['vehicleId']).toBeNull();
+    });
+
+    it('sends the vehicle rates one item per place with their locations, and the chosen vehicle', async () => {
+      const { choose, pick, type, press, answer } = renderLocation(
+        'PerDeliveryLocation',
+        byDelivery(),
+        vehicleRatesByDelivery(),
+      );
+      choose('|l-3');
+      pick('v-1');
+      type('start', '10:00');
+      type('end', '13:00');
+
+      await press();
+      const body = await answer(result({ rateSource: 'Vehicle', vehicleId: 'v-1' }));
+
+      expect(body['vehicleId']).toBe('v-1');
+      expect(body['deliveryLocationId']).toBe('l-3');
+      expect(
+        (body['vehicleRates'] as Record<string, unknown>[]).map((item) => [
+          item['vehicleId'],
+          item['pickupLocationId'],
+          item['deliveryLocationId'],
+          item['dayPrice'],
+        ]),
+      ).toEqual([
+        ['v-2', null, 'l-3', 55],
+        ['v-1', null, 'l-3', 55],
+        ['v-1', null, 'l-2', 55],
+        ['v-1', null, 'l-1', 60],
+      ]);
+    });
+
+    it('names the location of a vehicle rate used, without the plate', async () => {
+      const view = renderLocation('PerDeliveryLocation', byDelivery(), vehicleRatesByDelivery());
+      view.choose('|l-3');
+      view.pick('v-1');
+      view.type('start', '10:00');
+      view.type('end', '13:00');
+      await view.press();
+      await view.answer(result({ rateSource: 'Vehicle', vehicleId: 'v-1' }));
+
+      expect(view.rows()[1]).toBe('Tariffa Propria del mezzo per il luogo Cantiere SP49, Spoltore');
+    });
+
+    it('names the pair of a vehicle rate used, without the plate', async () => {
+      const pairs = [locationRate(CHIETI, LANCIANO, 40)];
+      const view = renderLocation('PerLocationPair', pairs, [vehicleOn('v-1', 'AB123CD', pairs)]);
+      view.pick('v-1');
+      view.type('start', '10:00');
+      view.type('end', '13:00');
+      await view.press();
+      await view.answer(result({ rateSource: 'Vehicle', vehicleId: 'v-1' }));
+
+      expect(view.rows()[1]).toBe(
+        'Tariffa Propria del mezzo per la coppia Cantiere A14, Chieti Scalo → Discarica Cerratina, Lanciano',
+      );
+    });
+
+    it('removes the result when the places of a vehicle rate change on the page', async () => {
+      const { host, fixture, element, type, press, answer } = renderLocation(
+        'PerDeliveryLocation',
+        byDelivery(),
+        vehicleRatesByDelivery(),
+      );
+      type('start', '10:00');
+      type('end', '13:00');
+      await press();
+      await answer(result({ rateSource: 'Location' }));
+      expect(element.querySelector('.pt-calc')).not.toBeNull();
+
+      host.vehicleRates.set([
+        vehicleOn('v-1', 'AB123CD', [byDelivery()[0]]),
+        ...vehicleRatesByDelivery().slice(2),
+      ]);
+      fixture.detectChanges();
+
+      expect(element.querySelector('.pt-calc')).toBeNull();
+      expect(element.textContent).toContain('Qualcosa è cambiato');
     });
 
     it.each([

@@ -6,8 +6,13 @@ import { stubModalDialog } from '../../../core/testing/dom-testing';
 import { settle } from '../../../core/testing/interaction-testing';
 import italian from '../../../../../public/i18n/it.json';
 import type { RateableVehicle } from '../vehicles/vehicles-api';
-import type { PricingMode } from './contracts-api';
-import { ContractVehicleRates, type VehicleRateAnswer } from './contract-vehicle-rates';
+import type { BillingLevel, PricingMode } from './contracts-api';
+import type { RatedLocation } from './contract-location-rates';
+import {
+  ContractVehicleRates,
+  type RatedPlace,
+  type VehicleRateAnswer,
+} from './contract-vehicle-rates';
 
 const AUTOSPURGO: RateableVehicle = {
   id: 'v-1',
@@ -28,6 +33,7 @@ const DISMESSO: VehicleRateAnswer = {
   decommissioned: true,
   rate: { day: 48, night: null, callFee: null },
   minimum: { kind: 'None', amount: null, threshold: null, overage: null },
+  places: [],
 };
 
 const rateOf = (
@@ -40,6 +46,7 @@ const rateOf = (
   decommissioned: false,
   rate: { day: 55, night: 70, callFee: 40 },
   minimum: { kind: 'FixedMinimum', amount: 120, threshold: null, overage: null },
+  places: [],
   ...overrides,
 });
 
@@ -49,6 +56,8 @@ const rateOf = (
     <app-contract-vehicle-rates
       [night]="night()"
       [mode]="mode()"
+      [level]="level()"
+      [places]="places()"
       [rateable]="rateable()"
       [failed]="failed()"
       [answer]="answer()"
@@ -62,6 +71,8 @@ const rateOf = (
 class Host {
   readonly night = signal(false);
   readonly mode = signal<PricingMode>('ByHour');
+  readonly level = signal<BillingLevel>('FlatRate');
+  readonly places = signal<RatedPlace[]>([]);
   readonly rateable = signal<RateableVehicle[] | null>([AUTOSPURGO, GRU, FLOOR]);
   readonly failed = signal(false);
   readonly answer = signal<VehicleRateAnswer[] | null>(null);
@@ -363,6 +374,7 @@ describe('ContractVehicleRates', () => {
           decommissioned: false,
           rate: { day: 120.5, night: null, callFee: null },
           minimum: null,
+          places: [],
         },
       ],
     ]);
@@ -564,5 +576,441 @@ describe('ContractVehicleRates', () => {
       'override',
     );
     expect(JSON.stringify(italian.contracts.form.vehicleRates)).toContain('tariffa');
+  });
+
+  it('a flat-rate contract keeps its titles and has no places fieldset in the dialog', async () => {
+    const r = render((host) => host.answer.set([rateOf(AUTOSPURGO)]));
+
+    await r.open('Modifica');
+
+    expect(r.text(r.element.querySelector('app-dialog .pt-title'))).toBe('Modifica tariffa');
+    expect(r.rateForm().querySelector('fieldset input[data-place]')).toBeNull();
+    expect(r.rows()[0].querySelectorAll('li > span:first-child > span').length).toBe(1);
+  });
+
+  it('with the night surcharge added on a flat-rate contract the rows stay and "Conferma" asks for their night values', async () => {
+    const r = render((host) =>
+      host.answer.set([
+        rateOf(GRU, { rate: { day: 48, night: 60, callFee: 30 } }),
+        rateOf(AUTOSPURGO, { rate: { day: 50, night: null, callFee: null } }),
+      ]),
+    );
+    r.host.night.set(true);
+    r.fixture.detectChanges();
+    expect(r.rows().length).toBe(2);
+
+    r.button('Conferma').click();
+    await settle(r.fixture);
+
+    expect(r.notice()).toBe('Completa i prezzi notturni: AB123CD · Autospurgo Scania P410.');
+    expect(r.host.confirmed).toEqual([]);
+    expect(document.activeElement).toBe(r.rows()[0].querySelector('[data-edit]'));
+
+    await r.open('Modifica');
+    expect(r.field('day').value).toBe('50');
+    expect(r.field('night').value).toBe('');
+  });
+
+  it('a flat-rate answer whose rows all lack night values opens on "Sì" with its rows under the night surcharge', () => {
+    const r = render((host) => {
+      host.night.set(true);
+      host.answer.set([rateOf(GRU, { rate: { day: 48, night: null, callFee: null } })]);
+    });
+
+    expect(r.radios()[1].checked).toBe(true);
+    expect(r.rows().length).toBe(1);
+  });
+
+  it('a decommissioned vehicle with night values is confirmed without them once the contract has no night surcharge', () => {
+    const stored = { ...DISMESSO, rate: { day: 48, night: 60, callFee: 30 } };
+    const r = render((host) => host.answer.set([stored]));
+
+    r.button('Conferma').click();
+    r.fixture.detectChanges();
+
+    expect(r.host.confirmed).toEqual([
+      [{ ...stored, rate: { day: 48, night: null, callFee: null } }],
+    ]);
+  });
+
+  describe.each([
+    {
+      name: 'PerDeliveryLocation',
+      level: 'PerDeliveryLocation' as const,
+      billing: 'Per luogo di consegna',
+      sorted: ['Cantiere nord, Chieti', 'Magazzino centrale, Pescara', 'Porto, Ortona'],
+      one: 'Vale in 1 luogo su 3:',
+      many: 'Vale in 2 luoghi su 3:',
+      all: 'Vale in tutti i 3 luoghi',
+      legend: 'Luoghi in cui vale questa tariffa',
+      allBox: 'Tutti i luoghi',
+      required: 'Scegli almeno un luogo.',
+      hint: 'Nei luoghi spuntati, un viaggio fatto con questo mezzo usa questa tariffa al posto di quella del luogo.',
+    },
+    {
+      name: 'PerLocationPair',
+      level: 'PerLocationPair' as const,
+      billing: 'Per coppia di luoghi',
+      sorted: [
+        'Cantiere nord, Chieti → Porto, Ortona',
+        'Magazzino centrale, Pescara → Cantiere nord, Chieti',
+        'Magazzino centrale, Pescara → Porto, Ortona',
+      ],
+      one: 'Vale in 1 coppia su 3:',
+      many: 'Vale in 2 coppie su 3:',
+      all: 'Vale in tutte le 3 coppie',
+      legend: 'Coppie in cui vale questa tariffa',
+      allBox: 'Tutte le coppie',
+      required: 'Scegli almeno una coppia.',
+      hint: 'Nelle coppie spuntate, un viaggio fatto con questo mezzo usa questa tariffa al posto di quella della coppia.',
+    },
+  ])('on $name', (config) => {
+    const location = (id: string, name: string, municipality: string): RatedLocation => ({
+      id,
+      name,
+      municipality,
+      deactivated: false,
+    });
+    const CANTIERE = location('l-1', 'Cantiere nord', 'Chieti');
+    const MAGAZZINO = location('l-2', 'Magazzino centrale', 'Pescara');
+    const PORTO = location('l-3', 'Porto', 'Ortona');
+    // sorted as the sheet shows them: A before B before C
+    const [A, B, C]: RatedPlace[] =
+      config.level === 'PerLocationPair'
+        ? [
+            { pickup: CANTIERE, delivery: PORTO },
+            { pickup: MAGAZZINO, delivery: CANTIERE },
+            { pickup: MAGAZZINO, delivery: PORTO },
+          ]
+        : [CANTIERE, MAGAZZINO, PORTO].map((delivery) => ({ pickup: null, delivery }));
+    const PLACES = [C, A, B];
+
+    const setup = (host: Host, answer: VehicleRateAnswer[] = [], places = PLACES) => {
+      host.level.set(config.level);
+      host.places.set(places);
+      host.answer.set(answer);
+    };
+    const detail = (row: Element) =>
+      row.querySelector('li > span:first-child > span:nth-child(3)')?.textContent;
+    const boxes = (r: ReturnType<typeof render>) =>
+      Array.from(r.rateForm().querySelectorAll<HTMLInputElement>('input[data-place]'));
+    const ticked = (r: ReturnType<typeof render>) => boxes(r).map((box) => box.checked);
+    const tick = (r: ReturnType<typeof render>, box: HTMLInputElement, on = true) => {
+      box.checked = on;
+      box.dispatchEvent(new Event('change'));
+      r.fixture.detectChanges();
+    };
+    const squash = (value: string | null | undefined) => value?.replace(/\s+/g, ' ').trim();
+
+    it('each vehicle rate is a row with its "Vale in" line, one place, some places or all of them', () => {
+      const r = render((host) =>
+        setup(host, [
+          rateOf(AUTOSPURGO, { places: [A] }),
+          rateOf(GRU, { places: [B, A] }),
+          rateOf(FLOOR, { places: [A, B, C] }),
+        ]),
+      );
+
+      expect(r.rowTitles()).toEqual([
+        'AB123CD Autospurgo Scania P410',
+        'EF789LM Walking floor 30t',
+        'GH456JK Gru mobile 15t',
+      ]);
+      const lines = r.rows().map((row) => squash(detail(row)));
+      expect(lines).toEqual([
+        `${config.one} ${config.sorted[0]}`,
+        config.all,
+        `${config.many} ${config.sorted[0]} · ${config.sorted[1]}`,
+      ]);
+      for (const row of r.rows()) {
+        expect(
+          Array.from(row.querySelectorAll('button')).map((b) => b.textContent?.trim()),
+        ).toEqual(['Modifica', 'Togli']);
+      }
+    });
+
+    it('a vehicle with two rates has two rows, by first place', () => {
+      const r = render((host) =>
+        setup(host, [
+          rateOf(AUTOSPURGO, { places: [C], rate: { day: 60, night: 70, callFee: 40 } }),
+          rateOf(AUTOSPURGO, { places: [A, B] }),
+        ]),
+      );
+
+      expect(r.rowTitles()).toEqual([
+        'AB123CD Autospurgo Scania P410',
+        'AB123CD Autospurgo Scania P410',
+      ]);
+      expect(r.rowTerms()[0]).toContain('55,00');
+      expect(r.rowTerms()[1]).toContain('60,00');
+      expect(squash(detail(r.rows()[1]))).toBe(`${config.one} ${config.sorted[2]}`);
+    });
+
+    it('"Aggiungi un mezzo" opens the vehicle dialog with the select, the places fieldset and then the prices', async () => {
+      const r = render((host) => setup(host, [rateOf(AUTOSPURGO, { places: [A] })]));
+
+      await r.open('Aggiungi un mezzo');
+
+      expect(r.text(r.element.querySelector('app-dialog .pt-title'))).toBe(
+        'Nuova tariffa del mezzo',
+      );
+      expect(r.text(r.element.querySelector('app-dialog .pt-dialog__head .pt-muted'))).toBe(
+        `${config.billing} · a ore · senza maggiorazione notturna`,
+      );
+      const fieldset = r.rateForm().querySelector('fieldset')!;
+      expect(r.text(fieldset.querySelector('legend'))).toBe(config.legend);
+      expect(r.text(fieldset.querySelector('p'))).toBe(config.hint);
+      expect(r.text(fieldset.querySelector('label:has([data-places-all])'))).toBe(config.allBox);
+      expect(boxes(r).map((box) => r.text(box.closest('label')))).toEqual(config.sorted);
+      expect(ticked(r)).toEqual([false, false, false]);
+      const after = (a: Node, b: Node) =>
+        Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(after(r.select(), fieldset)).toBe(true);
+      expect(after(fieldset, r.field('day'))).toBe(true);
+      // a vehicle that already has a rate can receive another
+      expect(r.optionLabels()).toEqual([
+        'AB123CD · Autospurgo Scania P410',
+        'GH456JK · Gru mobile 15t',
+        'EF789LM · Walking floor 30t',
+      ]);
+    });
+
+    it('"Modifica" opens "Modifica tariffa del mezzo" with the places of the row ticked', async () => {
+      const r = render((host) => setup(host, [rateOf(AUTOSPURGO, { places: [A, C] })]));
+
+      await r.open('Modifica');
+
+      expect(r.text(r.element.querySelector('app-dialog .pt-title'))).toBe(
+        'Modifica tariffa del mezzo',
+      );
+      expect(ticked(r)).toEqual([true, false, true]);
+    });
+
+    it('a place where the chosen vehicle has another rate cannot be ticked and says so', async () => {
+      const r = render((host) =>
+        setup(host, [
+          rateOf(AUTOSPURGO, { places: [B], rate: { day: 60, night: 70, callFee: 40 } }),
+        ]),
+      );
+      await r.open('Aggiungi un mezzo');
+      expect(boxes(r).every((box) => !box.disabled)).toBe(true);
+
+      r.choose('v-1');
+
+      expect(boxes(r).map((box) => box.disabled)).toEqual([false, true, false]);
+      expect(r.text(boxes(r)[1].closest('label'))).toBe(
+        `${config.sorted[1]} · ha già l'altra tariffa di questo mezzo (60,00 €/h di giorno)`,
+      );
+
+      r.choose('v-2');
+      expect(boxes(r).every((box) => !box.disabled)).toBe(true);
+    });
+
+    it('changing the vehicle on "Modifica" unticks the places the new vehicle already holds', async () => {
+      const r = render((host) =>
+        setup(host, [
+          rateOf(GRU, { places: [A, B] }),
+          rateOf(AUTOSPURGO, { places: [B], rate: { day: 60, night: 70, callFee: 40 } }),
+        ]),
+      );
+
+      await r.open('Modifica', 1);
+      expect(r.select().value).toBe('v-2');
+      expect(ticked(r)).toEqual([true, true, false]);
+
+      r.choose('v-1');
+
+      expect(ticked(r)).toEqual([true, false, false]);
+      expect(boxes(r)[1].disabled).toBe(true);
+
+      await r.submit();
+
+      expect(r.rowTitles()).toEqual([
+        'AB123CD Autospurgo Scania P410',
+        'AB123CD Autospurgo Scania P410',
+      ]);
+      r.button('Conferma').click();
+      r.fixture.detectChanges();
+      expect(r.host.confirmed[0].map((entry) => [entry.vehicleId, entry.places])).toEqual([
+        ['v-1', [A]],
+        ['v-1', [B]],
+      ]);
+    });
+
+    it('confirming the dialog with no place shows the message of the level and adds nothing', async () => {
+      const r = render((host) => setup(host));
+      r.yes();
+      await r.open('Aggiungi un mezzo');
+      r.choose('v-2');
+      r.type('day', '48');
+
+      await r.submit();
+
+      expect(r.dialogOpen()).toBe(true);
+      expect(r.text(r.rateForm().querySelector('fieldset .pt-field__error'))).toBe(config.required);
+      expect(r.rows().length).toBe(0);
+    });
+
+    it('the ticked places become the places of the new row, and "Tutti" ticks every place', async () => {
+      const r = render((host) => setup(host));
+      r.yes();
+      await r.open('Aggiungi un mezzo');
+      r.choose('v-2');
+      r.type('day', '48');
+      tick(r, boxes(r)[2]);
+      tick(r, boxes(r)[0]);
+
+      await r.submit();
+
+      expect(squash(detail(r.rows()[0]))).toBe(
+        `${config.many} ${config.sorted[0]} · ${config.sorted[2]}`,
+      );
+      r.button('Conferma').click();
+      r.fixture.detectChanges();
+      expect(r.host.confirmed[0][0].places).toEqual([A, C]);
+
+      await r.open('Aggiungi un mezzo');
+      r.choose('v-1');
+      r.type('day', '30');
+      tick(r, r.rateForm().querySelector<HTMLInputElement>('[data-places-all]')!);
+      expect(ticked(r)).toEqual([true, true, true]);
+      await r.submit();
+
+      expect(squash(detail(r.rows()[0]))).toBe(config.all);
+    });
+
+    it('"Conferma" merges the rates of a vehicle that are equal and keeps the other', () => {
+      const r = render((host) => {
+        host.night.set(true);
+        setup(host, [
+          rateOf(AUTOSPURGO, { places: [A] }),
+          rateOf(AUTOSPURGO, { places: [C] }),
+          rateOf(AUTOSPURGO, { places: [B], rate: { day: 60, night: 70, callFee: 40 } }),
+          rateOf(GRU, { places: [A] }),
+        ]);
+      });
+      expect(r.rows().length).toBe(4);
+
+      r.button('Conferma').click();
+      r.fixture.detectChanges();
+
+      expect(
+        r.host.confirmed[0].map((entry) => [entry.vehicleId, entry.rate.day, entry.places]),
+      ).toEqual([
+        ['v-1', 55, [A, C]],
+        ['v-1', 60, [B]],
+        ['v-2', 55, [A]],
+      ]);
+    });
+
+    it('with the night surcharge added the rows stay and "Conferma" asks for the night values of the first incomplete one', async () => {
+      const r = render((host) =>
+        setup(host, [
+          rateOf(GRU, { places: [B], rate: { day: 48, night: null, callFee: null } }),
+          rateOf(AUTOSPURGO, { places: [A], rate: { day: 50, night: null, callFee: null } }),
+        ]),
+      );
+      r.host.night.set(true);
+      r.fixture.detectChanges();
+      expect(r.rows().length).toBe(2);
+
+      r.button('Conferma').click();
+      await settle(r.fixture);
+
+      expect(r.notice()).toBe('Completa i prezzi notturni: AB123CD · Autospurgo Scania P410.');
+      expect(r.host.confirmed).toEqual([]);
+      expect(document.activeElement).toBe(r.rows()[0].querySelector('[data-edit]'));
+
+      await r.open('Modifica');
+      expect(r.field('day').value).toBe('50');
+      expect(ticked(r)).toEqual([true, false, false]);
+    });
+
+    it('an answer whose rows all lack night values opens on "Sì", and "No" clears the rows', () => {
+      const r = render((host) => {
+        host.night.set(true);
+        setup(host, [rateOf(GRU, { places: [A], rate: { day: 48, night: null, callFee: null } })]);
+      });
+
+      expect(r.radios()[1].checked).toBe(true);
+      expect(r.rows().length).toBe(1);
+
+      r.radios()[0].click();
+      r.fixture.detectChanges();
+
+      expect(r.host.confirmed).toEqual([[]]);
+      expect(r.rows().length).toBe(0);
+    });
+
+    it('a decommissioned vehicle keeps its row and its pill, and its own option in the dialog', async () => {
+      const r = render((host) => setup(host, [{ ...DISMESSO, places: [B] }]));
+
+      expect(r.rowTitles()).toEqual(['ZZ999ZZ Vecchia cisterna Dismesso']);
+      expect(r.text(r.rows()[0].querySelector('.pt-pill--warn'))).toBe('Dismesso');
+      expect(squash(detail(r.rows()[0]))).toBe(`${config.one} ${config.sorted[1]}`);
+
+      await r.open('Modifica');
+      expect(r.optionLabels()[0]).toBe('ZZ999ZZ · Vecchia cisterna');
+      expect(r.select().value).toBe('v-9');
+      r.button('Annulla').click();
+      await settle(r.fixture);
+
+      r.button('Conferma').click();
+      r.fixture.detectChanges();
+      expect(r.host.confirmed).toEqual([[{ ...DISMESSO, places: [B] }]]);
+    });
+
+    it.each([
+      { name: 'rateable vehicles read', rateable: [AUTOSPURGO, GRU, FLOOR] },
+      { name: 'vehicles not loaded yet', rateable: null },
+    ])(
+      'two rows of a vehicle known only to the draft are confirmed unchanged ($name)',
+      ({ rateable }) => {
+        const first: VehicleRateAnswer = {
+          ...DISMESSO,
+          places: [A],
+          rate: { day: 48, night: null, callFee: null },
+        };
+        const second: VehicleRateAnswer = {
+          ...DISMESSO,
+          places: [B, C],
+          rate: { day: 62, night: null, callFee: null },
+          minimum: { kind: 'FixedMinimum', amount: 90, threshold: null, overage: null },
+        };
+        const r = render((host) => {
+          host.rateable.set(rateable);
+          setup(host, [first, second]);
+        });
+
+        r.button('Conferma').click();
+        r.fixture.detectChanges();
+
+        expect(r.host.confirmed).toEqual([[first, second]]);
+      },
+    );
+
+    it('a deactivated place keeps its pill in the row and in the dialog', async () => {
+      const gone = (place: RatedPlace): RatedPlace => ({
+        pickup: place.pickup,
+        delivery: place.delivery === null ? null : { ...place.delivery, deactivated: true },
+      });
+      const off = gone(A);
+      const r = render((host) => setup(host, [rateOf(AUTOSPURGO, { places: [off] })], [C, off, B]));
+
+      expect(
+        r.text(
+          r.rows()[0].querySelector('li > span:first-child > span:nth-child(3) .pt-pill--danger'),
+        ),
+      ).toBe('Disattivato');
+
+      await r.open('Modifica');
+
+      const first = boxes(r)[0].closest('label')!;
+      expect(r.text(first.querySelector('.pt-pill--danger'))).toBe('Disattivato');
+      expect(boxes(r).filter((box) => box.closest('label')!.querySelector('.pt-pill')).length).toBe(
+        1,
+      );
+      expect(ticked(r)).toEqual([true, false, false]);
+    });
   });
 });

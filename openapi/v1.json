@@ -555,7 +555,7 @@
         ]
       },
       "ContractVehicleRateDto": {
-        "description": "A vehicle rate of a contract as the API returns it, with the vehicle it is for.",
+        "description": "A vehicle rate of a contract as the API returns it, with the vehicle and the locations it is for. A\r\nside the billing level does not use is `null`.",
         "properties": {
           "dayPrice": {
             "description": "The day price.",
@@ -564,6 +564,17 @@
             "type": [
               "number",
               "string"
+            ]
+          },
+          "delivery": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RatedLocationDto",
+                "description": "The delivery location; `null` when the billing level does not use it."
+              }
             ]
           },
           "description": {
@@ -628,6 +639,17 @@
               "string"
             ]
           },
+          "pickup": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RatedLocationDto",
+                "description": "The pickup location; `null` when the billing level does not use it."
+              }
+            ]
+          },
           "vehicleId": {
             "description": "The vehicle the rate is for.",
             "format": "uuid",
@@ -643,6 +665,8 @@
           "licensePlate",
           "description",
           "vehicleStatus",
+          "pickup",
+          "delivery",
           "dayPrice",
           "nightPrice",
           "nightCallFee",
@@ -654,7 +678,7 @@
         "type": "object"
       },
       "ContractVehicleRateRequest": {
-        "description": "One vehicle rate of a contract request: the vehicle and the seven rate members, as sent. Every\r\nmember is optional here so that a missing or misplaced value is reported by\r\nContractRequestValidation on its own key, `VehicleRates[i].Member`.",
+        "description": "One vehicle rate of a contract request: the vehicle, the pickup and the delivery location the billing\r\nlevel uses (none on a flat-rate contract) and the seven rate members, as sent. Every\r\nmember is optional here so that a missing or misplaced value is reported by\r\nContractRequestValidation on its own key, `VehicleRates[i].Member`.",
         "properties": {
           "dayPrice": {
             "format": "double",
@@ -662,6 +686,13 @@
             "type": [
               "null",
               "number",
+              "string"
+            ]
+          },
+          "deliveryLocationId": {
+            "format": "uuid",
+            "type": [
+              "null",
               "string"
             ]
           },
@@ -720,6 +751,13 @@
               "string"
             ]
           },
+          "pickupLocationId": {
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "vehicleId": {
             "format": "uuid",
             "type": [
@@ -730,6 +768,8 @@
         },
         "required": [
           "vehicleId",
+          "pickupLocationId",
+          "deliveryLocationId",
           "dayPrice",
           "nightPrice",
           "nightCallFee",
@@ -741,7 +781,7 @@
         "type": "object"
       },
       "CreateContractRequest": {
-        "description": "Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).\r\nEvery member but the end of the validity, the seven rate members, the vehicle rates and the\r\nlocation rates is required; an empty set of documents is valid and duplicates collapse. The\r\nrate members are required for a flat-rate contract (the night ones with the night surcharge,\r\nthe minimum ones as its rule asks) and must be absent for any other billing level, as must the\r\nvehicle rates. The location rates are required, at least one, for any other billing level and\r\nmust be absent for a flat-rate contract. An absent list is an empty one.",
+        "description": "Request body for `POST /api/registry/customers/{customerId}/contracts` (PRD §5.4, RF-16).\r\nEvery member but the end of the validity, the seven rate members, the vehicle rates and the\r\nlocation rates is required; an empty set of documents is valid and duplicates collapse. The\r\nrate members are required for a flat-rate contract (the night ones with the night surcharge,\r\nthe minimum ones as its rule asks) and must be absent for any other billing level. The location\r\nrates are required, at least one, for any other billing level and must be absent for a flat-rate\r\ncontract. A vehicle rate carries no location on a flat-rate contract; on any other level it names\r\nthe pickup and delivery location the level uses, of one of the location rates. An absent list is\r\nan empty one.",
         "properties": {
           "billingLevel": {
             "oneOf": [
@@ -2122,7 +2162,7 @@
             ]
           },
           "vehicleId": {
-            "description": "The vehicle whose rate was used; `null` for the contract's rate.",
+            "description": "The vehicle whose rate was used; `null` when no vehicle rate was used.",
             "format": "uuid",
             "type": [
               "null",
@@ -2419,7 +2459,7 @@
         "type": "object"
       },
       "SimulatePriceRequest": {
-        "description": "Request body for `POST /api/registry/contracts/simulation`: the terms of a contract as\r\nwritten on the page, saved or not, and a sample trip. The billing level, the rate members, the vehicle\r\nrates and the location rates follow the contract requests; `StartTime` and `EndTime` are\r\n`HH:mm`. The end is for a trip by hour\r\nonly, `Kilograms` for a trip by weight only and `Kilometres` for a trip by distance only;\r\nthe quantities are whole numbers, read as numbers so that a fraction is reported on its own member.\r\n`VehicleId` is the trip's vehicle on a flat-rate contract: `null`, or a vehicle without a\r\nvehicle rate, uses the contract's rate. `PickupLocationId` and `DeliveryLocationId` are the\r\ntrip's locations: each is required when the billing level uses it, refused when it does not, and must\r\nhave a rate among the written location rates.",
+        "description": "Request body for `POST /api/registry/contracts/simulation`: the terms of a contract as\r\nwritten on the page, saved or not, and a sample trip. The billing level, the rate members, the vehicle\r\nrates and the location rates follow the contract requests; `StartTime` and `EndTime` are\r\n`HH:mm`. The end is for a trip by hour\r\nonly, `Kilograms` for a trip by weight only and `Kilometres` for a trip by distance only;\r\nthe quantities are whole numbers, read as numbers so that a fraction is reported on its own member.\r\n`VehicleId` is the trip's vehicle: `null`, or a vehicle without a vehicle rate on the trip's\r\nlocation or pair, uses the contract's rate on a flat-rate contract and the rate of the location or pair\r\non a location level. `PickupLocationId` and `DeliveryLocationId` are the\r\ntrip's locations: each is required when the billing level uses it, refused when it does not, and must\r\nhave a rate among the written location rates.",
         "properties": {
           "billingLevel": {
             "oneOf": [

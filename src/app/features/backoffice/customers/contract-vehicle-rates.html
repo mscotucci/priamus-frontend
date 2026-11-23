@@ -44,7 +44,7 @@
     />
   }
   @if (notice(); as notice) {
-    <span class="pt-field__error" role="alert">{{ notice | translate }}</span>
+    <span class="pt-field__error" role="alert">{{ notice.key | translate: notice.params }}</span>
   }
   <div class="flex flex-wrap gap-2">
     <button type="button" class="pt-btn pt-btn--sm" data-add (click)="add()">
@@ -71,6 +71,8 @@
     [night]="night()"
     [mode]="mode()"
     [subjects]="subjects()"
+    [titles]="titles()"
+    [places]="placesOf()"
     [rate]="state.entry?.rate ?? null"
     [minimum]="state.entry?.minimum ?? null"
     (confirmed)="onConfirmed($event)"

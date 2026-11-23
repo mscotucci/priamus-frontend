@@ -23,26 +23,10 @@
     </div>
   </ng-template>
 
-  <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-    @if (flat()) {
+  <div class="grid grid-cols-1 gap-3" [class]="flat() ? 'md:grid-cols-3' : 'md:grid-cols-4'">
+    @if (!flat()) {
       <div class="pt-field">
-        <label class="pt-label" for="sim-vehicle">{{
-          'contracts.form.simulation.vehicle' | translate
-        }}</label>
-        <select class="pt-input" id="sim-vehicle" (change)="pickVehicle($any($event.target).value)">
-          <option value="">{{ 'contracts.form.simulation.ownRate' | translate }}</option>
-          @for (option of vehicleOptions(); track option.id) {
-            <option [value]="option.id" [selected]="option.id === vehicleId()">
-              {{ option.label }}
-            </option>
-          }
-        </select>
-      </div>
-    } @else {
-      <div class="pt-field">
-        <label class="pt-label" for="sim-location">{{
-          locationLabelKey() | translate
-        }}</label>
+        <label class="pt-label" for="sim-location">{{ locationLabelKey() | translate }}</label>
         <select
           class="pt-input"
           id="sim-location"
@@ -56,6 +40,19 @@
         </select>
       </div>
     }
+    <div class="pt-field">
+      <label class="pt-label" for="sim-vehicle">{{
+        'contracts.form.simulation.vehicle' | translate
+      }}</label>
+      <select class="pt-input" id="sim-vehicle" (change)="pickVehicle($any($event.target).value)">
+        <option value="">{{ 'contracts.form.simulation.ownRate' | translate }}</option>
+        @for (option of vehicleOptions(); track option.id) {
+          <option [value]="option.id" [selected]="option.id === vehicleId()">
+            {{ option.label }}
+          </option>
+        }
+      </select>
+    </div>
 
     @switch (mode()) {
       @case ('ByHour') {

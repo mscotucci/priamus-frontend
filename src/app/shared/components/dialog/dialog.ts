@@ -22,6 +22,7 @@ let nextId = 0;
     <dialog
       #dialog
       class="pt-dialog m-auto text-inherit backdrop:bg-scrim"
+      [class.pt-dialog--lg]="size() === 'lg'"
       [attr.aria-labelledby]="titleId"
       [attr.aria-busy]="busy()"
       (cancel)="onCancel($event)"
@@ -55,6 +56,7 @@ export class Dialog {
   /** A code that ends the title (a plate), shown in mono; it stays part of the dialog's label. */
   readonly code = input<string | null>(null);
   readonly line = input<string | null>(null);
+  readonly size = input<'md' | 'lg'>('md');
   readonly busy = input(false);
   readonly closeRequested = output<void>();
 

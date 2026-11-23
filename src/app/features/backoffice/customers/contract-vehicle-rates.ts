@@ -16,16 +16,36 @@ import { ContractKeys } from './contract-keys';
 import { ChoiceKeys } from './choice-keys';
 import { Icon } from '../../../shared/components/icon/icon';
 import type { RateableVehicle } from '../vehicles/vehicles-api';
-import { rateDialogLine, rateTerms, sortVehicleRates } from './contract-labels';
+import {
+  locationRateLabel,
+  rateDialogLine,
+  rateSummary,
+  rateTerms,
+  rowKey,
+  sortLocationRates,
+  sortVehicleRates,
+} from './contract-labels';
 import { forNight, type Minimum, type Rate } from './contract-rate';
 import {
   ContractRateDialog,
   type ConfirmedRate,
+  type RateDialogTitles,
+  type RatePlaces,
   type RateSubject,
   type RateSubjectOption,
 } from './contract-rate-dialog';
 import { ContractRateRows, type RateRow } from './contract-rate-rows';
-import type { PricingMode } from './contracts-api';
+import type { LocationRateAnswer, LocationRateLevel } from './contract-location-rates';
+import {
+  mergeVehicleRates,
+  placePill,
+  placesLine,
+  vehicleRateKey,
+} from './contract-vehicle-rate-places';
+import type { BillingLevel, PricingMode } from './contracts-api';
+
+/** A location or pair a contract has a rate for, as a vehicle rate applies on it. */
+export type RatedPlace = Pick<LocationRateAnswer, 'pickup' | 'delivery'>;
 
 /** A vehicle with a rate of its own, as the contract page holds it once question 8 is answered. */
 export interface VehicleRateAnswer {
@@ -36,11 +56,18 @@ export interface VehicleRateAnswer {
   rate: Rate;
   /** Null when the contract is priced `ByTrip`: no minimum applies. */
   minimum: Minimum | null;
+  /** The places the rate applies on; empty on a flat-rate contract. */
+  places: RatedPlace[];
 }
 
 type Choice = 'no' | 'yes';
 
 const KEYS = 'contracts.form.vehicleRates';
+
+interface Notice {
+  key: string;
+  params?: Record<string, string>;
+}
 
 const label = (vehicle: { licensePlate: string; description: string }): string =>
   `${vehicle.licensePlate} · ${vehicle.description}`;
@@ -61,6 +88,10 @@ export class ContractVehicleRates {
   /** The contract has the night surcharge: each vehicle rate has a night price and a night call fee. */
   readonly night = input.required<boolean>();
   readonly mode = input.required<PricingMode>();
+  /** The billing level of the contract; without it the question is the flat-rate one. */
+  readonly level = input<BillingLevel>('FlatRate');
+  /** The locations or pairs the contract has a rate for, as the page writes them; empty on a flat-rate contract. */
+  readonly places = input<RatedPlace[]>([]);
   /** The vehicles that can receive a rate; null until read. */
   readonly rateable = input.required<RateableVehicle[] | null>();
   readonly failed = input(false);
@@ -85,18 +116,29 @@ export class ContractVehicleRates {
     computation: (answer) => answer ?? [],
   });
 
-  /** The rate the dialog is open on: `entry` is null for a new one, `key` is the vehicle it had when the dialog opened. */
+  /** The rate the dialog is open on: `entry` is null for a new one, `key` is the key it had when the dialog opened. */
   protected readonly dialog = signal<{
     entry: VehicleRateAnswer | null;
     key: string | null;
   } | null>(null);
-  protected readonly notice = signal<string | null>(null);
+  /** The message under the rows; it goes away when the night surcharge changes. */
+  protected readonly notice = linkedSignal<boolean, Notice | null>({
+    source: this.night,
+    computation: () => null,
+  });
 
   protected readonly keys = new ChoiceKeys();
 
-  protected readonly rows = computed<RateRow[]>(() =>
-    sortVehicleRates(this.draft()).map((entry) => ({
-      key: entry.vehicleId,
+  /** The level when it prices per location or pair, else null. */
+  private readonly placeLevel = computed<LocationRateLevel | null>(() => {
+    const level = this.level();
+    return level === 'FlatRate' ? null : level;
+  });
+
+  protected readonly rows = computed<RateRow[]>(() => {
+    const level = this.placeLevel();
+    return sortVehicleRates(this.draft()).map((entry) => ({
+      key: vehicleRateKey(entry),
       parts: [
         {
           mono: entry.licensePlate,
@@ -107,12 +149,62 @@ export class ContractVehicleRates {
         },
       ],
       summary: rateTerms(forNight(entry, this.night()), this.mode(), this.translate),
-    })),
-  );
+      detail:
+        level === null
+          ? undefined
+          : placesLine(entry, this.places().length, level, this.translate),
+    }));
+  });
 
   protected readonly line = computed(() =>
-    rateDialogLine('FlatRate', this.mode(), this.night(), this.translate),
+    rateDialogLine(this.level(), this.mode(), this.night(), this.translate),
   );
+
+  protected readonly titles = computed<RateDialogTitles>(() =>
+    this.placeLevel() === null
+      ? { new: 'contracts.form.rateDialog.new', edit: 'contracts.form.rateDialog.edit' }
+      : {
+          new: 'contracts.form.rateDialog.newVehicle',
+          edit: 'contracts.form.rateDialog.editVehicle',
+        },
+  );
+
+  /** The fieldset of the contract's places of the open dialog; null on a flat-rate contract. */
+  protected readonly placesOf = computed<RatePlaces | null>(() => {
+    const level = this.placeLevel();
+    const state = this.dialog();
+    if (level === null || state === null) {
+      return null;
+    }
+    const keys = `contracts.form.rateDialog.places.${level === 'PerLocationPair' ? 'pair' : 'location'}`;
+    return {
+      legend: `${keys}.legend`,
+      hint: `${keys}.hint`,
+      all: `${keys}.all`,
+      required: `${keys}.required`,
+      options: sortLocationRates(this.places()).map((place) => ({
+        key: rowKey(place),
+        label: locationRateLabel(place),
+        pill: placePill(place),
+      })),
+      ticked: (state.entry?.places ?? []).map(rowKey),
+      blocked: (ids) =>
+        this.draft()
+          .filter((other) => other.vehicleId === ids[0] && vehicleRateKey(other) !== state.key)
+          .flatMap((other) =>
+            other.places.map((place) => ({
+              key: rowKey(place),
+              text: this.translate.instant(`${KEYS}.places.otherRate`, {
+                price: rateSummary(
+                  { day: other.rate.day, night: null, callFee: null },
+                  this.mode(),
+                  this.translate,
+                ),
+              }),
+            })),
+          ),
+    };
+  });
 
   protected readonly subjects = computed<RateSubject[]>(() => {
     const state = this.dialog();
@@ -159,7 +251,7 @@ export class ContractVehicleRates {
   }
 
   protected edit(key: string): void {
-    const entry = this.draft().find((candidate) => candidate.vehicleId === key);
+    const entry = this.draft().find((candidate) => vehicleRateKey(candidate) === key);
     if (entry !== undefined) {
       this.open(entry, key);
     }
@@ -175,7 +267,7 @@ export class ContractVehicleRates {
   /** Removing the last row leaves "Sì" chosen and the list empty. */
   protected remove(key: string): void {
     this.notice.set(null);
-    this.draft.update((list) => list.filter((entry) => entry.vehicleId !== key));
+    this.draft.update((list) => list.filter((entry) => vehicleRateKey(entry) !== key));
   }
 
   protected onConfirmed(confirmed: ConfirmedRate): void {
@@ -188,33 +280,51 @@ export class ContractVehicleRates {
       ...vehicle,
       rate: confirmed.rate,
       minimum: confirmed.minimum,
+      places: confirmed.places.flatMap((key) =>
+        this.places().filter((place) => rowKey(place) === key),
+      ),
     };
     this.notice.set(null);
     this.draft.update((list) =>
-      editedKey !== null && list.some((other) => other.vehicleId === editedKey)
-        ? list.map((other) => (other.vehicleId === editedKey ? built : other))
+      editedKey !== null && list.some((other) => vehicleRateKey(other) === editedKey)
+        ? list.map((other) => (vehicleRateKey(other) === editedKey ? built : other))
         : [...list, built],
     );
     this.dialog.set(null);
     if (editedKey !== null) {
-      this.focusRow(built.vehicleId);
+      this.focusRow(vehicleRateKey(built));
     }
   }
 
-  /** "Conferma": at least one vehicle rate, with a night price and call fee only under the night surcharge. */
+  /**
+   * "Conferma": at least one vehicle rate, with a night price and call fee exactly under the night
+   * surcharge. On a location level the rates of a vehicle that are equal become one.
+   */
   protected confirm(): void {
-    if (this.draft().length === 0) {
-      this.notice.set(`${KEYS}.required`);
+    const sorted = sortVehicleRates(this.draft());
+    if (sorted.length === 0) {
+      this.notice.set({ key: `${KEYS}.required` });
       this.focusLater('[data-add]');
       return;
     }
+    const night = this.night();
+    const incomplete = night
+      ? sorted.findIndex((entry) => entry.rate.night === null || entry.rate.callFee === null)
+      : -1;
+    if (incomplete >= 0) {
+      this.notice.set({
+        key: 'contracts.form.locationRates.nightIncomplete',
+        params: { label: label(sorted[incomplete]) },
+      });
+      this.focusRow(vehicleRateKey(sorted[incomplete]));
+      return;
+    }
+    const answers = sorted.map((entry) => ({
+      ...forNight(entry, night),
+      ...this.vehicleOf(entry.vehicleId),
+    }));
     this.confirmed.emit(
-      sortVehicleRates(
-        this.draft().map((entry) => ({
-          ...forNight(entry, this.night()),
-          ...this.vehicleOf(entry.vehicleId),
-        })),
-      ),
+      sortVehicleRates(this.placeLevel() === null ? answers : mergeVehicleRates(answers)),
     );
   }
 
@@ -222,15 +332,20 @@ export class ContractVehicleRates {
     this.focusLater('[data-add]');
   }
 
-  /** The rateable vehicles without a rate, plus the row's own, even when it is not rateable any more. */
+  /**
+   * Flat rate: the rateable vehicles without a rate. A location level: every rateable vehicle, which
+   * may have several rates. Plus the row's own, even when it is not rateable any more.
+   */
   private optionsOf(
     entry: VehicleRateAnswer | null,
     editedKey: string | null,
   ): RateSubjectOption[] {
     const taken = new Set(
-      this.draft()
-        .filter((other) => editedKey === null || other.vehicleId !== editedKey)
-        .map((other) => other.vehicleId),
+      this.placeLevel() !== null
+        ? []
+        : this.draft()
+            .filter((other) => editedKey === null || vehicleRateKey(other) !== editedKey)
+            .map((other) => other.vehicleId),
     );
     const rateable = this.rateable() ?? [];
     return [
@@ -259,12 +374,20 @@ export class ContractVehicleRates {
         decommissioned: false,
       };
     }
-    return this.draft().find((entry) => entry.vehicleId === id) ?? null;
+    const own = this.draft().find((entry) => entry.vehicleId === id);
+    return own === undefined
+      ? null
+      : {
+          vehicleId: own.vehicleId,
+          licensePlate: own.licensePlate,
+          description: own.description,
+          decommissioned: own.decommissioned,
+        };
   }
 
-  /** The "Modifica" of the row of that vehicle: an edit that changes the vehicle makes a new row, the old control is gone. */
-  private focusRow(vehicleId: string): void {
-    const index = this.rows().findIndex((row) => row.key === vehicleId);
+  /** The "Modifica" of the row with that key: an edit that changes the key makes a new row, the old control is gone. */
+  private focusRow(key: string): void {
+    const index = this.rows().findIndex((row) => row.key === key);
     this.focusLater(`li:nth-child(${index + 1}) [data-edit]`);
   }
 

@@ -7,6 +7,7 @@ import type { VehicleRateAnswer } from './contract-vehicle-rates';
 import {
   BillingLevel,
   Contract,
+  ContractLocationRate,
   ContractStatus,
   PricingMode,
   RequiredDocument,
@@ -172,33 +173,44 @@ export const locationRateLabel = (
     .map(locationLabel)
     .join(' → ');
 
-/** The rates by pickup name and municipality, then delivery name and municipality, with Italian collation. */
-export function sortLocationRates<T extends Pick<LocationRateAnswer, 'pickup' | 'delivery'>>(
-  rates: readonly T[],
-): T[] {
-  const keys = (rate: T) => [
+type PlaceKey = Pick<LocationRateAnswer, 'pickup' | 'delivery'>;
+
+/** Orders two places by pickup name and municipality, then delivery name and municipality, with Italian collation. */
+export function compareLocationRates(a: PlaceKey, b: PlaceKey): number {
+  const keys = (rate: PlaceKey) => [
     rate.pickup?.name ?? '',
     rate.pickup?.municipality ?? '',
     rate.delivery?.name ?? '',
     rate.delivery?.municipality ?? '',
   ];
-  return [...rates].sort((a, b) => {
-    const left = keys(a);
-    const right = keys(b);
-    for (let at = 0; at < left.length; at++) {
-      const order = left[at].localeCompare(right[at], 'it');
-      if (order !== 0) {
-        return order;
-      }
+  const left = keys(a);
+  const right = keys(b);
+  for (let at = 0; at < left.length; at++) {
+    const order = left[at].localeCompare(right[at], 'it');
+    if (order !== 0) {
+      return order;
     }
-    return 0;
-  });
+  }
+  return 0;
 }
 
-/** The vehicle rates by licence plate, with Italian collation. */
-export const sortVehicleRates = <T extends Pick<VehicleRateAnswer, 'licensePlate'>>(
+/** The rates by pickup name and municipality, then delivery name and municipality, with Italian collation. */
+export const sortLocationRates = <T extends PlaceKey>(rates: readonly T[]): T[] =>
+  [...rates].sort(compareLocationRates);
+
+/** The vehicle rates by licence plate, then by their first place; the places of each sorted as the location rates are. */
+export const sortVehicleRates = <T extends Pick<VehicleRateAnswer, 'licensePlate' | 'places'>>(
   rates: readonly T[],
-): T[] => [...rates].sort((a, b) => a.licensePlate.localeCompare(b.licensePlate, 'it'));
+): T[] =>
+  rates
+    .map((rate) => ({ ...rate, places: sortLocationRates(rate.places) }))
+    .sort(
+      (a, b) =>
+        a.licensePlate.localeCompare(b.licensePlate, 'it') ||
+        (a.places.length > 0 && b.places.length > 0
+          ? compareLocationRates(a.places[0], b.places[0])
+          : 0),
+    );
 
 /** The line of the rate dialog: "<level> · <mode> · <con/senza maggiorazione notturna>". */
 export const rateDialogLine = (
@@ -212,3 +224,37 @@ export const rateDialogLine = (
     mode: translate.instant(`customers.contracts.pricing.${mode.toLowerCase()}`).toLowerCase(),
     night: translate.instant(`contracts.form.rateDialog.night.${night ? 'yes' : 'no'}`),
   });
+
+/** The key of a row: the ids of its locations. */
+export const rowKey = (entry: Pick<LocationRateAnswer, 'pickup' | 'delivery'>): string =>
+  `${entry.pickup?.id ?? ''}|${entry.delivery?.id ?? ''}`;
+
+/** A location rate of a contract as the page holds it; no minimum under a trip price. */
+export function locationRateAnswerOf(
+  entry: ContractLocationRate,
+  mode: PricingMode,
+): LocationRateAnswer {
+  const side = (location: ContractLocationRate['pickup']): LocationRateAnswer['pickup'] =>
+    location === null
+      ? null
+      : {
+          id: location.id,
+          name: location.name,
+          municipality: location.municipality,
+          deactivated: location.status === 'Deactivated',
+        };
+  return {
+    pickup: side(entry.pickup),
+    delivery: side(entry.delivery),
+    rate: { day: entry.dayPrice, night: entry.nightPrice, callFee: entry.nightCallFee },
+    minimum:
+      mode === 'ByTrip' || entry.minimumRule === null
+        ? null
+        : {
+            kind: entry.minimumRule,
+            amount: entry.minimumAmount,
+            threshold: entry.minimumThreshold,
+            overage: entry.minimumOveragePrice,
+          },
+  };
+}

@@ -30,6 +30,12 @@ class Host {
 })
 class HostWithCode {}
 
+@Component({
+  imports: [Dialog],
+  template: `<app-dialog icon="truck" tone="primary" title="Nuova tariffa" size="lg" />`,
+})
+class HostWide {}
+
 function render() {
   stubModalDialog();
   const fixture = TestBed.createComponent(Host);
@@ -79,6 +85,17 @@ describe('Dialog', () => {
     expect(title.textContent?.replace(/\s+/g, ' ').trim()).toBe('Modifica mezzo CZ334KL');
     expect(title.querySelector('.pt-mono')?.textContent).toBe('CZ334KL');
     expect(dialog.getAttribute('aria-labelledby')).toBe(title.id);
+  });
+
+  it('carries the wide modifier only when its size is lg', () => {
+    const { dialog } = render();
+    const wide = TestBed.createComponent(HostWide);
+    wide.detectChanges();
+
+    expect(dialog.classList.contains('pt-dialog--lg')).toBe(false);
+    expect(
+      (wide.nativeElement as HTMLElement).querySelector('dialog')!.classList.contains('pt-dialog--lg'),
+    ).toBe(true);
   });
 
   it('emits the close request on Escape and leaves the closing to the caller', () => {

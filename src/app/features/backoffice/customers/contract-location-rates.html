@@ -1,7 +1,9 @@
 @if (rows().length > 0) {
   <app-contract-rate-rows
     [rows]="rows()"
+    [duplicable]="true"
     (edit)="edit($event)"
+    (duplicate)="duplicate($event)"
     (removed)="remove($event)"
     (focusAdd)="focusAdd()"
   />
@@ -37,8 +39,9 @@
     [night]="night()"
     [mode]="mode()"
     [subjects]="subjects()"
-    [rate]="state.entry?.rate ?? null"
-    [minimum]="state.entry?.minimum ?? null"
+    [notice]="copyNotice()"
+    [rate]="(state.entry ?? state.copy)?.rate ?? null"
+    [minimum]="(state.entry ?? state.copy)?.minimum ?? null"
     [check]="check()"
     (confirmed)="onConfirmed($event)"
     (cancelled)="dialog.set(null)"

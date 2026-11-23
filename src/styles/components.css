@@ -525,6 +525,7 @@ select.pt-input option:checked {
   cursor: pointer;
 }
 .pt-check input {
+  flex: none;
   width: var(--icon-md);
   height: var(--icon-md);
   margin: 0;
@@ -910,6 +911,9 @@ select.pt-input option:checked {
   padding: var(--space-6);
   border-radius: var(--radius-2xl);
   background: var(--surface);
+}
+.pt-dialog--lg {
+  max-width: 672px;
 }
 .pt-dialog__head {
   display: flex;

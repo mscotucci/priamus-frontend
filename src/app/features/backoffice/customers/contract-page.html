@@ -335,6 +335,7 @@
               [rateable]="locations.rateable()"
               [failed]="locations.rateableFailed()"
               [answer]="locationRates()"
+              [vehicleRates]="vehicleRates() ?? []"
               [cancellable]="editing() === 6"
               (confirmed)="confirmLocationRates($event)"
               (cancelled)="cancelEdit()"
@@ -416,7 +417,7 @@
       <app-contract-question
         [number]="8"
         [title]="'contracts.form.vehicleRates.title' | translate"
-        [hint]="'contracts.form.vehicleRates.hint' | translate"
+        [hint]="vehicleRatesHint() | translate"
         [open]="open(8)"
         [current]="current(8)"
         [answer]="vehicleRatesAnswer()"
@@ -427,7 +428,7 @@
         (modify)="edit(8)"
         (cancelled)="cancelEdit()"
       >
-        @for (entry of sortedVehicleRates(); track entry.vehicleId) {
+        @for (entry of sortedVehicleRates(); track vehicleRateKey(entry)) {
           <span detail>
             <span class="pt-mono">{{ entry.licensePlate }}</span> {{ entry.description }}
             @if (entry.decommissioned) {
@@ -436,12 +437,28 @@
               }}</span>
             }
             · {{ vehicleRateLine(entry) }}
+            @if (vehiclePlacesLine(entry); as places) {
+              · {{ places.lead }}
+              @for (part of places.parts; track $index; let last = $last) {
+                {{ part.label }}
+                @if (part.pill) {
+                  <span class="pt-pill" [class]="'pt-pill--' + part.pill.tone">{{
+                    part.pill.key | translate
+                  }}</span>
+                }
+                @if (!last) {
+                  ·
+                }
+              }
+            }
           </span>
         }
         @if (open(8)) {
           <app-contract-vehicle-rates
             [night]="radio().night === 'yes'"
             [mode]="radio().mode!"
+            [level]="billingLevel()!"
+            [places]="locationRates()"
             [rateable]="facade.rateableVehiclesLoading() ? null : facade.rateableVehicles()"
             [failed]="facade.rateableVehiclesFailed()"
             [answer]="vehicleRates()"

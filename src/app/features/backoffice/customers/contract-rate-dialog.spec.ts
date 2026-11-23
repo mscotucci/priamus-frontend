@@ -9,7 +9,13 @@ import { settle } from '../../../core/testing/interaction-testing';
 import { LocationsFacade, type SavedLocation } from '../locations/locations-facade';
 import type { PricingMode } from './contracts-api';
 import type { Minimum, Rate } from './contract-rate';
-import { type ConfirmedRate, ContractRateDialog, type RateSubject } from './contract-rate-dialog';
+import {
+  type ConfirmedRate,
+  ContractRateDialog,
+  type RateDialogTitles,
+  type RatePlaces,
+  type RateSubject,
+} from './contract-rate-dialog';
 
 const MAGAZZINO = { id: 'l-1', label: 'Magazzino centrale, Pescara' };
 const DISCARICA = { id: 'l-2', label: 'Discarica Cerratina, Lanciano' };
@@ -44,6 +50,9 @@ const DELIVERY = 'contracts.form.vehicleRates.vehicle.label';
       [night]="night()"
       [mode]="mode()"
       [subjects]="subjects()"
+      [titles]="titles()"
+      [notice]="notice()"
+      [places]="places()"
       [rate]="rate()"
       [minimum]="minimum()"
       [check]="check()"
@@ -58,6 +67,12 @@ class Host {
   readonly night = signal(true);
   readonly mode = signal<PricingMode>('ByHour');
   readonly subjects = signal<RateSubject[]>([subject(DELIVERY)]);
+  readonly titles = signal<RateDialogTitles>({
+    new: 'contracts.form.rateDialog.new',
+    edit: 'contracts.form.rateDialog.edit',
+  });
+  readonly notice = signal<string | null>(null);
+  readonly places = signal<RatePlaces | null>(null);
   readonly rate = signal<Rate | null>(null);
   readonly minimum = signal<Minimum | null>(null);
   readonly check = signal<(ids: string[]) => string | null>(() => null);
@@ -139,6 +154,14 @@ describe('ContractRateDialog', () => {
     r.type('callFee', '35');
   };
 
+  it('the rate dialog is the wide one', () => {
+    const { element } = render();
+
+    expect(element.querySelector('dialog.pt-dialog')!.classList.contains('pt-dialog--lg')).toBe(
+      true,
+    );
+  });
+
   it('a new rate shows the title, the line, the select with its placeholder, the prices with their unit and Annulla / Aggiungi', () => {
     const { element, text, selects, button } = render();
 
@@ -185,6 +208,7 @@ describe('ContractRateDialog', () => {
     expect(r.host.confirmed).toEqual([
       {
         ids: ['l-2'],
+        places: [],
         rate: { day: 36.5, night: 46, callFee: 35 },
         minimum: { kind: 'FixedMinimum', amount: 60, threshold: null, overage: null },
       },
@@ -277,6 +301,7 @@ describe('ContractRateDialog', () => {
     expect(r.host.confirmed).toEqual([
       {
         ids: ['l-1'],
+        places: [],
         rate: { day: 34, night: null, callFee: null },
         minimum: { kind: 'None', amount: null, threshold: null, overage: null },
       },
@@ -533,5 +558,277 @@ describe('ContractRateDialog', () => {
     expect(r.selects()[0].disabled).toBe(true);
     expect(r.selects()[0].getAttribute('aria-invalid')).toBe('true');
     expect(document.activeElement).toBe(r.field('day'));
+  });
+});
+
+describe('ContractRateDialog places and extras', () => {
+  const PLACES: RatePlaces = {
+    legend: 'contracts.form.rateDialog.places.location.legend',
+    hint: 'contracts.form.rateDialog.places.location.hint',
+    all: 'contracts.form.rateDialog.places.location.all',
+    required: 'contracts.form.rateDialog.places.location.required',
+    options: [
+      { key: 'p-1', label: 'Cantiere A14, Chieti Scalo' },
+      { key: 'p-2', label: 'Discarica Cerratina, Lanciano' },
+      {
+        key: 'p-3',
+        label: 'Magazzino centrale, Pescara',
+        pill: { key: 'contracts.form.locationRates.deactivated', tone: 'danger' },
+      },
+    ],
+    ticked: ['p-1'],
+    // the vehicle l-1 holds another rate on p-2
+    blocked: (ids) =>
+      ids[0] === 'l-1' ? [{ key: 'p-2', text: "ha già l'altra tariffa di questo mezzo" }] : [],
+  };
+
+  const open = (overrides: Partial<RatePlaces> = {}, chosen = '') => {
+    stubModalDialog();
+    TestBed.configureTestingModule({
+      providers: [
+        provideTestI18n(),
+        LocationsFacade,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    TestBed.inject(TranslateService).use('it');
+    const fixture = TestBed.createComponent(Host);
+    const host = fixture.componentInstance;
+    host.subjects.set([subject(DELIVERY, chosen)]);
+    host.places.set({ ...PLACES, ...overrides });
+    fixture.detectChanges();
+    TestBed.tick();
+    const element = fixture.nativeElement as HTMLElement;
+    const text = (node: Element | null | undefined) =>
+      node?.textContent?.replace(/\s+/g, ' ').trim();
+    const boxes = () => Array.from(element.querySelectorAll<HTMLInputElement>('input[data-place]'));
+    const all = () => element.querySelector<HTMLInputElement>('input[data-places-all]')!;
+    const choose = (id: string) => {
+      const select = element.querySelector<HTMLSelectElement>('form select')!;
+      select.value = id;
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    };
+    const click = (box: HTMLInputElement) => {
+      box.click();
+      fixture.detectChanges();
+    };
+    const submit = async () => {
+      element
+        .querySelector('form[id^="rate-dialog-"]')!
+        .dispatchEvent(new Event('submit', { cancelable: true }));
+      await settle(fixture);
+    };
+    const prices = () => {
+      for (const [name, value] of [
+        ['day', '34'],
+        ['night', '46'],
+        ['callFee', '35'],
+      ]) {
+        const input = element.querySelector<HTMLInputElement>(`input[id$="-${name}"]`)!;
+        input.value = value;
+        input.dispatchEvent(new Event('input'));
+      }
+      fixture.detectChanges();
+    };
+    return { fixture, host, element, text, boxes, all, choose, click, submit, prices };
+  };
+
+  afterEach(() => document.body.replaceChildren());
+
+  it('the fieldset sits between the select and the prices, with its legend, its hint, "Tutti i luoghi" and one checkbox per option', () => {
+    const { element, text, boxes, all } = open();
+
+    const order = Array.from(
+      element.querySelectorAll(
+        'form select, form fieldset[aria-describedby], form input[id$="-day"]',
+      ),
+    ).map((node) => node.tagName);
+    expect(order).toEqual(['SELECT', 'FIELDSET', 'INPUT']);
+    const fieldset = element.querySelector('fieldset')!;
+    expect(text(fieldset.querySelector('legend'))).toBe('Luoghi in cui vale questa tariffa');
+    expect(text(fieldset.querySelector('.pt-field__hint'))).toBe(
+      'Nei luoghi spuntati, un viaggio fatto con questo mezzo usa questa tariffa al posto di quella del luogo.',
+    );
+    expect(text(all().closest('label'))).toBe('Tutti i luoghi');
+    expect(boxes().map((box) => text(box.closest('label')))).toEqual([
+      'Cantiere A14, Chieti Scalo',
+      'Discarica Cerratina, Lanciano',
+      'Magazzino centrale, Pescara Disattivato',
+    ]);
+    expect(boxes().map((box) => box.checked)).toEqual([true, false, false]);
+  });
+
+  it('an option can carry the pill', () => {
+    const { boxes } = open();
+
+    const label = boxes()[2].closest('label')!;
+    expect(label.querySelector('.pt-pill--danger')?.textContent?.trim()).toBe('Disattivato');
+    expect(boxes()[0].closest('label')!.querySelector('.pt-pill')).toBeNull();
+  });
+
+  it('an option that cannot be ticked is disabled, unticked and shows its text', () => {
+    const { boxes, text, choose } = open({ ticked: ['p-1', 'p-2'] }, 'l-2');
+    expect(boxes().map((box) => box.checked)).toEqual([true, true, false]);
+
+    choose('l-1');
+
+    expect(boxes().map((box) => box.disabled)).toEqual([false, true, false]);
+    expect(boxes()[1].checked).toBe(false);
+    expect(text(boxes()[1].closest('label'))).toBe(
+      "Discarica Cerratina, Lanciano · ha già l'altra tariffa di questo mezzo",
+    );
+  });
+
+  it('changing the chosen subject unticks the options that became not tickable, and a later subject frees them', async () => {
+    const r = open({ ticked: ['p-1', 'p-2'] }, 'l-2');
+    r.prices();
+
+    r.choose('l-1');
+    r.choose('l-2');
+
+    expect(r.boxes().map((box) => [box.disabled, box.checked])).toEqual([
+      [false, true],
+      [false, false],
+      [false, false],
+    ]);
+    await r.submit();
+    expect(r.host.confirmed[0].places).toEqual(['p-1']);
+  });
+
+  it('an option not tickable when the dialog opens is not ticked', () => {
+    const { boxes } = open({ ticked: ['p-1', 'p-2'] }, 'l-1');
+
+    expect(boxes().map((box) => [box.disabled, box.checked])).toEqual([
+      [false, true],
+      [true, false],
+      [false, false],
+    ]);
+  });
+
+  it('"Tutti i luoghi" ticks every tickable option, shows ticked when all are, and unticks them again', () => {
+    const { boxes, all, click, choose } = open({ ticked: [] }, 'l-2');
+    choose('l-1');
+
+    click(all());
+    expect(boxes().map((box) => box.checked)).toEqual([true, false, true]);
+    expect(all().checked).toBe(true);
+
+    click(all());
+    expect(boxes().map((box) => box.checked)).toEqual([false, false, false]);
+    expect(all().checked).toBe(false);
+  });
+
+  it('"Tutti i luoghi" shows ticked once the last option is ticked by hand and unticked when one is cleared', () => {
+    const { boxes, all, click } = open({ ticked: ['p-1', 'p-2'] }, 'l-2');
+    expect(all().checked).toBe(false);
+
+    click(boxes()[2]);
+    expect(all().checked).toBe(true);
+
+    click(boxes()[0]);
+    expect(all().checked).toBe(false);
+  });
+
+  it('submitting with nothing ticked shows the error under the fieldset, keeps the dialog open and moves the focus there', async () => {
+    const r = open({ ticked: [] }, 'l-2');
+    r.prices();
+
+    await r.submit();
+
+    const fieldset = r.element.querySelector('fieldset')!;
+    expect(r.text(fieldset.querySelector('.pt-field__error'))).toBe('Scegli almeno un luogo.');
+    expect(fieldset.getAttribute('aria-describedby')).toContain(
+      fieldset.querySelector('.pt-field__error')!.id,
+    );
+    expect(r.host.confirmed).toEqual([]);
+    expect(document.activeElement).toBe(r.all());
+
+    r.click(r.boxes()[0]);
+    expect(fieldset.querySelector('.pt-field__error')).toBeNull();
+  });
+
+  it('when every option is blocked for the chosen subject, "Tutti i luoghi" is disabled', () => {
+    const { all, boxes } = open(
+      {
+        blocked: () =>
+          PLACES.options.map((option) => ({ key: option.key, text: "ha già l'altra tariffa" })),
+      },
+      'l-1',
+    );
+
+    expect(boxes().every((box) => box.disabled)).toBe(true);
+    expect(all().disabled).toBe(true);
+  });
+
+  it('a ticked key that matches no option does not confirm, and asks for a place', async () => {
+    const r = open({ ticked: ['gone'] }, 'l-2');
+    r.prices();
+
+    await r.submit();
+
+    expect(r.host.confirmed).toEqual([]);
+    expect(r.text(r.element.querySelector('fieldset .pt-field__error'))).toBe(
+      'Scegli almeno un luogo.',
+    );
+  });
+
+  it('confirming returns the ticked keys, in the order of the options', async () => {
+    const r = open({ ticked: ['p-3'] }, 'l-2');
+    r.prices();
+    r.click(r.boxes()[0]);
+
+    await r.submit();
+
+    expect(r.host.confirmed.length).toBe(1);
+    expect(r.host.confirmed[0].places).toEqual(['p-1', 'p-3']);
+  });
+
+  it('the ticked keys are read once: a caller that emits new ones later does not change what is ticked', () => {
+    const r = open({ ticked: ['p-1'] }, 'l-2');
+
+    r.host.places.set({ ...PLACES, ticked: ['p-2', 'p-3'] });
+    r.fixture.detectChanges();
+
+    expect(r.boxes().map((box) => box.checked)).toEqual([true, false, false]);
+  });
+
+  it('the title keys are an input and the notice shows above the first select', () => {
+    const r = open();
+    expect(r.text(r.element.querySelector('.pt-title'))).toBe('Nuova tariffa');
+    expect(r.element.querySelector('.pt-notice')).toBeNull();
+
+    r.host.titles.set({
+      new: 'contracts.form.rateDialog.newVehicle',
+      edit: 'contracts.form.rateDialog.editVehicle',
+    });
+    r.host.notice.set(
+      'Copia di Cantiere A14, Chieti Scalo. Scegli il luogo e cambia quello che serve.',
+    );
+    r.fixture.detectChanges();
+    expect(r.text(r.element.querySelector('.pt-title'))).toBe('Nuova tariffa del mezzo');
+    r.host.editing.set(true);
+    r.fixture.detectChanges();
+    expect(r.text(r.element.querySelector('.pt-title'))).toBe('Modifica tariffa del mezzo');
+
+    const notice = r.element.querySelector('form .pt-notice.pt-notice--info')!;
+    expect(r.text(notice)).toBe(
+      'Copia di Cantiere A14, Chieti Scalo. Scegli il luogo e cambia quello che serve.',
+    );
+    expect(notice.nextElementSibling!.querySelector('select')).not.toBeNull();
+  });
+
+  it('a dialog without the new inputs has no fieldset, no notice and confirms no places', async () => {
+    const r = open();
+    r.host.places.set(null);
+    r.choose('l-2');
+    r.fixture.detectChanges();
+    r.prices();
+
+    expect(r.element.querySelector('fieldset input[data-place]')).toBeNull();
+    expect(r.element.querySelector('.pt-notice')).toBeNull();
+    await r.submit();
+    expect(r.host.confirmed[0].places).toEqual([]);
   });
 });

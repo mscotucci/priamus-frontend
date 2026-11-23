@@ -18,6 +18,7 @@ import { Icon, type IconName } from '../../../shared/components/icon/icon';
 import { LocationFormDialog } from '../locations/location-form-dialog';
 import { locationLabel } from '../locations/location-label';
 import type { SavedLocation } from '../locations/locations-facade';
+import type { RateRowPill } from './contract-rate-rows';
 import type { MinimumRuleKind, PricingMode } from './contracts-api';
 import {
   draftsOf,
@@ -57,9 +58,44 @@ export interface RateSubject {
   canCreate: boolean;
 }
 
+/** One checkbox of the places fieldset. */
+export interface RatePlaceOption {
+  key: string;
+  label: string;
+  pill?: RateRowPill | null;
+}
+
+/** An option that cannot be ticked, with the text shown after its label (already translated). */
+export interface RatePlaceBlock {
+  key: string;
+  text: string;
+}
+
+/** The optional fieldset of checkboxes: where the rate applies. Texts are keys of `it.json`. */
+export interface RatePlaces {
+  legend: string;
+  hint: string;
+  all: string;
+  /** The error shown when the dialog is submitted with nothing ticked. */
+  required: string;
+  options: RatePlaceOption[];
+  /** The keys ticked when the dialog opens. */
+  ticked: string[];
+  /** The options that cannot be ticked while the subjects hold these chosen ids. */
+  blocked: (ids: string[]) => RatePlaceBlock[];
+}
+
+/** The keys of the two dialog titles. */
+export interface RateDialogTitles {
+  new: string;
+  edit: string;
+}
+
 export interface ConfirmedRate {
   /** The chosen id of each subject, in order. */
   ids: string[];
+  /** The keys of the ticked places, in the order of the options; empty when the dialog has no fieldset. */
+  places: string[];
   rate: Rate;
   /** Null when the contract is priced `ByTrip`: no minimum applies. */
   minimum: Minimum | null;
@@ -88,6 +124,14 @@ export class ContractRateDialog implements OnInit {
   readonly night = input.required<boolean>();
   readonly mode = input.required<PricingMode>();
   readonly subjects = input.required<RateSubject[]>();
+  /** Keys of `it.json` of the title of a new and of an edited rate. */
+  readonly titles = input<RateDialogTitles>({
+    new: 'contracts.form.rateDialog.new',
+    edit: 'contracts.form.rateDialog.edit',
+  });
+  /** An info notice above the first select, already translated. */
+  readonly notice = input<string | null>(null);
+  readonly places = input<RatePlaces | null>(null);
   readonly rate = input<Rate | null>(null);
   readonly minimum = input<Minimum | null>(null);
   /** Refuses a combination of chosen ids: the key of the message shown under the last select, or null. */
@@ -103,6 +147,8 @@ export class ContractRateDialog implements OnInit {
 
   // read once from the inputs when the dialog opens: the caller's later changes do not reset them
   protected readonly chosen = signal<string[]>([]);
+  protected readonly ticked = signal<string[]>([]);
+  protected readonly placesError = signal(false);
   protected readonly drafts = signal<Drafts>(EMPTY_DRAFTS);
   protected readonly kind = signal<MinimumRuleKind>('None');
   protected readonly errors = signal<Errors>({});
@@ -113,8 +159,23 @@ export class ContractRateDialog implements OnInit {
   /** Locations created here, kept as options before the list is read again. */
   private readonly created = signal<RateSubjectOption[]>([]);
 
+  /** The options that cannot be ticked for the chosen ids, text by key. */
+  protected readonly blocked = computed(
+    () => new Map((this.places()?.blocked(this.chosen()) ?? []).map((b) => [b.key, b.text])),
+  );
+  protected readonly tickable = computed(() =>
+    (this.places()?.options ?? []).filter((option) => !this.blocked().has(option.key)),
+  );
+  protected readonly allTicked = computed(
+    () =>
+      this.tickable().length > 0 &&
+      this.tickable().every((option) => this.ticked().includes(option.key)),
+  );
+
   ngOnInit(): void {
     this.chosen.set(this.subjects().map((subject) => subject.chosen));
+    this.ticked.set(this.places()?.ticked ?? []);
+    this.untickBlocked();
     this.drafts.set(draftsOf(this.rate(), this.minimum()));
     this.kind.set(this.minimum()?.kind ?? 'None');
   }
@@ -182,6 +243,28 @@ export class ContractRateDialog implements OnInit {
     this.chosen.update((chosen) => chosen.map((value, at) => (at === index ? id : value)));
     this.subjectErrors.update((flags) => flags.map((flag, at) => (at === index ? false : flag)));
     this.combinationError.set(null);
+    this.untickBlocked();
+  }
+
+  private untickBlocked(): void {
+    const blocked = this.blocked();
+    if (blocked.size > 0) {
+      this.ticked.update((ticked) => ticked.filter((key) => !blocked.has(key)));
+    }
+  }
+
+  protected tick(key: string, on: boolean): void {
+    this.ticked.update((ticked) => (on ? [...ticked, key] : ticked.filter((k) => k !== key)));
+    this.placesError.set(false);
+  }
+
+  protected tickAll(on: boolean): void {
+    const keys = this.tickable().map((option) => option.key);
+    this.ticked.update((ticked) => [
+      ...ticked.filter((key) => !keys.includes(key)),
+      ...(on ? keys : []),
+    ]);
+    this.placesError.set(false);
   }
 
   protected setDraft(field: AmountField, value: string): void {
@@ -228,7 +311,17 @@ export class ContractRateDialog implements OnInit {
     this.errors.set(errors);
     this.subjectErrors.set(missing);
     this.combinationError.set(combination);
-    if (Object.keys(errors).length > 0 || missing.includes(true) || combination !== null) {
+    const places = (this.places()?.options ?? [])
+      .map((option) => option.key)
+      .filter((key) => this.ticked().includes(key));
+    const noPlace = this.places() !== null && places.length === 0;
+    this.placesError.set(noPlace);
+    if (
+      Object.keys(errors).length > 0 ||
+      missing.includes(true) ||
+      combination !== null ||
+      noPlace
+    ) {
       afterNextRender(
         {
           read: () =>
@@ -242,6 +335,7 @@ export class ContractRateDialog implements OnInit {
     }
     this.confirmed.emit({
       ids,
+      places,
       rate: toRate(values),
       minimum: this.withMinimum() ? toMinimum(this.kind(), values) : null,
     });

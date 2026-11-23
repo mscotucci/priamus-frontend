@@ -34,7 +34,9 @@ const ROWS: RateRow[] = [
   template: `
     <app-contract-rate-rows
       [rows]="rows()"
+      [duplicable]="duplicable()"
       (edit)="edited.push($event)"
+      (duplicate)="duplicated.push($event)"
       (removed)="remove($event)"
       (focusAdd)="addFocused = addFocused + 1"
     />
@@ -42,7 +44,9 @@ const ROWS: RateRow[] = [
 })
 class Host {
   readonly rows = signal<RateRow[]>(ROWS);
+  readonly duplicable = signal(false);
   readonly edited: string[] = [];
+  readonly duplicated: string[] = [];
   addFocused = 0;
 
   remove(key: string): void {
@@ -150,5 +154,74 @@ describe('ContractRateRows', () => {
     await settle(fixture);
 
     expect(host.addFocused).toBe(1);
+  });
+
+  it('a row with a detail shows a third line that is not muted, with its lead and its parts joined by a dot', () => {
+    const { host, fixture, items, text } = render();
+    host.rows.set([
+      {
+        ...ROWS[0],
+        detail: {
+          lead: 'Vale in 2 luoghi su 3:',
+          parts: [
+            { label: 'Cantiere A14, Chieti Scalo', pill: null },
+            { label: 'Discarica Cerratina, Lanciano', pill: null },
+          ],
+        },
+      },
+      ROWS[1],
+    ]);
+    fixture.detectChanges();
+
+    const lines = Array.from(items()[0].querySelectorAll('.flex-col > span'));
+    expect(lines.length).toBe(2);
+    expect(lines[1].classList.contains('pt-muted')).toBe(false);
+    expect(text(lines[1])).toBe(
+      'Vale in 2 luoghi su 3: Cantiere A14, Chieti Scalo · Discarica Cerratina, Lanciano',
+    );
+    expect(items()[1].querySelectorAll('.flex-col > span').length).toBe(1);
+  });
+
+  it('a part of the third line carries its pill and its monospace text', () => {
+    const { host, fixture, items, text } = render();
+    host.rows.set([
+      {
+        ...ROWS[0],
+        detail: {
+          lead: 'Vale in 1 luogo su 3:',
+          parts: [
+            {
+              mono: 'AB123CD',
+              label: 'Cantiere SP49, Spoltore',
+              pill: { key: 'contracts.form.locationRates.deactivated', tone: 'danger' },
+            },
+          ],
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const line = items()[0].querySelectorAll('.flex-col > span')[1];
+    expect(text(line)).toBe('Vale in 1 luogo su 3: AB123CD Cantiere SP49, Spoltore Disattivato');
+    expect(line.querySelector('.pt-mono')?.textContent).toBe('AB123CD');
+    expect(line.querySelector('.pt-pill--danger')).not.toBeNull();
+  });
+
+  it('"Duplica" is absent by default, sits between "Modifica" and "Togli" when asked, and emits the key of its row', () => {
+    const { host, fixture, items, buttons } = render();
+    expect(buttons('Duplica').length).toBe(0);
+
+    host.duplicable.set(true);
+    fixture.detectChanges();
+
+    expect(buttons('Duplica').length).toBe(3);
+    expect(
+      Array.from(items()[0].querySelectorAll('button')).map((b) => b.textContent?.trim()),
+    ).toEqual(['Modifica', 'Duplica', 'Togli']);
+    expect(buttons('Duplica')[1].getAttribute('aria-describedby')).toBe(
+      items()[1].querySelector('strong')!.id,
+    );
+    buttons('Duplica')[1].click();
+    expect(host.duplicated).toEqual(['b']);
   });
 });

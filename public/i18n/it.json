@@ -598,9 +598,26 @@
           "yes": "con maggiorazione notturna",
           "no": "senza maggiorazione notturna"
         },
-        "minimum": "Minimo fatturabile"
+        "minimum": "Minimo fatturabile",
+        "newVehicle": "Nuova tariffa del mezzo",
+        "editVehicle": "Modifica tariffa del mezzo",
+        "places": {
+          "location": {
+            "legend": "Luoghi in cui vale questa tariffa",
+            "hint": "Nei luoghi spuntati, un viaggio fatto con questo mezzo usa questa tariffa al posto di quella del luogo.",
+            "all": "Tutti i luoghi",
+            "required": "Scegli almeno un luogo."
+          },
+          "pair": {
+            "legend": "Coppie in cui vale questa tariffa",
+            "hint": "Nelle coppie spuntate, un viaggio fatto con questo mezzo usa questa tariffa al posto di quella della coppia.",
+            "all": "Tutte le coppie",
+            "required": "Scegli almeno una coppia."
+          }
+        }
       },
       "rateRows": {
+        "duplicate": "Duplica",
         "remove": "Togli"
       },
       "locationRates": {
@@ -635,6 +652,16 @@
         "required": "Aggiungi almeno una tariffa.",
         "nightIncomplete": "Completa i prezzi notturni: {{label}}.",
         "duplicatePair": "Questa coppia ha già una tariffa.",
+        "duplicate": {
+          "location": {
+            "withVehicles": "Copia di {{label}}: stessi prezzi e stesse tariffe dei mezzi ({{plates}}). Scegli il luogo e cambia quello che serve.",
+            "alone": "Copia di {{label}}. Scegli il luogo e cambia quello che serve."
+          },
+          "pair": {
+            "withVehicles": "Copia di {{label}}: stessi prezzi e stesse tariffe dei mezzi ({{plates}}). Scegli i luoghi e cambia quello che serve.",
+            "alone": "Copia di {{label}}. Scegli i luoghi e cambia quello che serve."
+          }
+        },
         "deactivated": "Disattivato",
         "location": {
           "pickup": "Luogo di partenza",
@@ -647,6 +674,8 @@
       "vehicleRates": {
         "title": "Ci sono mezzi con una tariffa diversa?",
         "hint": "Per esempio autospurghi, gru o walking floor. Un viaggio fatto con uno di questi mezzi usa la sua tariffa al posto di quella del cliente.",
+        "hintLocation": "Per esempio autospurghi, gru o walking floor. Nei luoghi che scegli, un viaggio fatto con uno di questi mezzi usa la sua tariffa al posto di quella del luogo.",
+        "hintPair": "Per esempio autospurghi, gru o walking floor. Nelle coppie che scegli, un viaggio fatto con uno di questi mezzi usa la sua tariffa al posto di quella della coppia.",
         "no": {
           "title": "No",
           "hint": "Stessa tariffa per tutti i mezzi"
@@ -659,6 +688,19 @@
           "no": "Stessa tariffa per tutti i mezzi",
           "one": "1 mezzo con tariffa propria",
           "many": "{{count}} mezzi con tariffa propria"
+        },
+        "places": {
+          "location": {
+            "one": "Vale in 1 luogo su {{total}}:",
+            "many": "Vale in {{count}} luoghi su {{total}}:",
+            "all": "Vale in tutti i {{total}} luoghi"
+          },
+          "pair": {
+            "one": "Vale in 1 coppia su {{total}}:",
+            "many": "Vale in {{count}} coppie su {{total}}:",
+            "all": "Vale in tutte le {{total}} coppie"
+          },
+          "otherRate": "ha già l'altra tariffa di questo mezzo ({{price}} di giorno)"
         },
         "required": "Aggiungi almeno un mezzo.",
         "decommissioned": "Dismesso",
@@ -732,6 +774,8 @@
           "nightNoSurcharge": "Di notte · il contratto non ha la maggiorazione notturna: vale il prezzo di giorno",
           "contractRate": "Del cliente",
           "vehicleRate": "Propria del mezzo",
+          "vehicleLocationRate": "Propria del mezzo per il luogo {{location}}",
+          "vehiclePairRate": "Propria del mezzo per la coppia {{pair}}",
           "locationRate": "Del luogo {{location}}",
           "pairRate": "Della coppia {{pair}}",
           "formula": "{{quantity}} × {{price}} {{unit}} = {{amount}} €",

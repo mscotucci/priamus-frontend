@@ -567,6 +567,8 @@ describe('CustomersFacade', () => {
 
     const vehicleRate = {
       vehicleId: 'v1',
+      pickupLocationId: null,
+      deliveryLocationId: null,
       dayPrice: 95,
       nightPrice: null,
       nightCallFee: null,

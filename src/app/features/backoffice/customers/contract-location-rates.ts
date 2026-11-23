@@ -10,13 +10,20 @@ import {
   linkedSignal,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Icon } from '../../../shared/components/icon/icon';
 import { locationLabel } from '../locations/location-label';
 import type { RateableLocation } from '../locations/locations-api';
 import type { SavedLocation } from '../locations/locations-facade';
-import { locationRateLabel, rateDialogLine, rateTerms, sortLocationRates } from './contract-labels';
+import {
+  locationRateLabel,
+  rateDialogLine,
+  rateTerms,
+  rowKey,
+  sortLocationRates,
+} from './contract-labels';
 import { forNight, rateMembers, type Minimum, type Rate } from './contract-rate';
 import {
   ContractRateDialog,
@@ -25,9 +32,10 @@ import {
   type RateSubjectOption,
 } from './contract-rate-dialog';
 import { ContractRateRows, type RateRow } from './contract-rate-rows';
+import { joinPlace, leavePlace, movePlace } from './contract-vehicle-rate-places';
+import type { VehicleRateAnswer } from './contract-vehicle-rates';
 import type {
   BillingLevel,
-  ContractLocationRate,
   ContractLocationRateRequest,
   PricingMode,
 } from './contracts-api';
@@ -52,36 +60,6 @@ export interface LocationRateAnswer {
 }
 
 export type LocationRateLevel = Exclude<BillingLevel, 'FlatRate'>;
-
-/** A location rate of a contract as the page holds it; no minimum under a trip price. */
-export function locationRateAnswerOf(
-  entry: ContractLocationRate,
-  mode: PricingMode,
-): LocationRateAnswer {
-  const side = (location: ContractLocationRate['pickup']): LocationRateAnswer['pickup'] =>
-    location === null
-      ? null
-      : {
-          id: location.id,
-          name: location.name,
-          municipality: location.municipality,
-          deactivated: location.status === 'Deactivated',
-        };
-  return {
-    pickup: side(entry.pickup),
-    delivery: side(entry.delivery),
-    rate: { day: entry.dayPrice, night: entry.nightPrice, callFee: entry.nightCallFee },
-    minimum:
-      mode === 'ByTrip' || entry.minimumRule === null
-        ? null
-        : {
-            kind: entry.minimumRule,
-            amount: entry.minimumAmount,
-            threshold: entry.minimumThreshold,
-            overage: entry.minimumOveragePrice,
-          },
-  };
-}
 
 /** The item of a save request for a location rate: the ids of its locations and the seven rate members. */
 export const locationRateRequestOf = (answer: LocationRateAnswer): ContractLocationRateRequest => ({
@@ -114,16 +92,18 @@ export const LEVEL_KEY: Record<LocationRateLevel, 'pickup' | 'delivery' | 'both'
   PerLocationPair: 'both',
 };
 
+/** What "Conferma" hands to the page: the location rates and the vehicle rates as the rows left them. */
+export interface ConfirmedLocationRates {
+  locationRates: LocationRateAnswer[];
+  vehicleRates: VehicleRateAnswer[];
+}
+
 interface Notice {
   key: string;
   params?: Record<string, string>;
 }
 
 const KEYS = 'contracts.form.locationRates';
-
-/** The key of a row: the ids of its locations. */
-export const rowKey = (entry: LocationRateAnswer): string =>
-  `${entry.pickup?.id ?? ''}|${entry.delivery?.id ?? ''}`;
 
 /** The body of question 6 of a location contract while it is open: one row per rate, and the dialog that writes them. */
 @Component({
@@ -149,7 +129,9 @@ export class ContractLocationRates {
   readonly answer = input.required<LocationRateAnswer[] | null>();
   /** The question was reopened with "Modifica": it offers "Annulla modifica". */
   readonly cancellable = input(false);
-  readonly confirmed = output<LocationRateAnswer[]>();
+  /** The page's vehicle rates: empty while question 8 is unanswered or answered "No". */
+  readonly vehicleRates = input<VehicleRateAnswer[]>([]);
+  readonly confirmed = output<ConfirmedLocationRates>();
   readonly cancelled = output();
   /** The dialog opens after a failed read of the locations: they are read again. */
   readonly retry = output();
@@ -174,10 +156,48 @@ export class ContractLocationRates {
     },
   });
 
-  /** The rate the dialog is open on: `entry` is null for a new one, `key` is the key it had when the dialog opened. */
+  private readonly vehicleRatesKey = computed(() => JSON.stringify(this.vehicleRates()));
+
+  /** The vehicle rates being written beside the location rates; they start again when the location rates do. */
+  protected readonly vehicleDraft = linkedSignal<
+    {
+      answer: LocationRateAnswer[] | null;
+      content: string;
+      level: LocationRateLevel;
+      mode: PricingMode;
+    },
+    VehicleRateAnswer[]
+  >({
+    source: () => ({
+      answer: this.answer(),
+      content: this.vehicleRatesKey(),
+      level: this.level(),
+      mode: this.mode(),
+    }),
+    computation: (source, previous) => {
+      if (previous === undefined) {
+        return untracked(this.vehicleRates);
+      }
+      if (previous.source.level !== source.level || previous.source.mode !== source.mode) {
+        return [];
+      }
+      // an empty answer replacing an empty one is no new answer: what was written stays
+      return (previous.source.answer?.length ?? 0) === 0 &&
+        (source.answer?.length ?? 0) === 0 &&
+        previous.source.content === source.content
+        ? previous.value
+        : untracked(this.vehicleRates);
+    },
+  });
+
+  /**
+   * The rate the dialog is open on: `entry` is null for a new one, `key` is the key it had when the dialog
+   * opened; `copy` is the row a new one is a copy of.
+   */
   protected readonly dialog = signal<{
     entry: LocationRateAnswer | null;
     key: string | null;
+    copy: LocationRateAnswer | null;
   } | null>(null);
   /** The message under the rows; it goes away when the night surcharge, the level or the pricing mode changes. */
   protected readonly notice = linkedSignal<
@@ -250,6 +270,26 @@ export class ContractLocationRates {
     }));
   });
 
+  /** The notice of a copy: its source and the vehicles whose rate applies there. */
+  protected readonly copyNotice = computed(() => {
+    const copy = this.dialog()?.copy ?? null;
+    if (copy === null) {
+      return null;
+    }
+    const plates = [
+      ...new Set(
+        this.vehicleDraft()
+          .filter((answer) => answer.places.some((place) => rowKey(place) === rowKey(copy)))
+          .map((answer) => answer.licensePlate),
+      ),
+    ];
+    const places = this.level() === 'PerLocationPair' ? 'pair' : 'location';
+    return this.translate.instant(
+      `${KEYS}.duplicate.${places}.${plates.length === 0 ? 'alone' : 'withVehicles'}`,
+      { label: locationRateLabel(copy), plates: plates.join(', ') },
+    );
+  });
+
   /** A pair already in the list is refused under the second select. */
   protected readonly check = computed(() => {
     const editedKey = this.dialog()?.key ?? null;
@@ -267,18 +307,29 @@ export class ContractLocationRates {
   });
 
   protected add(): void {
-    this.open(null, null);
+    this.open(null, null, null);
   }
 
   protected edit(key: string): void {
     const entry = this.draft().find((candidate) => rowKey(candidate) === key);
     if (entry !== undefined) {
-      this.open(entry, key);
+      this.open(entry, key, null);
     }
   }
 
-  private open(entry: LocationRateAnswer | null, key: string | null): void {
-    this.dialog.set({ entry, key });
+  protected duplicate(key: string): void {
+    const copy = this.draft().find((candidate) => rowKey(candidate) === key);
+    if (copy !== undefined) {
+      this.open(null, null, copy);
+    }
+  }
+
+  private open(
+    entry: LocationRateAnswer | null,
+    key: string | null,
+    copy: LocationRateAnswer | null,
+  ): void {
+    this.dialog.set({ entry, key, copy });
     if (this.failed()) {
       this.retry.emit();
     }
@@ -286,6 +337,10 @@ export class ContractLocationRates {
 
   protected remove(key: string): void {
     this.notice.set(null);
+    const removed = this.draft().find((entry) => rowKey(entry) === key);
+    if (removed !== undefined) {
+      this.vehicleDraft.update((list) => leavePlace(list, removed));
+    }
     this.draft.update((list) => list.filter((entry) => rowKey(entry) !== key));
   }
 
@@ -295,6 +350,7 @@ export class ContractLocationRates {
 
   protected onConfirmed(confirmed: ConfirmedRate): void {
     const editedKey = this.dialog()?.key ?? null;
+    const copy = this.dialog()?.copy ?? null;
     const known = this.known();
     const chosen = Object.fromEntries(
       SIDES[this.level()].map((side, index) => [side, known.get(confirmed.ids[index]) ?? null]),
@@ -306,6 +362,12 @@ export class ContractLocationRates {
       minimum: confirmed.minimum,
     };
     this.notice.set(null);
+    const old = editedKey === null ? undefined : this.draft().find((o) => rowKey(o) === editedKey);
+    if (old !== undefined && rowKey(old) !== rowKey(built)) {
+      this.vehicleDraft.update((list) => movePlace(list, old, built));
+    } else if (old === undefined && copy !== null) {
+      this.vehicleDraft.update((list) => joinPlace(list, copy, built));
+    }
     this.draft.update((list) =>
       editedKey !== null && list.some((other) => rowKey(other) === editedKey)
         ? list.map((other) => (rowKey(other) === editedKey ? built : other))
@@ -337,7 +399,10 @@ export class ContractLocationRates {
       this.focusRow(rowKey(sorted[incomplete]));
       return;
     }
-    this.confirmed.emit(sorted.map((entry) => forNight(entry, night)));
+    this.confirmed.emit({
+      locationRates: sorted.map((entry) => forNight(entry, night)),
+      vehicleRates: this.vehicleDraft(),
+    });
   }
 
   protected focusAdd(): void {

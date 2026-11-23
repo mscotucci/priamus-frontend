@@ -35,13 +35,15 @@
 <app-dialog
   [icon]="icon()"
   tone="primary"
-  [title]="
-    (editing() ? 'contracts.form.rateDialog.edit' : 'contracts.form.rateDialog.new') | translate
-  "
+  size="lg"
+  [title]="(editing() ? titles().edit : titles().new) | translate"
   [line]="line()"
   (closeRequested)="cancelled.emit()"
 >
   <form [id]="formId" class="flex flex-col gap-3" novalidate (submit)="submit($event)">
+    @if (notice(); as notice) {
+      <div class="pt-notice pt-notice--info">{{ notice }}</div>
+    }
     @for (subject of subjects(); track $index; let index = $index) {
       <div class="pt-field">
         <label class="pt-label" [for]="formId + '-subject' + index">{{
@@ -78,6 +80,57 @@
           }}</span>
         }
       </div>
+    }
+    @if (places(); as places) {
+      <fieldset
+        class="flex flex-col gap-2"
+        [attr.aria-describedby]="
+          formId + '-places-hint' + (placesError() ? ' ' + formId + '-places-error' : '')
+        "
+      >
+        <legend class="pt-label mb-2">{{ places.legend | translate }}</legend>
+        <p class="pt-field__hint" [id]="formId + '-places-hint'">{{ places.hint | translate }}</p>
+        <label class="pt-check">
+          <input
+            type="checkbox"
+            data-places-all
+            [checked]="allTicked()"
+            [disabled]="tickable().length === 0"
+            [attr.aria-invalid]="placesError() ? 'true' : null"
+            (change)="tickAll($any($event.target).checked)"
+          />
+          <strong>{{ places.all | translate }}</strong>
+        </label>
+        <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+          @for (option of places.options; track option.key) {
+            <label class="pt-check">
+              <input
+                type="checkbox"
+                data-place
+                [checked]="ticked().includes(option.key)"
+                [disabled]="blocked().has(option.key)"
+                (change)="tick(option.key, $any($event.target).checked)"
+              />
+              <span>
+                {{ option.label }}
+                @if (option.pill; as pill) {
+                  <span class="pt-pill" [class]="'pt-pill--' + pill.tone">{{
+                    pill.key | translate
+                  }}</span>
+                }
+                @if (blocked().get(option.key); as text) {
+                  <span class="pt-muted">· {{ text }}</span>
+                }
+              </span>
+            </label>
+          }
+        </div>
+        @if (placesError()) {
+          <span class="pt-field__error" [id]="formId + '-places-error'">{{
+            places.required | translate
+          }}</span>
+        }
+      </fieldset>
     }
     <ng-container *ngTemplateOutlet="amountFields; context: { $implicit: rateFieldsOf() }" />
     @if (withMinimum()) {

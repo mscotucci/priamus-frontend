@@ -427,6 +427,8 @@ describe('CustomerPage', () => {
             licensePlate: 'AB123CD',
             description: 'Autospurgo Scania P410',
             vehicleStatus: 'Active',
+            pickup: null,
+            delivery: null,
             dayPrice: 55,
             nightPrice: null,
             nightCallFee: null,
@@ -442,7 +444,50 @@ describe('CustomerPage', () => {
     expect(text(cells(element, 0)[4])).toBe('30,00 €/h');
   });
 
-  it('a deactivated customer has a notice on the contracts and "Apri" in place of "Modifica" on each row, with the same link', async () => {
+  it('the "Tariffa" column of a location contract with vehicle rates still counts its locations and pairs', async () => {
+    const rateOf = (id: string, deliveryId: string | null): ContractLocationRate => ({
+      pickup: { id, name: 'Cantiere ' + id, municipality: 'Chieti', status: 'Active' },
+      delivery:
+        deliveryId === null
+          ? null
+          : { id: deliveryId, name: 'Discarica', municipality: 'Lanciano', status: 'Active' },
+      dayPrice: 30,
+      nightPrice: null,
+      nightCallFee: null,
+      minimumRule: null,
+      minimumAmount: null,
+      minimumThreshold: null,
+      minimumOveragePrice: null,
+    });
+    const vehicleOn = (place: ContractLocationRate) => ({
+      ...place,
+      vehicleId: 'v1',
+      licensePlate: 'AB123CD',
+      description: 'Autospurgo Scania P410',
+      vehicleStatus: 'Active' as const,
+      dayPrice: 55,
+    });
+    const single = [rateOf('1', null), rateOf('2', null)];
+    const pairs = [rateOf('1', 'd1'), rateOf('2', 'd2'), rateOf('3', 'd3')];
+    const element = await answer(await render(), customer, [
+      contract({
+        id: 'a',
+        billingLevel: 'PerPickupLocation',
+        locationRates: single,
+        vehicleRates: single.map(vehicleOn),
+      }),
+      contract({
+        id: 'b',
+        billingLevel: 'PerLocationPair',
+        locationRates: pairs,
+        vehicleRates: [vehicleOn(pairs[0])],
+      }),
+    ]);
+
+    expect([0, 1].map((row) => text(cells(element, row)[4]))).toEqual(['2 luoghi', '3 coppie']);
+  });
+
+  it('a deactivated customer has a notice on the contracts and "Apri"in place of "Modifica" on each row, with the same link', async () => {
     const element = await answer(await render(), { ...customer, status: 'Deactivated' }, contracts);
 
     expect(text(element.querySelector('main .pt-notice--info'))).toBe(

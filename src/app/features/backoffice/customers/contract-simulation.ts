@@ -20,6 +20,7 @@ import {
   formatTons,
   locationRateLabel,
   minimumSummary,
+  rowKey,
   sortLocationRates,
   sortVehicleRates,
 } from './contract-labels';
@@ -28,10 +29,10 @@ import {
   LEVEL_KEY,
   locationRateRequestOf,
   locationRatesKey,
-  rowKey,
   type LocationRateAnswer,
 } from './contract-location-rates';
 import type { VehicleRateAnswer } from './contract-vehicle-rates';
+import { vehicleRateRequestsOf } from './contract-vehicle-rate-places';
 import {
   type BillingLevel,
   type PriceSimulation,
@@ -120,9 +121,9 @@ export class ContractSimulation {
   protected readonly running = signal(false);
   private readonly outcome = signal<Outcome | null>(null);
 
-  /** The chosen vehicle; a vehicle that lost its rate on the page falls back to the contract's rate. */
+  /** The chosen vehicle; a vehicle without a rate on the chosen place falls back to "Un mezzo senza tariffa propria". */
   protected readonly vehicleId = computed(() =>
-    this.vehicleRates().some((entry) => entry.vehicleId === this.vehicle()) ? this.vehicle() : '',
+    this.vehicleOptions().some((option) => option.id === this.vehicle()) ? this.vehicle() : '',
   );
 
   protected readonly flat = computed(() => this.level() === 'FlatRate');
@@ -164,10 +165,11 @@ export class ContractSimulation {
       level: this.level(),
       rate: this.rate(),
       minimum: this.minimum(),
-      vehicleRates: this.vehicleRates().map(({ vehicleId, rate, minimum }) => ({
+      vehicleRates: this.vehicleRates().map(({ vehicleId, rate, minimum, places }) => ({
         vehicleId,
         rate,
         minimum,
+        places: places.map(rowKey),
       })),
       vehicle: this.vehicleId(),
       locationRates: locationRatesKey(this.locationRates()),
@@ -204,12 +206,24 @@ export class ContractSimulation {
       : null;
   });
 
-  protected readonly vehicleOptions = computed(() =>
-    sortVehicleRates(this.vehicleRates()).map((entry) => ({
-      id: entry.vehicleId,
-      label: `${entry.licensePlate} · ${entry.description}`,
-    })),
-  );
+  /** The vehicles whose rate applies on the chosen place (all of them on a flat rate), once each, by plate. */
+  protected readonly vehicleOptions = computed(() => {
+    const flat = this.flat();
+    const locationId = this.locationId();
+    const options = new Map<string, { id: string; label: string }>();
+    for (const entry of sortVehicleRates(this.vehicleRates())) {
+      if (
+        !options.has(entry.vehicleId) &&
+        (flat || entry.places.some((own) => rowKey(own) === locationId))
+      ) {
+        options.set(entry.vehicleId, {
+          id: entry.vehicleId,
+          label: `${entry.licensePlate} · ${entry.description}`,
+        });
+      }
+    }
+    return [...options.values()];
+  });
 
   protected pickLocation(id: string): void {
     this.location.set(id);
@@ -312,12 +326,7 @@ export class ContractSimulation {
       pricingMode: mode,
       nightSurcharge: this.night(),
       ...rateMembers(flat, this.rate(), this.minimum()),
-      vehicleRates: flat
-        ? this.vehicleRates().map(({ vehicleId, rate, minimum }) => ({
-            vehicleId,
-            ...rateMembers(true, rate, minimum),
-          }))
-        : [],
+      vehicleRates: vehicleRateRequestsOf(this.vehicleRates()),
       vehicleId: this.vehicleId() === '' ? null : this.vehicleId(),
       billingLevel: this.level(),
       locationRates: flat ? [] : this.locationRates().map(locationRateRequestOf),
@@ -334,8 +343,15 @@ export class ContractSimulation {
     const t = (name: string, params?: object): string =>
       this.translate.instant(`contracts.form.simulation.result.${name}`, params);
     const choice = this.locationChoice();
-    if (choice === null || source === 'Contract' || source === 'Vehicle') {
+    if (choice === null || source === 'Contract' || (source === 'Vehicle' && this.flat())) {
       return t('contractRate');
+    }
+    if (source === 'Vehicle') {
+      return choice.delivery !== null && choice.pickup !== null
+        ? t('vehiclePairRate', { pair: locationRateLabel(choice) })
+        : t('vehicleLocationRate', {
+            location: locationLabel((choice.pickup ?? choice.delivery)!),
+          });
     }
     return source === 'Location'
       ? t('locationRate', { location: locationLabel((choice.pickup ?? choice.delivery)!) })
@@ -353,7 +369,7 @@ export class ContractSimulation {
           ? t('night', { start, from, to })
           : t('nightNoSurcharge');
     const vehicle =
-      result.rateSource !== 'Vehicle'
+      result.rateSource !== 'Vehicle' || !this.flat()
         ? undefined
         : this.vehicleRates().find((entry) => entry.vehicleId === result.vehicleId);
     const quantity = result.quantity;

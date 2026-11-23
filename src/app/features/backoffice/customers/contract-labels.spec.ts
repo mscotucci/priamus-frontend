@@ -124,6 +124,7 @@ describe('contract labels', () => {
       decommissioned: false,
       rate: { day: 55, night: 70, callFee: 40 },
       minimum: { kind: 'FixedMinimum', amount: 120, threshold: null, overage: null },
+      places: [],
     };
 
     it('tells the rate and the minimum with its first letter in lower case', () => {

@@ -28,11 +28,13 @@ export interface RateRow {
   key: string;
   parts: RateRowPart[];
   summary: string;
+  /** An optional third line, not muted: a lead text then parts joined by " · ". */
+  detail?: { lead: string; parts: RateRowPart[] };
 }
 
 let nextRowsId = 0;
 
-/** The compact list of rates of a contract question, each row with "Modifica" and "Togli". */
+/** The compact list of rates of a contract question, each row with "Modifica", an opt-in "Duplica" and "Togli". */
 @Component({
   selector: 'app-contract-rate-rows',
   imports: [TranslatePipe],
@@ -60,6 +62,25 @@ let nextRowsId = 0;
               }
             </strong>
             <span class="pt-muted">{{ row.summary }}</span>
+            @if (row.detail; as detail) {
+              <span>
+                {{ detail.lead }}
+                @for (part of detail.parts; track $index; let last = $last) {
+                  @if (part.mono; as mono) {
+                    <span class="pt-mono">{{ mono }}</span>
+                  }
+                  {{ part.label }}
+                  @if (part.pill; as pill) {
+                    <span class="pt-pill" [class]="'pt-pill--' + pill.tone">{{
+                      pill.key | translate
+                    }}</span>
+                  }
+                  @if (!last) {
+                    ·
+                  }
+                }
+              </span>
+            }
           </span>
           <span class="flex gap-2">
             <button
@@ -71,6 +92,17 @@ let nextRowsId = 0;
             >
               {{ 'contracts.form.modify' | translate }}
             </button>
+            @if (duplicable()) {
+              <button
+                type="button"
+                class="pt-btn pt-btn--outline pt-btn--sm"
+                data-duplicate
+                [attr.aria-describedby]="rowsId + '-' + index"
+                (click)="duplicate.emit(row.key)"
+              >
+                {{ 'contracts.form.rateRows.duplicate' | translate }}
+              </button>
+            }
             <button
               type="button"
               class="pt-btn pt-btn--outline pt-btn--sm"
@@ -95,6 +127,10 @@ export class ContractRateRows {
   readonly rows = input.required<RateRow[]>();
   /** The key of the row whose "Modifica" was pressed. */
   readonly edit = output<string>();
+  /** Offers "Duplica" on every row. */
+  readonly duplicable = input(false);
+  /** The key of the row whose "Duplica" was pressed. */
+  readonly duplicate = output<string>();
   /** The key of the row whose "Togli" was pressed. */
   readonly removed = output<string>();
   /** The removed row was the last one: the focus belongs to the control that adds a row. */
