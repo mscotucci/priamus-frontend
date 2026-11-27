@@ -7,12 +7,14 @@ const setup = guardSetup([
   { path: 'login', component: Page, canActivate: [guestGuard] },
   { path: 'users', component: Page },
   { path: 'customers', component: Page },
+  { path: 'driver', component: Page },
 ]);
 
 describe('guestGuard', () => {
   it.each<[CurrentUser['role'], string]>([
     ['Admin', '/users'],
     ['BackOffice', '/customers'],
+    ['Driver', '/driver'],
   ])('sends a signed-in %s opening the login to %s', async (role, landing) => {
     const router = setup(userWithRole(role));
 
@@ -21,8 +23,8 @@ describe('guestGuard', () => {
     expect(router.url).toBe(landing);
   });
 
-  it('lets a signed-in Driver, whose landing page is the login itself, open the login', async () => {
-    const router = setup(userWithRole('Driver'));
+  it('lets a signed-in user of an unexpected role, whose landing page is the login itself, open the login', async () => {
+    const router = setup({ ...userWithRole('Admin'), role: 'Unknown' as CurrentUser['role'] });
 
     await router.navigateByUrl('/login');
 

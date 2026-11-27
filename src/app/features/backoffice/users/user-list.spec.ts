@@ -996,7 +996,7 @@ describe('UserList', () => {
       harness.detectChanges();
       const element = harness.fixture.nativeElement as HTMLElement;
 
-      expect(TestBed.inject(Router).url).toBe('/login');
+      expect(TestBed.inject(Router).url).toBe('/driver');
       expect(element.querySelector('app-vehicle-list')).toBeNull();
       http.expectNone((r) => r.url === '/api/registry/vehicles');
     });
@@ -1026,7 +1026,7 @@ describe('UserList', () => {
       harness.detectChanges();
       const element = harness.fixture.nativeElement as HTMLElement;
 
-      expect(TestBed.inject(Router).url).toBe('/login');
+      expect(TestBed.inject(Router).url).toBe('/driver');
       expect(element.querySelector('app-customer-list')).toBeNull();
       http.expectNone((r) => r.url === '/api/registry/customers');
     });

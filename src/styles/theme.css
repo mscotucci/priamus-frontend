@@ -14,6 +14,8 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-on-primary: var(--on-primary);
+  --color-action: var(--action);
+  --color-on-action: var(--on-action);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warn: var(--warn);
@@ -35,7 +37,9 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  --radius-xl: 12px;
   --radius-2xl: 16px;
+  --radius-3xl: 24px;
   --radius-full: 9999px;
   --font-*: initial;
   --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, sans-serif;

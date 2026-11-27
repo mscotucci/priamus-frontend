@@ -13,10 +13,16 @@ export type IconName =
   | 'plus'
   | 'search'
   | 'chevron'
+  | 'chevron-right'
   | 'check'
   | 'alert'
   | 'settings'
-  | 'pin';
+  | 'pin'
+  | 'arrow-left'
+  | 'calendar'
+  | 'clock'
+  | 'scale'
+  | 'ruler';
 
 @Component({
   selector: 'app-icon',

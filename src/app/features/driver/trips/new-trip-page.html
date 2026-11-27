@@ -1,0 +1,143 @@
+<header class="pt-appbar sticky top-0 z-10">
+  <a
+    class="pt-btn pt-btn--icon pt-btn--lg"
+    routerLink="/driver"
+    [attr.aria-label]="'driver.newTrip.back' | translate"
+    ><app-icon name="arrow-left"
+  /></a>
+  <h1 class="pt-appbar__title">{{ 'driver.newTrip.title' | translate }}</h1>
+</header>
+<main class="mx-auto flex w-full max-w-[640px] flex-1 flex-col gap-3 p-4 min-[900px]:p-8">
+  @if (notice(); as content) {
+    <app-notice [notice]="content" />
+  }
+  @if (loading()) {
+    <div class="flex items-center justify-center gap-3 py-2" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'driver.newTrip.loading' | translate }}</span>
+    </div>
+  }
+  @for (question of questions; track question) {
+    <app-trip-question
+      [number]="question"
+      [name]="nameKey(question) | translate"
+      [title]="titleKey(question) | translate"
+      [state]="stateOf(question)"
+      (modify)="modify(question)"
+    >
+      @if (question === 1 && open() === 1) {
+        <app-vehicle-question
+          [tractor]="tractor()"
+          [vehicle]="answers().vehicle"
+          [trailer]="answers().trailer"
+          (tractorChosen)="chooseTractor($event)"
+          (changeLeading)="changeLeading()"
+          (answered)="answer({ kind: 'vehicle', vehicle: $event.vehicle, trailer: $event.trailer })"
+        />
+      }
+      @if (question === 2 && open() === 2) {
+        <app-customer-question
+          [customer]="answers().customer"
+          [failed]="customerFailed()"
+          (answered)="chooseCustomer($event)"
+        />
+      }
+      @if (question === 3 && open() === 3) {
+        @if (answers().questions; as contract) {
+          <app-locations-question
+            [questions]="contract"
+            [locations]="answers().locations"
+            (answered)="answer({ kind: 'locations', locations: $event })"
+          />
+        }
+      }
+      <div answer>
+        @switch (question) {
+          @case (1) {
+            @if (repeatedVehicle()) {
+              <p class="pt-question__value">
+                @for (line of vehicleLines(); track $index) {
+                  @if (!$first) {
+                    +
+                  }
+                  <span class="pt-mono">{{ line.plate }}</span>
+                }
+              </p>
+            } @else {
+              @for (line of vehicleLines(); track $index) {
+                <p class="pt-question__value">
+                  <span class="pt-mono">{{ line.plate }}</span> · {{ line.description }}
+                </p>
+              }
+            }
+          }
+          @case (2) {
+            <p class="pt-question__value">{{ answers().customer?.companyName }}</p>
+          }
+          @case (3) {
+            @for (line of locationLines(); track $index) {
+              <p class="pt-question__value">
+                @if (line.prefix === 'arrow') {
+                  →
+                } @else if (line.prefix !== null) {
+                  {{ 'driver.newTrip.locations.side.' + line.prefix | translate }}:
+                }
+                {{ line.place }}
+              </p>
+            } @empty {
+              <p class="pt-question__value">{{ 'driver.newTrip.locations.none' | translate }}</p>
+            }
+          }
+        }
+      </div>
+    </app-trip-question>
+  }
+</main>
+<div class="pt-bottombar sticky bottom-0 min-[900px]:static min-[900px]:px-8!">
+  <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2">
+    @if (tripInProgress()) {
+      <p class="pt-muted text-center">{{ 'driver.newTrip.add.inProgress' | translate }}</p>
+      <button
+        type="button"
+        class="pt-btn pt-btn--xl pt-btn--primary w-full"
+        [disabled]="!complete() || saving() || rereading()"
+        (click)="add(false)"
+      >
+        {{ 'driver.newTrip.add.alone' | translate }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="pt-btn pt-btn--xl pt-btn--primary w-full"
+        [disabled]="!complete() || saving() || rereading()"
+        (click)="add(true)"
+      >
+        {{ 'driver.newTrip.add.andStart' | translate }}
+      </button>
+      <button
+        type="button"
+        class="pt-btn pt-btn--lg w-full"
+        [disabled]="!complete() || saving() || rereading()"
+        (click)="add(false)"
+      >
+        {{ 'driver.newTrip.add.only' | translate }}
+      </button>
+    }
+  </div>
+</div>
+@if (leaveDecision(); as decide) {
+  <app-dialog
+    icon="alert"
+    tone="warn"
+    [title]="'common.leave.title' | translate"
+    (closeRequested)="decide(false)"
+  >
+    <p>{{ 'common.leave.text' | translate }}</p>
+    <button actions #stay type="button" class="pt-btn pt-btn--outline" (click)="decide(false)">
+      {{ 'common.leave.stay' | translate }}
+    </button>
+    <button actions type="button" class="pt-btn pt-btn--danger" (click)="decide(true)">
+      {{ 'common.leave.discard' | translate }}
+    </button>
+  </app-dialog>
+}

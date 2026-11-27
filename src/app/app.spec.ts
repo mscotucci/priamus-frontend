@@ -161,7 +161,7 @@ describe('App routes', () => {
   );
 
   it.each<[CurrentUser['role'], string]>([
-    ['Driver', '/login'],
+    ['Driver', '/driver'],
     ['BackOffice', '/customers'],
     ['Admin', '/customers'],
   ])(
@@ -197,7 +197,7 @@ describe('App routes', () => {
   );
 
   it.each<[CurrentUser['role'], string]>([
-    ['Driver', '/login'],
+    ['Driver', '/driver'],
     ['BackOffice', '/drivers'],
     ['Admin', '/drivers'],
   ])(
@@ -233,7 +233,7 @@ describe('App routes', () => {
   );
 
   it.each<[CurrentUser['role'], string]>([
-    ['Driver', '/login'],
+    ['Driver', '/driver'],
     ['BackOffice', '/locations'],
     ['Admin', '/locations'],
   ])(

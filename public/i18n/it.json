@@ -8,6 +8,12 @@
       "retry": "Riprova",
       "cancel": "Annulla"
     },
+    "leave": {
+      "title": "Uscire senza salvare?",
+      "text": "Le modifiche andranno perse.",
+      "stay": "Resta sulla pagina",
+      "discard": "Esci senza salvare"
+    },
     "refreshing": "Aggiornamento…"
   },
   "errors": {
@@ -26,9 +32,215 @@
     "submit": {
       "idle": "Accedi",
       "pending": "Accesso in corso…"
+    }
+  },
+  "driver": {
+    "brand": "Priamus Trips",
+    "signOut": "Esci",
+    "notReached": "Connessione persa. Riprova.",
+    "home": {
+      "loading": "Caricamento…",
+      "action": {
+        "title": "Nuovo viaggio",
+        "hint": "Mezzo, cliente e luoghi"
+      },
+      "inProgress": {
+        "title": "In corso",
+        "startedLabel": "Iniziato",
+        "started": {
+          "today": "Oggi alle {{time}}",
+          "yesterday": "Ieri, {{date}}, alle {{time}}",
+          "other": "{{date}}, alle {{time}}"
+        },
+        "customer": "Cliente",
+        "places": "Luoghi",
+        "vehicle": "Mezzo",
+        "endAt": "Terminato alle…",
+        "endNow": {
+          "button": "Termina ora",
+          "title": "Terminare il viaggio ora?",
+          "yesterday": "Il viaggio è iniziato ieri alle {{time}}. Terminando adesso dura {{duration}}.",
+          "other": "Il viaggio è iniziato il {{date}} alle {{time}}. Terminando adesso dura {{duration}}.",
+          "typeEnd": "Scrivi l'ora di arrivo"
+        },
+        "remove": {
+          "button": "Elimina",
+          "title": "Eliminare il viaggio?"
+        }
+      },
+      "planned": {
+        "title": "Da fare",
+        "expires": {
+          "days": "Scade tra {{days}} giorni",
+          "tomorrow": "Scade domani",
+          "today": "Scade oggi"
+        }
+      },
+      "repeat": {
+        "title": "Ripeti un viaggio",
+        "all": "Mostra tutti",
+        "noPlaces": "Senza luoghi"
+      }
     },
-    "driver": {
-      "unavailable": "L'app autisti non è ancora disponibile."
+    "noResults": "Nessun risultato.",
+    "planned": {
+      "title": "Viaggio da fare",
+      "back": "Torna alla home",
+      "loading": "Caricamento…",
+      "customer": "Cliente",
+      "places": "Luoghi",
+      "noPlaces": "Senza luoghi",
+      "vehicle": "Mezzo",
+      "expires": {
+        "days": "Se non lo inizi, questo viaggio viene eliminato tra {{days}} giorni.",
+        "tomorrow": "Se non lo inizi, questo viaggio viene eliminato domani.",
+        "today": "Se non lo inizi, questo viaggio viene eliminato a fine giornata."
+      },
+      "inProgress": "Hai un viaggio in corso: termina quello prima di iniziare questo.",
+      "startNow": "Inizia ora",
+      "startAt": "Iniziato alle…",
+      "when": {
+        "title": "Quando è iniziato?",
+        "today": "Oggi",
+        "yesterday": "Ieri",
+        "other": "Altra",
+        "otherDay": "Giorno",
+        "time": "Ora di inizio",
+        "previousEndHint": "Dalla fine del viaggio di prima.",
+        "confirm": "Conferma l'inizio"
+      },
+      "remove": {
+        "button": "Elimina",
+        "title": "Eliminare il viaggio?"
+      },
+      "stale": "Questo viaggio non si può più iniziare: qualcosa è cambiato. Eliminalo e inseriscilo di nuovo.",
+      "startFailed": "Non è stato possibile iniziare il viaggio. Chiama la segreteria."
+    },
+    "newTrip": {
+      "title": "Nuovo viaggio",
+      "loading": "Caricamento…",
+      "back": "Torna alla home",
+      "modify": "Modifica",
+      "add": {
+        "andStart": "Inserisci e inizia ora",
+        "only": "Inserisci soltanto",
+        "alone": "Inserisci",
+        "inProgress": "Hai un viaggio in corso: questo lo inizierai dopo."
+      },
+      "save": {
+        "changed": "Qualcosa è cambiato mentre compilavi. Controlla le risposte e riprova.",
+        "failed": "Non è stato possibile inserire il viaggio. Chiama la segreteria."
+      },
+      "question": {
+        "vehicle": {
+          "name": "Mezzo",
+          "title": "Con quale mezzo?"
+        },
+        "customer": {
+          "name": "Cliente",
+          "title": "Per quale cliente?"
+        },
+        "locations": {
+          "name": "Luoghi",
+          "title": "Dove?"
+        }
+      },
+      "vehicle": {
+        "search": "Cerca targa o descrizione…",
+        "trailerTitle": "Con quale rimorchio?",
+        "change": "Cambia",
+        "noTrailer": "Senza rimorchio",
+        "proposedName": "Mezzo · l'ultimo che hai usato oggi"
+      },
+      "customer": {
+        "search": "Cerca cliente…",
+        "recent": "Usati di recente",
+        "vat": "P.IVA {{vat}}",
+        "missing": "Non trovi il cliente? Chiama la segreteria."
+      },
+      "locations": {
+        "optionalName": "Luoghi (facoltativi)",
+        "none": "Nessun luogo",
+        "search": "Cerca luogo…",
+        "continue": "Continua",
+        "skip": "Salta",
+        "side": {
+          "pickup": "Partenza",
+          "delivery": "Consegna"
+        },
+        "add": {
+          "pickup": "Aggiungi la partenza (facoltativa)",
+          "delivery": "Aggiungi la consegna (facoltativa)"
+        },
+        "title": {
+          "both": "Da dove a dove?",
+          "delivery": "Dove consegni?",
+          "pickup": "Da dove parti?",
+          "none": "Vuoi indicare i luoghi?"
+        }
+      }
+    },
+    "end": {
+      "title": "Termina il viaggio",
+      "back": "Torna alla home",
+      "loading": "Caricamento…",
+      "started": {
+        "today": "iniziato oggi alle {{time}}",
+        "yesterday": "iniziato ieri alle {{time}}",
+        "other": "iniziato il {{date}} alle {{time}}"
+      },
+      "time": "Ora di fine",
+      "duration": "Durata: {{duration}}",
+      "kilograms": "Peso trasportato",
+      "kilometres": "Chilometri percorsi",
+      "unit": {
+        "kg": "kg",
+        "km": "km"
+      },
+      "weightHint": "In chili, come sulla pesata.",
+      "error": {
+        "end": {
+          "equal": "L'ora di fine deve essere diversa dall'ora di inizio."
+        },
+        "kilograms": {
+          "format": "Scrivi i chili, senza virgola.",
+          "max": "Al massimo 99.999 kg."
+        },
+        "kilometres": {
+          "format": "Scrivi i chilometri, senza virgola.",
+          "max": "Al massimo 9.999 km."
+        }
+      },
+      "endNow": "Termina ora",
+      "confirm": "Conferma la fine",
+      "stale": "Il viaggio è appena iniziato: terminalo tra un minuto.",
+      "failed": "Non è stato possibile terminare il viaggio. Chiama la segreteria."
+    },
+    "ended": {
+      "title": "Viaggio concluso",
+      "number": "Viaggio n. {{number}}",
+      "times": "Orari",
+      "weight": "Peso",
+      "distance": "Chilometri",
+      "customer": "Cliente",
+      "locations": "Luoghi",
+      "vehicle": "Mezzo",
+      "sameRoute": "Stesso giro",
+      "home": "Torna alla home"
+    },
+    "unlinked": {
+      "title": "Non puoi ancora registrare viaggi",
+      "hint": "Il tuo account non è collegato a un autista attivo. Chiama la segreteria."
+    },
+    "duration": {
+      "h1": "1 ora",
+      "hN": "{{hours}} ore",
+      "m1": "1 minuto",
+      "mN": "{{minutes}} minuti",
+      "h1m1": "1 ora e 1 minuto",
+      "h1mN": "1 ora e {{minutes}} minuti",
+      "hNm1": "{{hours}} ore e 1 minuto",
+      "hNmN": "{{hours}} ore e {{minutes}} minuti"
     }
   },
   "role": {
@@ -353,12 +565,6 @@
       "saving": "Salvataggio in corso…",
       "saved": "Contratto salvato",
       "reload": "Ricarica",
-      "leave": {
-        "title": "Uscire senza salvare?",
-        "text": "Le modifiche a questo contratto andranno perse.",
-        "stay": "Resta sulla pagina",
-        "discard": "Esci senza salvare"
-      },
       "change": {
         "title": "Da quando valgono le modifiche?",
         "line": "Il contratto è in vigore dal {{from}} e ne hai cambiato le condizioni.",

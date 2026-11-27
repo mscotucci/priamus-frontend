@@ -129,7 +129,8 @@ const perThemeTokens = (tokens) =>
   );
 // The modifiers each component may have: its sizes and its colours. One table for every check that needs it.
 const allowedModifiers = {
-  btn: ['sm', 'lg', 'icon', 'primary', 'outline', 'warn', 'danger'],
+  btn: ['sm', 'lg', 'xl', 'icon', 'primary', 'outline', 'warn', 'danger'],
+  choice: ['solid', 'stacked'],
   input: ['sm', 'lg'],
   search: ['sm', 'lg'],
   notice: ['info', 'success', 'warn', 'danger'],
@@ -144,6 +145,7 @@ const allowedModifiers = {
   paging: [],
   brand: [],
   topbar: [],
+  appbar: ['home'],
   // The exceptions of the grammar, taken from the reference mockups (UX-CONTEXT.md, Design system grammar).
   stat: ['highlight'],
   row: ['anomaly'],
@@ -163,7 +165,7 @@ const checks = [
     async run() {
       const { tokens } = await buildTokens();
       const css = await read('src/styles/tokens.css');
-      const expected = { 'control-sm': '30px', 'control-md': '36px', 'control-lg': '44px' };
+      const expected = { 'control-sm': '30px', 'control-md': '36px', 'control-lg': '44px', 'control-xl': '56px' };
       return Object.entries(expected).flatMap(([name, value]) => {
         const token = tokens.size?.tokens.find((t) => t.name === name);
         return token?.value === value
@@ -202,7 +204,7 @@ const checks = [
     name: 'the icons of the first screens are in the sprite',
     async run() {
       const ids = await spriteIds();
-      return ['truck', 'user', 'user-plus', 'user-x', 'sign-out', 'menu', 'close', 'search', 'chevron']
+      return ['truck', 'user', 'user-plus', 'user-x', 'sign-out', 'menu', 'close', 'search', 'chevron', 'arrow-left', 'calendar', 'clock']
         .filter((id) => !ids.includes(id))
         .map((id) => `public/icons.svg has no symbol "${id}"`);
     },
@@ -240,6 +242,9 @@ const checks = [
         ['.pt-input--lg', 'lg'],
         ['.pt-search--sm', 'sm'],
         ['.pt-search--lg', 'lg'],
+        ['.pt-btn--xl', 'xl'],
+        ['.pt-driver .pt-input--lg', 'xl'],
+        ['.pt-driver .pt-search--lg', 'xl'],
       ];
       const squares = [
         ['.pt-btn--icon', 'md'],
@@ -270,6 +275,36 @@ const checks = [
         ...['.pt-filter__button', '.pt-search--sm', '.pt-btn--sm'].flatMap((s) =>
           hasDeclaration(rules, s, 'height', 'var(--control-sm)'),
         ),
+      ];
+    },
+  },
+  {
+    name: 'the driver look sizes its controls and its text from tokens',
+    async run() {
+      const rules = await componentRules();
+      const props = { size: 'font-size', line: 'line-height', weight: 'font-weight' };
+      const text = (selector, style) =>
+        Object.entries(props).flatMap(([part, prop]) =>
+          hasDeclaration(rules, selector, prop, `var(--text-${style}-${part})`),
+        );
+      return [
+        ...hasDeclaration(rules, '.pt-driver .pt-choice', 'min-height', 'var(--control-xl)'),
+        ...hasDeclaration(rules, ".pt-driver .pt-choice input[type='radio']", 'width', 'var(--icon-xl)'),
+        ...hasDeclaration(rules, '.pt-driver .pt-tile', 'width', 'var(--tile-lg)'),
+        ...hasDeclaration(rules, '.pt-btn--xl', 'border-radius', 'var(--radius-2xl)'),
+        ...hasDeclaration(rules, '.pt-driver .pt-input--lg', 'border-radius', 'var(--radius-xl)'),
+        ...hasDeclaration(rules, '.pt-driver .pt-choice', 'border-radius', 'var(--radius-2xl)'),
+        ...hasDeclaration(rules, '.pt-choice--solid:has(input:checked)', 'background', 'var(--primary)'),
+        ...hasDeclaration(rules, '.pt-choice--solid:has(input:checked)', 'color', 'var(--on-primary)'),
+        ...hasDeclaration(rules, '.pt-choice--stacked', 'flex-direction', 'column'),
+        ...hasDeclaration(rules, '.pt-driver .pt-choice--stacked', 'padding-inline', 'var(--space-2)'),
+        ...text('.pt-btn--xl', 'button-xl'),
+        ...text('.pt-driver .pt-input--lg', 'field-lg'),
+        ...text('.pt-question__title', 'question-title'),
+        ...rules
+          .filter((r) => r.selectors.some((s) => s.startsWith('.pt-driver') || /--(xl|solid|stacked)\b|^\.pt-(link|appbar|action|summary|bottombar|section-title)/.test(s)))
+          .filter((r) => /box-shadow/.test(r.body))
+          .map((r) => `${r.selectors.join(', ')} has a shadow: the driver look is flat`),
       ];
     },
   },
@@ -688,7 +723,7 @@ const checks = [
     name: 'colour modifiers use the shared names',
     async run() {
       const text = (await read('src/styles/components.css')) + (await galleryHtml());
-      return modifiersOutsideTable(text, ['btn', 'notice', 'pill', 'count', 'tile']);
+      return modifiersOutsideTable(text, ['btn', 'notice', 'pill', 'count', 'tile', 'choice']);
     },
   },
   {
@@ -697,7 +732,7 @@ const checks = [
       const selectors = (await componentRules()).flatMap((r) => r.selectors);
       return modifiersOutsideTable(
         selectors.join('\n'),
-        ['notice', 'tile', 'toast', 'spinner', 'avatar', 'empty', 'paging', 'brand', 'topbar', 'stat', 'row'],
+        ['notice', 'tile', 'toast', 'spinner', 'avatar', 'empty', 'paging', 'brand', 'topbar', 'appbar', 'stat', 'row'],
       );
     },
   },
@@ -812,8 +847,11 @@ const checks = [
         '.pt-field', '.pt-label', '.pt-field__error',
         '.pt-notice', '.pt-pill', '.pt-count', '.pt-toast', '.pt-toast-region', '.pt-spinner', '.pt-empty',
         '.pt-card', '.pt-stat', '.pt-table', '.pt-paging', '.pt-dialog', '.pt-drawer', '.pt-menu',
-        '.pt-nav-item', '.pt-nav__group', '.pt-topbar', '.pt-topbar__title', '.pt-filter__button', '.pt-view',
+        '.pt-nav-item', '.pt-nav__group', '.pt-topbar', '.pt-topbar__title', '.pt-page', '.pt-filter__button', '.pt-view',
         '.pt-icon', '.pt-brand', '.pt-tile', '.pt-avatar',
+        '.pt-driver', '.pt-btn--xl', '.pt-link', '.pt-choice', '.pt-choice--solid:has(input:checked)', '.pt-choice--stacked', '.pt-question', '.pt-question__title', '.pt-question__value',
+        '.pt-appbar', '.pt-appbar--home', '.pt-appbar__title', '.pt-action', '.pt-action__tile', '.pt-action__title', '.pt-action__hint',
+        '.pt-summary', '.pt-summary__row', '.pt-bottombar', '.pt-section-title', '.pt-driver-name',
       ]
         .filter((sel) => lacksRule(top, sel))
         .map((sel) => `${sel} has no rule`);

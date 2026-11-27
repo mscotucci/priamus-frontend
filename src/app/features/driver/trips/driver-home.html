@@ -1,0 +1,204 @@
+<header class="pt-appbar pt-appbar--home min-[900px]:px-8!">
+  <div class="pt-brand">
+    <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
+    <p class="pt-brand__name">{{ 'driver.brand' | translate }}</p>
+  </div>
+  <button type="button" class="pt-btn pt-btn--lg" (click)="facade.signOut()">
+    <app-icon name="sign-out" />{{ 'driver.signOut' | translate }}
+  </button>
+</header>
+<main class="mx-auto flex w-full max-w-[640px] flex-col gap-5 p-5 min-[900px]:p-8">
+  @if (facade.homeLoading()) {
+    <div class="flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'driver.home.loading' | translate }}</span>
+    </div>
+  } @else if (facade.homeFailed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="facade.reloadHome()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (facade.home(); as home) {
+    <div>
+      <p class="pt-driver-name">{{ home.firstName }} {{ home.lastName }}</p>
+      <p class="pt-muted">{{ today }}</p>
+    </div>
+    @if (notice(); as content) {
+      <app-notice [notice]="content" />
+    }
+    @if (home.inProgress; as progress) {
+      @let trip = progress.trip;
+      <section class="flex flex-col gap-2">
+        <h2 class="pt-section-title">{{ 'driver.home.inProgress.title' | translate }}</h2>
+        <dl class="pt-summary">
+          <div class="pt-summary__row">
+            <span class="pt-tile pt-tile--primary"><app-icon name="clock" /></span>
+            <div>
+              <dt class="pt-label">{{ 'driver.home.inProgress.startedLabel' | translate }}</dt>
+              @let started = startedText(trip);
+              <dd>{{ started.key | translate: started.params }}</dd>
+            </div>
+          </div>
+          <div class="pt-summary__row">
+            <span class="pt-tile pt-tile--primary"><app-icon name="building" /></span>
+            <div>
+              <dt class="pt-label">{{ 'driver.home.inProgress.customer' | translate }}</dt>
+              <dd>{{ trip.customer.companyName }}</dd>
+            </div>
+          </div>
+          <div class="pt-summary__row">
+            <span class="pt-tile pt-tile--primary"><app-icon name="pin" /></span>
+            <div>
+              <dt class="pt-label">{{ 'driver.home.inProgress.places' | translate }}</dt>
+              @if (trip.pickup || trip.delivery) {
+                @if (trip.pickup; as pickup) {
+                  <dd>{{ pickup.name }}, {{ pickup.municipality }}</dd>
+                }
+                @if (trip.delivery; as delivery) {
+                  <dd>→ {{ delivery.name }}, {{ delivery.municipality }}</dd>
+                }
+              } @else {
+                <dd>{{ 'driver.home.repeat.noPlaces' | translate }}</dd>
+              }
+            </div>
+          </div>
+          <div class="pt-summary__row">
+            <span class="pt-tile pt-tile--primary"><app-icon name="truck" /></span>
+            <div>
+              <dt class="pt-label">{{ 'driver.home.inProgress.vehicle' | translate }}</dt>
+              <dd>
+                <span class="pt-mono">{{ trip.vehicle.licensePlate }}</span>
+                @if (trip.trailer; as trailer) {
+                  + <span class="pt-mono">{{ trailer.licensePlate }}</span>
+                }
+              </dd>
+            </div>
+          </div>
+        </dl>
+        @if (!overdue()) {
+          <button
+            type="button"
+            class="pt-btn pt-btn--xl pt-btn--primary w-full"
+            [disabled]="facade.saving()"
+            (click)="endNow(trip, progress.endAsks)"
+          >
+            <app-icon name="check" />{{ 'driver.home.inProgress.endNow.button' | translate }}
+          </button>
+        }
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            class="pt-btn pt-btn--lg"
+            [disabled]="facade.saving()"
+            (click)="facade.openEnd(trip.id, true)"
+          >
+            {{ 'driver.home.inProgress.endAt' | translate }}
+          </button>
+          <button
+            type="button"
+            class="pt-btn pt-btn--lg"
+            [disabled]="facade.saving()"
+            (click)="removeDialog.set(trip.id)"
+          >
+            {{ 'driver.home.inProgress.remove.button' | translate }}
+          </button>
+        </div>
+      </section>
+    }
+    <a class="pt-action" routerLink="new-trip">
+      <span class="pt-action__tile"><app-icon name="plus" size="lg" /></span>
+      <span class="flex-1"
+        ><span class="pt-action__title">{{ 'driver.home.action.title' | translate }}</span
+        ><span class="pt-action__hint">{{ 'driver.home.action.hint' | translate }}</span></span
+      >
+      <app-icon name="chevron-right" />
+    </a>
+    @if (home.planned.length > 0) {
+      <section class="flex flex-col gap-2">
+        <h2 class="pt-section-title">{{ 'driver.home.planned.title' | translate }}</h2>
+        @for (planned of home.planned; track planned.trip.id) {
+          <a class="pt-choice no-underline" [routerLink]="['trips', planned.trip.id]">
+            <span class="pt-tile pt-tile--primary"><app-icon name="building" /></span>
+            <span class="min-w-0 flex-1"
+              >{{ planned.trip.customer.companyName }}
+              <span class="pt-choice__hint">{{
+                places(planned.trip) ?? ('driver.home.repeat.noPlaces' | translate)
+              }}</span>
+              <span class="pt-choice__hint"
+                ><span class="pt-mono">{{ planned.trip.vehicle.licensePlate }}</span>
+                @if (planned.trip.trailer; as trailer) {
+                  + <span class="pt-mono">{{ trailer.licensePlate }}</span>
+                }
+              </span>
+              @let expires = expiry(planned.daysToExpiry);
+              <span class="pt-choice__hint">{{
+                expires.key | translate: expires.params
+              }}</span></span
+            >
+            <app-icon name="chevron-right" />
+          </a>
+        }
+      </section>
+    }
+    @if (!home.inProgress && shown().length > 0) {
+      <section class="flex flex-col gap-2">
+        <h2 class="pt-section-title">{{ 'driver.home.repeat.title' | translate }}</h2>
+        @for (trip of shown(); track $index) {
+          <button type="button" class="pt-choice w-full text-left" (click)="repeat(trip)">
+            <span class="pt-tile pt-tile--primary"><app-icon name="building" /></span>
+            <span class="min-w-0 flex-1"
+              >{{ trip.customer.companyName }}
+              <span class="pt-choice__hint">{{
+                places(trip) ?? ('driver.home.repeat.noPlaces' | translate)
+              }}</span>
+              <span class="pt-choice__hint"
+                ><span class="pt-mono">{{ trip.vehicle.licensePlate }}</span>
+                @if (trip.trailer; as trailer) {
+                  + <span class="pt-mono">{{ trailer.licensePlate }}</span>
+                }
+              </span></span
+            >
+            <app-icon name="chevron-right" />
+          </button>
+        }
+        @if (hasMore()) {
+          <button type="button" class="pt-link text-center" (click)="displayAll()">
+            {{ 'driver.home.repeat.all' | translate }}
+          </button>
+        }
+      </section>
+    }
+  }
+</main>
+@if (endNowDialog(); as dialog) {
+  <app-dialog
+    icon="clock"
+    tone="warn"
+    [title]="'driver.home.inProgress.endNow.title' | translate"
+    (closeRequested)="endNowDialog.set(null)"
+  >
+    <p>{{ dialog.text }}</p>
+    <button actions type="button" class="pt-btn pt-btn--outline" (click)="typeEnd(dialog.tripId)">
+      {{ 'driver.home.inProgress.endNow.typeEnd' | translate }}
+    </button>
+    <button actions type="button" class="pt-btn pt-btn--primary" (click)="confirmEndNow()">
+      {{ 'driver.home.inProgress.endNow.button' | translate }}
+    </button>
+  </app-dialog>
+}
+@if (removeDialog() !== null) {
+  <app-dialog
+    icon="alert"
+    tone="danger"
+    [title]="'driver.home.inProgress.remove.title' | translate"
+    (closeRequested)="removeDialog.set(null)"
+  >
+    <button actions type="button" class="pt-btn pt-btn--outline" (click)="removeDialog.set(null)">
+      {{ 'common.actions.cancel' | translate }}
+    </button>
+    <button actions type="button" class="pt-btn pt-btn--danger" (click)="removeTrip()">
+      {{ 'driver.home.inProgress.remove.button' | translate }}
+    </button>
+  </app-dialog>
+}

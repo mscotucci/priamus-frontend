@@ -5,9 +5,7 @@ import { CurrentUser } from '../../core/auth/auth-api';
 import { landingPath } from '../../core/auth/landing';
 import { Session } from '../../core/auth/session';
 
-export type SignInOutcome = 'signed-in' | 'refused' | 'failed' | 'driver' | 'ignored';
-
-const DRIVER_NOTICE: NoticeContent = { key: 'login.driver.unavailable' };
+export type SignInOutcome = 'signed-in' | 'refused' | 'failed' | 'ignored';
 
 /** Only an address inside the application is honoured: not `https://…`, not `//host`. */
 function isInAppPath(url: string | null): url is string {
@@ -40,11 +38,6 @@ export class LoginFacade {
         const notice = noticeOf(error as ApiError);
         this.noticeState.set(notice);
         return 'detail' in notice ? 'refused' : 'failed';
-      }
-      if (user.role === 'Driver') {
-        await this.session.signOut();
-        this.noticeState.set(DRIVER_NOTICE);
-        return 'driver';
       }
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
       await this.router.navigateByUrl(isInAppPath(returnUrl) ? returnUrl : landingPath(user.role));

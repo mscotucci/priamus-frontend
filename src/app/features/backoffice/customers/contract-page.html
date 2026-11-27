@@ -36,7 +36,7 @@
     </button>
   }
 </app-topbar>
-<main class="mx-auto flex w-full max-w-4xl flex-col gap-4 p-8">
+<main class="pt-page mx-auto flex w-full max-w-4xl flex-col gap-4">
   @if (notFound()) {
     <div class="pt-card pt-empty">
       <p class="pt-title">
@@ -562,15 +562,15 @@
   <app-dialog
     icon="alert"
     tone="warn"
-    [title]="'contracts.form.leave.title' | translate"
+    [title]="'common.leave.title' | translate"
     (closeRequested)="decide(false)"
   >
-    <p>{{ 'contracts.form.leave.text' | translate }}</p>
+    <p>{{ 'common.leave.text' | translate }}</p>
     <button actions #stay type="button" class="pt-btn pt-btn--outline" (click)="decide(false)">
-      {{ 'contracts.form.leave.stay' | translate }}
+      {{ 'common.leave.stay' | translate }}
     </button>
     <button actions type="button" class="pt-btn pt-btn--danger" (click)="decide(true)">
-      {{ 'contracts.form.leave.discard' | translate }}
+      {{ 'common.leave.discard' | translate }}
     </button>
   </app-dialog>
 }

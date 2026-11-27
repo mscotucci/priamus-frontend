@@ -17,6 +17,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/login').then((m) => m.Login),
   },
   {
+    path: 'driver',
+    canActivate: [authGuard, roleGuard('Driver')],
+    loadComponent: () => import('./features/driver/trips/trips').then((m) => m.Trips),
+    loadChildren: () => import('./features/driver/trips/trips.routes').then((m) => m.tripsRoutes),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () => import('./core/layout/layout').then((m) => m.Layout),

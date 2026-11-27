@@ -45,6 +45,7 @@ describe('LoginFacade', () => {
   it.each<[CurrentUser['role'], string]>([
     ['Admin', '/users'],
     ['BackOffice', '/customers'],
+    ['Driver', '/driver'],
   ])('after a %s signs in, navigates to %s', async (role, landing) => {
     const { facade, signIn, navigate } = setup({ signIn: () => Promise.resolve(user(role)) });
 
@@ -183,16 +184,16 @@ describe('LoginFacade', () => {
     expect(facade.notice()).toEqual({ key: 'errors.generic' });
   });
 
-  it('signs a Driver out at once, does not navigate and shows the unavailable notice', async () => {
+  it('keeps a Driver signed in and shows no notice', async () => {
     const { facade, signOut, navigate } = setup({
       signIn: () => Promise.resolve(user('Driver')),
     });
 
     const outcome = await facade.submit('dan', 'secret');
 
-    expect(outcome).toBe('driver');
-    expect(signOut).toHaveBeenCalledTimes(1);
-    expect(navigate).not.toHaveBeenCalled();
-    expect(facade.notice()).toEqual({ key: 'login.driver.unavailable' });
+    expect(outcome).toBe('signed-in');
+    expect(signOut).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/driver');
+    expect(facade.notice()).toBeNull();
   });
 });

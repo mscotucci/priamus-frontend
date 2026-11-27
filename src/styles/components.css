@@ -57,6 +57,14 @@
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+/* A choice card shows the focus of its input on the card, not on the input */
+.pt-root .pt-choice:has(input:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.pt-root .pt-choice input:focus-visible {
+  outline: none;
+}
 /* Fields show one ring flush with the border instead: the longer selectors win by specificity. */
 .pt-root .pt-input:focus-visible {
   border-color: var(--primary);
@@ -754,6 +762,26 @@ select.pt-input option:checked {
   }
 }
 
+/* Back-office page: the content under the top bar */
+.pt-page {
+  padding: var(--space-8);
+}
+@media (max-width: 639px) {
+  .pt-page {
+    padding: var(--space-4);
+  }
+  /* at phone width the outermost boxes run edge to edge, square and without side borders, while text outside them
+     keeps the page padding; the space between two boxes stays */
+  .pt-page
+    :is(.pt-card, .pt-table-wrap, .pt-notice, .pt-question):not(
+      :is(.pt-card, .pt-table-wrap, .pt-notice, .pt-question, dialog) *
+    ) {
+    margin-inline: calc(var(--space-4) * -1);
+    border-inline-width: 0;
+    border-radius: 0;
+  }
+}
+
 /* Data table */
 .pt-table-wrap {
   /* contains absolutely positioned cell content (sr-only labels), so the wrap clips it instead of the page */
@@ -906,7 +934,8 @@ select.pt-input option:checked {
   color: var(--primary);
 }
 .pt-dialog {
-  width: 100%;
+  /* a margin on each side on a phone, so the dialog never touches the edges of the screen */
+  width: calc(100% - 2 * var(--space-4));
   max-width: 448px;
   padding: var(--space-6);
   border-radius: var(--radius-2xl);
@@ -1087,4 +1116,258 @@ select.pt-input option:checked {
   display: block;
   color: var(--text-muted);
   font-size: var(--text-small-size);
+}
+
+/* Driver app (phone and tablet, used in the cab): the area root gives the driver size to the controls under it,
+   so a template carries no size modifier. The look is flat: no shadow. */
+.pt-driver {
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--text-card-title-size);
+  line-height: var(--text-card-title-line);
+}
+/* The main button of a page */
+.pt-btn--xl {
+  gap: var(--space-2);
+  height: var(--control-xl);
+  border-radius: var(--radius-2xl);
+  font-size: var(--text-button-xl-size);
+  line-height: var(--text-button-xl-line);
+  font-weight: var(--text-button-xl-weight);
+}
+/* Driver app: a long label wraps inside its button instead of leaving it; the size stays the least height */
+.pt-driver .pt-btn--lg {
+  height: auto;
+  min-height: var(--control-lg);
+  padding-block: var(--space-2);
+  white-space: normal;
+}
+/* A text link in the primary colour: the "Modifica" of an answered question */
+.pt-link {
+  padding: var(--space-3) var(--space-1);
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+.pt-driver .pt-label {
+  font-size: var(--text-label-lg-size);
+  line-height: var(--text-label-lg-line);
+}
+.pt-driver .pt-field__error {
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+}
+.pt-driver .pt-input--lg {
+  height: var(--control-xl);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  font-size: var(--text-field-lg-size);
+  line-height: var(--text-field-lg-line);
+  font-weight: var(--text-field-lg-weight);
+}
+/* Inside a group the input keeps its square end against the add-on, at the driver radius too */
+.pt-driver .pt-input-group .pt-input {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+.pt-driver .pt-input-group__addon {
+  border-start-end-radius: var(--radius-xl);
+  border-end-end-radius: var(--radius-xl);
+  font-size: var(--text-card-title-size);
+  font-weight: 700;
+}
+.pt-driver .pt-search--lg {
+  width: 100%;
+  height: var(--control-xl);
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--bg);
+  font-size: var(--text-field-lg-size);
+  line-height: var(--text-field-lg-line);
+  font-weight: var(--text-field-lg-weight);
+}
+.pt-driver .pt-tile {
+  width: var(--tile-lg);
+  height: var(--tile-lg);
+  border-radius: var(--radius-xl);
+}
+/* Choice card at driver size */
+.pt-driver .pt-choice {
+  min-height: var(--control-xl);
+  padding: var(--space-3) var(--space-4);
+  border-width: 2px;
+  border-radius: var(--radius-2xl);
+  font-size: var(--text-card-title-size);
+  line-height: var(--text-card-title-line);
+  font-weight: 700;
+}
+.pt-driver .pt-choice__hint {
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
+  font-weight: 500;
+}
+.pt-driver .pt-choice input[type='radio'] {
+  width: var(--icon-xl);
+  height: var(--icon-xl);
+}
+/* The solid choice card: the checked one is filled in the primary colour (the day of a trip) */
+.pt-choice--solid:has(input:checked) {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.pt-choice--solid:has(input:checked) .pt-choice__hint {
+  color: inherit;
+  opacity: 0.85;
+}
+/* The stacked choice card: title over hint, centred, for a row of short cards (the day of a trip) */
+.pt-choice--stacked {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  text-align: center;
+}
+.pt-driver .pt-choice--stacked {
+  padding-inline: var(--space-2);
+}
+/* Question at driver size: the open one is framed in primary, an answered one is a line with its answer and
+   "Modifica", the ones after the open one are dimmed */
+.pt-driver .pt-question {
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-2xl);
+}
+.pt-driver .pt-question:not([aria-current='step'], .pt-question--answered) {
+  opacity: 0.55;
+}
+.pt-driver .pt-question__number {
+  width: var(--space-8);
+  font-size: var(--text-body-size);
+}
+.pt-driver .pt-question--answered {
+  align-items: center;
+  background: var(--surface);
+}
+.pt-question__title {
+  margin: 0;
+  font-size: var(--text-question-title-size);
+  line-height: var(--text-question-title-line);
+  font-weight: var(--text-question-title-weight);
+}
+.pt-driver .pt-question--answered .pt-question__title {
+  color: var(--text-muted);
+  font-size: var(--text-label-lg-size);
+  line-height: var(--text-label-lg-line);
+  font-weight: var(--text-label-lg-weight);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.pt-question__value {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* Driver app bar: back, centred title, a third empty column; on the home the brand and an action */
+.pt-appbar {
+  display: grid;
+  grid-template-columns: var(--tile-lg) 1fr var(--tile-lg);
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.pt-appbar--home {
+  grid-template-columns: 1fr auto;
+}
+.pt-appbar__title {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-question-title-size);
+  line-height: var(--text-question-title-line);
+  font-weight: var(--text-question-title-weight);
+}
+.pt-appbar .pt-btn--icon {
+  width: var(--tile-lg);
+  height: var(--tile-lg);
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--text);
+}
+/* The large action card: the one thing the home is for */
+.pt-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-5);
+  border-radius: var(--radius-3xl);
+  background: var(--action);
+  color: var(--on-action);
+  text-decoration: none;
+}
+.pt-action__tile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--space-8) * 2);
+  height: calc(var(--space-8) * 2);
+  border-radius: var(--radius-2xl);
+  background: color-mix(in srgb, var(--on-action) 18%, transparent);
+}
+.pt-action__title {
+  display: block;
+  font-size: var(--text-section-title-size);
+  line-height: var(--text-section-title-line);
+  font-weight: 800;
+}
+.pt-action__hint {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+  opacity: 0.85;
+}
+/* What was recorded: icon, label, value */
+.pt-summary {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2xl);
+  background: var(--surface);
+}
+.pt-summary__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+.pt-summary__row + .pt-summary__row {
+  border-top: 1px solid var(--border);
+}
+.pt-summary dd {
+  margin: 0;
+  font-weight: 700;
+}
+/* The main button of a page, at the bottom of the screen */
+.pt-bottombar {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: var(--bg);
+}
+.pt-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-label-lg-size);
+  line-height: var(--text-label-lg-line);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.pt-driver-name {
+  margin: 0;
+  font-size: var(--text-page-title-size);
+  line-height: var(--text-page-title-line);
+  font-weight: 800;
 }

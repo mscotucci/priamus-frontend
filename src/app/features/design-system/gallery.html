@@ -49,6 +49,9 @@
         <app-icon name="chevron" size="lg" /><span class="pt-muted">chevron</span>
       </div>
       <div class="flex flex-col items-center gap-1">
+        <app-icon name="chevron-right" size="lg" /><span class="pt-muted">chevron-right</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
         <app-icon name="check" size="lg" /><span class="pt-muted">check</span>
       </div>
       <div class="flex flex-col items-center gap-1">
@@ -59,6 +62,21 @@
       </div>
       <div class="flex flex-col items-center gap-1">
         <app-icon name="pin" size="lg" /><span class="pt-muted">pin</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="arrow-left" size="lg" /><span class="pt-muted">arrow-left</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="calendar" size="lg" /><span class="pt-muted">calendar</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="clock" size="lg" /><span class="pt-muted">clock</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="scale" size="lg" /><span class="pt-muted">scale</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="ruler" size="lg" /><span class="pt-muted">ruler</span>
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-4">
@@ -375,6 +393,152 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
     </p>
   </section>
 
+  <section class="flex flex-col gap-3" aria-labelledby="g-driver">
+    <h2 id="g-driver" class="pt-label">App autista</h2>
+    <div class="pt-driver flex flex-col gap-4 p-4">
+      <p class="pt-muted">Barra con freccia indietro e titolo: pt-appbar, pt-appbar__title</p>
+      <header class="pt-appbar">
+        <a class="pt-btn pt-btn--icon pt-btn--lg" href="#" aria-label="Torna alla home"
+          ><app-icon name="arrow-left"
+        /></a>
+        <h3 class="pt-appbar__title">Nuovo viaggio</h3>
+      </header>
+      <p class="pt-muted">Barra della home con marchio e «Esci»: pt-appbar--home</p>
+      <header class="pt-appbar pt-appbar--home">
+        <div class="pt-brand">
+          <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
+          <p class="pt-brand__name">Priamus Trips</p>
+        </div>
+        <button type="button" class="pt-btn pt-btn--lg"><app-icon name="sign-out" />Esci</button>
+      </header>
+      <p class="pt-muted">Nome dell'autista: pt-driver-name</p>
+      <div>
+        <p class="pt-driver-name">Marco Di Tullio</p>
+        <p class="pt-muted">Lunedì 23 novembre</p>
+      </div>
+      <p class="pt-muted">
+        Azione principale: pt-action, pt-action__tile, pt-action__title, pt-action__hint
+      </p>
+      <a class="pt-action" href="#">
+        <span class="pt-action__tile"><app-icon name="plus" size="lg" /></span>
+        <span class="flex-1"
+          ><span class="pt-action__title">Registra un viaggio</span
+          ><span class="pt-action__hint">Mezzo, cliente, luoghi e orari</span></span
+        >
+        <app-icon name="chevron-right" />
+      </a>
+      <p class="pt-muted">
+        Titolo di sezione e righe di riepilogo: pt-section-title, pt-summary, pt-summary__row
+      </p>
+      <h3 class="pt-section-title">Ripeti un viaggio</h3>
+      <dl class="pt-summary">
+        <div class="pt-summary__row">
+          <span class="pt-tile pt-tile--primary"><app-icon name="building" /></span>
+          <div>
+            <dt class="pt-label">Cliente</dt>
+            <dd>Calcestruzzi Vestina S.p.A.</dd>
+          </div>
+        </div>
+        <div class="pt-summary__row">
+          <span class="pt-tile pt-tile--primary"><app-icon name="calendar" /></span>
+          <div>
+            <dt class="pt-label">Data</dt>
+            <dd>Lunedì 23 novembre 2026</dd>
+          </div>
+        </div>
+        <div class="pt-summary__row">
+          <span class="pt-tile pt-tile--primary"><app-icon name="clock" /></span>
+          <div>
+            <dt class="pt-label">Orari</dt>
+            <dd>07:30 – 10:45 · 3 ore e 15 minuti</dd>
+          </div>
+        </div>
+      </dl>
+      <p class="pt-muted">Barra in basso con il pulsante principale: pt-bottombar</p>
+      <div class="pt-bottombar">
+        <button type="button" class="pt-btn pt-btn--xl pt-btn--primary w-full">
+          <app-icon name="check" />Conferma viaggio
+        </button>
+      </div>
+      <div class="flex flex-col gap-3">
+        <button type="button" class="pt-btn pt-btn--xl pt-btn--primary">
+          <app-icon name="check" />Conferma viaggio
+        </button>
+        <button type="button" class="pt-btn pt-btn--xl pt-btn--primary" disabled>
+          <app-icon name="check" />Conferma viaggio
+        </button>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="pt-field"
+          ><span class="pt-label">Inizio</span
+          ><input class="pt-input pt-input--lg" type="time" value="07:30"
+        /></label>
+        <label class="pt-field"
+          ><span class="pt-label">Peso trasportato</span
+          ><span class="pt-input-group"
+            ><input class="pt-input pt-input--lg" inputmode="numeric" value="12300" /><span
+              class="pt-input-group__addon"
+              >kg</span
+            ></span
+          ><span class="pt-field__hint">In chili, come sulla pesata.</span></label
+        >
+      </div>
+      <p class="pt-field__error">Il viaggio non può essere nel futuro.</p>
+      <label class="pt-search pt-search--lg">
+        <app-icon name="search" /><input type="search" placeholder="Cerca cliente…" />
+      </label>
+      <label class="pt-choice"
+        ><input type="radio" name="g-driver-choice" /><span
+          >Magazzino A<span class="pt-choice__hint">Penne</span></span
+        ></label
+      >
+      <label class="pt-choice"
+        ><input class="sr-only" type="radio" name="g-driver-choice" checked /><span
+          class="pt-tile pt-tile--primary"
+          ><app-icon name="building" /></span
+        ><span
+          >Calcestruzzi Vestina S.p.A.<span class="pt-choice__hint">P.IVA 01234567890</span></span
+        ></label
+      >
+      <p class="pt-muted">
+        Giorno del viaggio, scelte piene e impilate: pt-choice--solid, pt-choice--stacked
+      </p>
+      <div class="grid grid-cols-3 gap-2">
+        <label class="pt-choice pt-choice--solid pt-choice--stacked"
+          ><input class="sr-only" type="radio" name="g-driver-day" checked /><span>Oggi</span
+          ><span class="pt-choice__hint">23 nov</span></label
+        >
+        <label class="pt-choice pt-choice--solid pt-choice--stacked"
+          ><input class="sr-only" type="radio" name="g-driver-day" /><span>Ieri</span
+          ><span class="pt-choice__hint">22 nov</span></label
+        >
+        <label class="pt-choice pt-choice--solid pt-choice--stacked"
+          ><input class="sr-only" type="radio" name="g-driver-day" /><span>Altra</span
+          ><span class="pt-choice__hint">…</span></label
+        >
+      </div>
+      <section class="pt-question" aria-current="step">
+        <span class="pt-question__number">2</span>
+        <div class="flex min-w-0 flex-1 flex-col gap-3">
+          <h3 class="pt-question__title">Per quale cliente?</h3>
+          <p class="pt-label">Usati di recente</p>
+        </div>
+      </section>
+      <section class="pt-question pt-question--answered">
+        <span class="pt-question__number"><app-icon name="check" size="sm" /></span>
+        <div class="min-w-0 flex-1">
+          <h3 class="pt-question__title">Mezzo</h3>
+          <p class="pt-question__value"><span class="pt-mono">AB123CD</span> · Scania R450</p>
+        </div>
+        <a class="pt-link" href="#">Modifica</a>
+      </section>
+      <section class="pt-question">
+        <span class="pt-question__number">4</span>
+        <h3 class="pt-question__title">Dove?</h3>
+      </section>
+    </div>
+  </section>
+
   <section class="flex flex-col gap-3" aria-labelledby="g-table">
     <h2 id="g-table" class="pt-label">Tabella</h2>
     <div class="pt-table-wrap">
@@ -435,7 +599,7 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
     <h2 id="g-notice" class="pt-label">Avviso — neutro e quattro colori, con azione facoltativa</h2>
     <div class="flex max-w-3xl flex-col gap-2">
       <div class="pt-notice">Le modifiche valgono dal prossimo accesso.</div>
-      <div class="pt-notice pt-notice--info">L'app autisti non è ancora disponibile.</div>
+      <div class="pt-notice pt-notice--info">Controlla i dati e riprova.</div>
       <div class="pt-notice pt-notice--success">Tutte le anomalie del mese sono risolte.</div>
       <div class="pt-notice pt-notice--warn" role="alert">
         <span>2 viaggi hanno tariffa mancante.</span>
@@ -584,6 +748,10 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
             <button type="button" class="pt-btn pt-btn--outline">Modifica</button>
           </div>
         </header>
+        <!-- under 640px the outermost boxes of the page run edge to edge -->
+        <div class="pt-page flex flex-col gap-4">
+          <div class="pt-card">Contenuto della pagina: pt-page</div>
+        </div>
       </div>
     </div>
   </section>
@@ -665,7 +833,9 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
             <p class="pt-muted text-xs">Larga, per i moduli con più campi</p>
           </div>
         </div>
-        <p>La finestra larga è larga 672px al massimo e serve ai moduli con più campi affiancati.</p>
+        <p>
+          La finestra larga è larga 672px al massimo e serve ai moduli con più campi affiancati.
+        </p>
         <div class="pt-dialog__actions">
           <button type="button" class="pt-btn pt-btn--outline">Annulla</button>
           <button type="button" class="pt-btn pt-btn--primary">Salva</button>

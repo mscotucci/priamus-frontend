@@ -1,0 +1,82 @@
+@for (group of groups(); track group.side) {
+  @if (group.labelled) {
+    <p class="pt-label">{{ 'driver.newTrip.locations.side.' + group.side | translate }}</p>
+  }
+  @for (place of group.places; track place.id) {
+    <label class="pt-choice">
+      <input
+        class="sr-only"
+        type="radio"
+        [name]="group.side"
+        [checked]="draft()[group.side]?.id === place.id"
+        (click)="pickPlace(group.side, place)"
+      />
+      <span class="pt-tile pt-tile--primary"><app-icon name="pin" /></span>
+      <span class="min-w-0 flex-1"
+        >{{ place.name }}<span class="pt-choice__hint">{{ place.municipality }}</span></span
+      >
+    </label>
+  }
+}
+@if (asked() === 'None' || requiredChosen()) {
+  @for (side of optional(); track side) {
+    <button
+      type="button"
+      class="pt-btn pt-btn--lg pt-btn--outline"
+      [attr.aria-expanded]="list() === side"
+      (click)="toggleList(side)"
+    >
+      <app-icon name="plus" />
+      @if (asked() === 'None') {
+        {{ 'driver.newTrip.locations.side.' + side | translate }}
+        @if (draft()[side]; as chosen) {
+          · {{ chosen.name }}
+        }
+      } @else {
+        {{ 'driver.newTrip.locations.add.' + side | translate }}
+      }
+    </button>
+  }
+  @if (list(); as side) {
+    <label class="pt-search pt-search--lg">
+      <app-icon name="search" size="sm" />
+      <input
+        #search
+        type="search"
+        [placeholder]="'driver.newTrip.locations.search' | translate"
+        [attr.aria-label]="'driver.newTrip.locations.search' | translate"
+        (input)="searchFor(search.value)"
+      />
+    </label>
+    @for (place of facade.locations(); track place.id) {
+      <label class="pt-choice">
+        <input
+          class="sr-only"
+          type="radio"
+          name="optional"
+          [checked]="draft()[side]?.id === place.id"
+          (click)="pickOptional(side, place)"
+        />
+        <span class="pt-tile pt-tile--primary"><app-icon name="pin" /></span>
+        <span class="min-w-0 flex-1"
+          >{{ place.name }}<span class="pt-choice__hint">{{ place.municipality }}</span></span
+        >
+      </label>
+    }
+    @if (facade.locationsFailed()) {
+      <p class="pt-field__error">{{ 'errors.generic' | translate }}</p>
+    } @else if (!facade.locationsLoading() && facade.locations().length === 0) {
+      <p class="pt-muted text-center">{{ 'driver.noResults' | translate }}</p>
+    }
+  }
+  @if (asked() === 'None' ? anyChosen() : requiredChosen()) {
+    <button type="button" class="pt-btn pt-btn--xl pt-btn--primary w-full" (click)="continue()">
+      {{ 'driver.newTrip.locations.continue' | translate }}
+    </button>
+  }
+  @if (asked() === 'None' && !anyChosen()) {
+    <button type="button" class="pt-btn pt-btn--xl pt-btn--outline w-full" (click)="skip()">
+      {{ 'driver.newTrip.locations.skip' | translate }}
+    </button>
+  }
+}

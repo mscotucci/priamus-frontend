@@ -22,8 +22,9 @@ Reusable UX conventions. Single-screen details live in the mockups, behaviour in
 ## Design system grammar
 
 - A component is a base class plus size and colour modifiers (`pt-btn pt-btn--sm pt-btn--primary`); states come from HTML and ARIA attributes.
-- Sizes are `sm` (30px), `md` (36px, default) and `lg` (44px, touch), the same on every control; colours are `primary`, `danger`, `warn`, `success`, `info` and the neutral default.
+- Sizes are `sm` (30px), `md` (36px, default) and `lg` (44px, touch), the same on every control, and `xl` (56px), which is the driver area's own: the root `pt-driver` gives it to the controls under it and `pt-btn--xl` to the main button; colours are `primary`, `danger`, `warn`, `success`, `info` and the neutral default.
 - Three modifiers are the grammar's only exceptions, taken from the reference mockups: `pt-pill--purple` (the pill of a flat-rate price), `pt-stat--highlight` (the one stat card that stands out, in the primary colour) and `pt-row--anomaly` (a table row with an open anomaly).
+- The driver look adds two modifiers of the choice card: `pt-choice--solid` (the checked card is filled in the primary colour) and `pt-choice--stacked` (title over hint, centred, for a row of short cards).
 - A component enters the catalogue when a reference mockup or an approved screen uses it.
 - A focused field shows one ring flush with its border, never an inner and an outer one; buttons and links show the detached ring only for the keyboard.
 - The open list of a select is the design system's menu, through the browser's customisable native select.
@@ -32,6 +33,11 @@ Reusable UX conventions. Single-screen details live in the mockups, behaviour in
 
 - **Back-office** (secretariat, desktop first): dense tables, filters, drawers. Navigation is a column on the left; the current user and "Esci" sit at its bottom.
 - **Driver app** (phone and tablet first, used in the cab): one task per screen, large touch targets (no control under 44px), no table. It never shows prices, rates or totals.
+- The driver app takes its look from the May screenshots of the driver app (large cards with wide corners, the primary action card on the home, section icons) and none of their greeting, emoji or connection pill: the app does not work without network (decided 2026-11-23). A page has a bar with a back arrow and a centred title, or the brand and "Esci" on the home; its main button stays at the bottom of the screen.
+- A driver form is a guided page like the contract's (`pt-question`), at driver size: one question open at a time, a tap on a card answers it and opens the next with no "Avanti", the choices (search and cards) sit inside the question, an answered question is a line with its answer and "Modifica". The question that opens is brought to the top of the screen without the page jumping. Changing an answer empties only the answers that no longer hold (decided 2026-11-23).
+- What a driver does again is offered before it is asked: a form opens with the answers of the driver's last use proposed or already given, and a past item can be repeated from the home. A proposal is never saved by itself (decided 2026-11-23).
+- A driver adds a trip, starts it and ends it, and each act leads back to the home, which shows what is in progress first; an end alone leads to "Viaggio concluso", whose two buttons lead to a new trip with the same answers or to the home. An act that cannot be done now is not offered, and a notice says why (decided 2026-11-24).
+- On a screen 900px wide or more a driver page is the same content in one centred column of 640px, its main button at the end of the column (decided 2026-11-23).
 - Every page of both areas works at phone width (375 px) without the page scrolling horizontally: wide tables scroll inside their own container.
 
 ## Lists and detail (back-office)

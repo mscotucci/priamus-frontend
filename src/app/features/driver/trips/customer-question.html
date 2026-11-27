@@ -1,0 +1,42 @@
+@if (failed()) {
+  <p class="pt-field__error">{{ 'errors.generic' | translate }}</p>
+}
+<label class="pt-search pt-search--lg">
+  <app-icon name="search" size="sm" />
+  <input
+    #search
+    type="search"
+    [placeholder]="'driver.newTrip.customer.search' | translate"
+    [attr.aria-label]="'driver.newTrip.customer.search' | translate"
+    (input)="searchFor(search.value)"
+  />
+</label>
+@for (item of all(); track item.id) {
+  @if ($first && facade.customers().recent.length > 0) {
+    <p class="pt-label">{{ 'driver.newTrip.customer.recent' | translate }}</p>
+  }
+  <label class="pt-choice">
+    <input
+      class="sr-only"
+      type="radio"
+      name="customer"
+      [checked]="item.id === customer()?.id"
+      (click)="pick(item)"
+    />
+    <span class="pt-tile pt-tile--primary"><app-icon name="building" /></span>
+    <span class="min-w-0 flex-1"
+      >{{ item.companyName }}
+      @if (item.vatNumber) {
+        <span class="pt-choice__hint">{{
+          'driver.newTrip.customer.vat' | translate: { vat: item.vatNumber }
+        }}</span>
+      }
+    </span>
+  </label>
+}
+@if (facade.customersFailed()) {
+  <p class="pt-field__error">{{ 'errors.generic' | translate }}</p>
+} @else if (!facade.customersLoading() && all().length === 0) {
+  <p class="pt-muted text-center">{{ 'driver.noResults' | translate }}</p>
+}
+<p class="pt-muted text-center text-xs">{{ 'driver.newTrip.customer.missing' | translate }}</p>

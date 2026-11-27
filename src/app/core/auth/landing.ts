@@ -7,6 +7,8 @@ export function landingPath(role: CurrentUser['role']): string {
       return '/users';
     case 'BackOffice':
       return '/customers';
+    case 'Driver':
+      return '/driver';
     default:
       return '/login';
   }

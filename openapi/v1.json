@@ -1,6 +1,64 @@
 {
   "components": {
     "schemas": {
+      "AddTripRequest": {
+        "description": "Request body for `PUT /api/operations/driver/trips/{tripId}`. The driver is the session's and\r\nthe trip is added on today in Italy, so the body names neither. The customer and the leading vehicle\r\nare required; the trailer and the two locations are optional.",
+        "properties": {
+          "customerId": {
+            "description": "The customer the trip is done for.",
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deliveryLocationId": {
+            "description": "The delivery location; `null` when not named.",
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pickupLocationId": {
+            "description": "The pickup location; `null` when not named.",
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "start": {
+            "description": "`true` to start the trip now, in the same act that adds it.",
+            "type": "boolean"
+          },
+          "trailerId": {
+            "description": "The trailer; `null` when none.",
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vehicleId": {
+            "description": "The tractor or standalone vehicle.",
+            "format": "uuid",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "customerId",
+          "vehicleId",
+          "trailerId",
+          "pickupLocationId",
+          "deliveryLocationId",
+          "start"
+        ],
+        "type": "object"
+      },
       "BillingLevel": {
         "description": "How finely the rates of a Contract are set, and so which locations a trip must\r\nname (PRD §5.4).",
         "enum": [
@@ -179,6 +237,39 @@
           "locationRates",
           "version",
           "changeFrom"
+        ],
+        "type": "object"
+      },
+      "CheckTripAnswersResponse": {
+        "description": "Which answers of a trip still hold. An answer that was not sent is `true`: there is nothing to\r\nempty.",
+        "properties": {
+          "customer": {
+            "description": "The customer is active and has a contract in force today.",
+            "type": "boolean"
+          },
+          "delivery": {
+            "description": "The delivery location is active and accepted by the contract in force.",
+            "type": "boolean"
+          },
+          "pickup": {
+            "description": "The pickup location is active and accepted by the contract in force.",
+            "type": "boolean"
+          },
+          "trailer": {
+            "description": "The trailer is active, a trailer, and fits the leading vehicle.",
+            "type": "boolean"
+          },
+          "vehicle": {
+            "description": "The leading vehicle is active and a tractor or a standalone vehicle.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "vehicle",
+          "trailer",
+          "customer",
+          "pickup",
+          "delivery"
         ],
         "type": "object"
       },
@@ -1558,6 +1649,45 @@
         ],
         "type": "object"
       },
+      "EndTripRequest": {
+        "description": "Request body for `POST /api/operations/driver/trips/{tripId}/end`. The time absent ends the trip\r\nnow; the measure the contract asks for is given, the other is not.",
+        "properties": {
+          "kilograms": {
+            "description": "The kilograms carried, for a trip measured by weight.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          },
+          "kilometres": {
+            "description": "The kilometres driven, for a trip measured by distance.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          },
+          "time": {
+            "description": "The time the trip ended; `null` to end it now.",
+            "format": "time",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "time",
+          "kilograms",
+          "kilometres"
+        ],
+        "type": "object"
+      },
       "GetCurrentUserResponse": {
         "description": "The signed-in user as the database knows it now.",
         "properties": {
@@ -1588,6 +1718,176 @@
           "username",
           "role",
           "driverId"
+        ],
+        "type": "object"
+      },
+      "GetDriverHomeResponse": {
+        "description": "What the driver home shows: the driver's name, the trip in progress, the planned trips and the trips the\r\ndriver can repeat.",
+        "properties": {
+          "firstName": {
+            "description": "The driver's first name.",
+            "type": "string"
+          },
+          "inProgress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/InProgressTripDto",
+                "description": "The trip in progress; `null` when there is none."
+              }
+            ]
+          },
+          "lastName": {
+            "description": "The driver's last name.",
+            "type": "string"
+          },
+          "planned": {
+            "description": "The planned trips that have not expired, in the order they were added.",
+            "items": {
+              "$ref": "#/components/schemas/PlannedTripDto"
+            },
+            "type": "array"
+          },
+          "repeatableTrips": {
+            "description": "Every repeatable trip of the driver, built from ended trips, the one ended\r\n            last first; the page shows the first four and offers the rest.",
+            "items": {
+              "$ref": "#/components/schemas/RepeatableTripDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName",
+          "inProgress",
+          "planned",
+          "repeatableTrips"
+        ],
+        "type": "object"
+      },
+      "GetNewTripResponse": {
+        "description": "What \"Nuovo viaggio\" proposes when it opens.",
+        "properties": {
+          "hasTripInProgress": {
+            "description": "Whether the driver has a trip in progress.",
+            "type": "boolean"
+          },
+          "trailer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripVehicleDto",
+                "description": "The trailer of that trip, when the vehicle and the trailer still hold; `null`\r\n            otherwise. A trailer that is missing is not judged: a tractor that now requires one is proposed\r\n            without it."
+              }
+            ]
+          },
+          "vehicle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripVehicleDto",
+                "description": "The leading vehicle of the driver's most recent trip started today, when it still\r\n            holds; `null` otherwise."
+              }
+            ]
+          }
+        },
+        "required": [
+          "vehicle",
+          "trailer",
+          "hasTripInProgress"
+        ],
+        "type": "object"
+      },
+      "GetTripResponse": {
+        "description": "One trip of the driver and what its page needs besides it.",
+        "properties": {
+          "daysToExpiry": {
+            "description": "For a planned trip, 7 on the day it was added and 0 on its last day;\r\n            `null` otherwise.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          },
+          "endAsks": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripEndAsks",
+                "description": "For a trip in progress, what ending it asks of the driver, by the contract of the\r\n            trip day; `null` for any other trip."
+              }
+            ]
+          },
+          "proposedStart": {
+            "description": "For a planned trip, the end time of the driver's latest trip ended today,\r\n            proposed as the start time; `null` when none ended today and for any other trip.",
+            "format": "time",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "trip": {
+            "$ref": "#/components/schemas/TripDto",
+            "description": "The trip."
+          }
+        },
+        "required": [
+          "trip",
+          "daysToExpiry",
+          "proposedStart",
+          "endAsks"
+        ],
+        "type": "object"
+      },
+      "InProgressTripDto": {
+        "description": "A trip in progress and what its end asks.",
+        "properties": {
+          "endAsks": {
+            "$ref": "#/components/schemas/TripEndAsks",
+            "description": "What ending it asks of the driver, by the contract of the trip day."
+          },
+          "trip": {
+            "$ref": "#/components/schemas/TripDto",
+            "description": "The trip."
+          }
+        },
+        "required": [
+          "trip",
+          "endAsks"
+        ],
+        "type": "object"
+      },
+      "ListTripCustomersResponse": {
+        "description": "The customers offered today, split as the question shows them.",
+        "properties": {
+          "others": {
+            "description": "The other customers, in the order the Registry gives them (by company name).",
+            "items": {
+              "$ref": "#/components/schemas/TripCustomerDto"
+            },
+            "type": "array"
+          },
+          "recent": {
+            "description": "The customers of the driver's latest trips, most recent first, five at most;\r\n            empty when a search text is given.",
+            "items": {
+              "$ref": "#/components/schemas/TripCustomerDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "recent",
+          "others"
         ],
         "type": "object"
       },
@@ -2048,6 +2348,29 @@
         ],
         "type": "object"
       },
+      "PlannedTripDto": {
+        "description": "A planned trip and the days left before it expires.",
+        "properties": {
+          "daysToExpiry": {
+            "description": "7 on the day it was added, 0 on its last day.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "trip": {
+            "$ref": "#/components/schemas/TripDto",
+            "description": "The trip."
+          }
+        },
+        "required": [
+          "trip",
+          "daysToExpiry"
+        ],
+        "type": "object"
+      },
       "PriceSimulationDto": {
         "description": "A simulated amount with the steps that led to it, as the engine computed them.",
         "properties": {
@@ -2437,6 +2760,60 @@
         ],
         "type": "object"
       },
+      "RepeatableTripDto": {
+        "description": "What a past trip offers to do again: customer, locations, leading vehicle and trailer, named as the\r\nregistry names them now (a decommissioned vehicle keeps its name).",
+        "properties": {
+          "customer": {
+            "$ref": "#/components/schemas/TripCustomerDto",
+            "description": "The customer."
+          },
+          "delivery": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripLocationDto",
+                "description": "The delivery location; `null` when the trip named none."
+              }
+            ]
+          },
+          "pickup": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripLocationDto",
+                "description": "The pickup location; `null` when the trip named none."
+              }
+            ]
+          },
+          "trailer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripVehicleDto",
+                "description": "The trailer; `null` when the trip had none."
+              }
+            ]
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/TripVehicleDto",
+            "description": "The tractor or standalone vehicle."
+          }
+        },
+        "required": [
+          "customer",
+          "pickup",
+          "delivery",
+          "vehicle",
+          "trailer"
+        ],
+        "type": "object"
+      },
       "RequiredDocument": {
         "description": "A document a Contract asks for. The declaration order is the canonical order of\r\na set of required documents (PRD §5.4).",
         "enum": [
@@ -2666,11 +3043,352 @@
           null
         ]
       },
+      "StartTripRequest": {
+        "description": "Request body for `POST /api/operations/driver/trips/{tripId}/start`. Both members absent start the\r\ntrip now; otherwise both are given, as the day and time the driver typed.",
+        "properties": {
+          "day": {
+            "description": "The day the trip started; `null` to start it now.",
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time": {
+            "description": "The time the trip started; `null` to start it now.",
+            "format": "time",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "day",
+          "time"
+        ],
+        "type": "object"
+      },
       "TimeBand": {
         "description": "Whether a trip starts in the night band.",
         "enum": [
           "Day",
           "Night"
+        ]
+      },
+      "TripCustomerDto": {
+        "description": "A customer the driver can choose for a trip.",
+        "properties": {
+          "companyName": {
+            "description": "The company name.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The customer's identifier.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "vatNumber": {
+            "description": "The VAT number; `null` when the customer has none.",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "companyName",
+          "vatNumber"
+        ],
+        "type": "object"
+      },
+      "TripDto": {
+        "description": "A trip in any state, as the driver app receives it: what was answered, named as the registry names it\r\nnow, and the times and measures once they exist. It carries no price.",
+        "properties": {
+          "customer": {
+            "$ref": "#/components/schemas/TripCustomerDto",
+            "description": "The customer."
+          },
+          "day": {
+            "description": "The day the trip started; `null` while it is planned.",
+            "format": "date",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "delivery": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripLocationDto",
+                "description": "The delivery location; `null` when none was named."
+              }
+            ]
+          },
+          "end": {
+            "description": "The end time; `null` until it is ended.",
+            "format": "time",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "description": "The trip's identifier.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kilograms": {
+            "description": "The kilograms carried; `null` unless the trip was measured by weight.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          },
+          "kilometres": {
+            "description": "The kilometres driven; `null` unless the trip was measured by distance.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          },
+          "number": {
+            "description": "The trip number; `null` until it is ended.",
+            "format": "int64",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ]
+          },
+          "pickup": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripLocationDto",
+                "description": "The pickup location; `null` when none was named."
+              }
+            ]
+          },
+          "start": {
+            "description": "The start time; `null` while it is planned.",
+            "format": "time",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/TripState",
+            "description": "Planned, in progress or ended."
+          },
+          "trailer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripVehicleDto",
+                "description": "The trailer; `null` when none."
+              }
+            ]
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/TripVehicleDto",
+            "description": "The tractor or standalone vehicle."
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "customer",
+          "pickup",
+          "delivery",
+          "vehicle",
+          "trailer",
+          "day",
+          "start",
+          "end",
+          "kilograms",
+          "kilometres",
+          "number"
+        ],
+        "type": "object"
+      },
+      "TripEndAsks": {
+        "description": "What the end of a trip still asks of the driver. It names the measure, never the way the contract prices.",
+        "enum": [
+          "Nothing",
+          "Kilograms",
+          "Kilometres"
+        ]
+      },
+      "TripLocationDto": {
+        "description": "A location the driver can pick up from or deliver to.",
+        "properties": {
+          "id": {
+            "description": "The location's identifier.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "municipality": {
+            "description": "The municipality it lies in.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the place.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "municipality"
+        ],
+        "type": "object"
+      },
+      "TripLocationsAsked": {
+        "description": "Which locations a trip for a customer on a day must name.",
+        "enum": [
+          "None",
+          "Pickup",
+          "Delivery",
+          "Both"
+        ]
+      },
+      "TripPlaceDto": {
+        "description": "A location, or a pair, a contract has a rate for. Only the sides the contract asks for are set.",
+        "properties": {
+          "delivery": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripLocationDto",
+                "description": "The delivery location; `null` when the contract does not ask for it."
+              }
+            ]
+          },
+          "pickup": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripLocationDto",
+                "description": "The pickup location; `null` when the contract does not ask for it."
+              }
+            ]
+          }
+        },
+        "required": [
+          "pickup",
+          "delivery"
+        ],
+        "type": "object"
+      },
+      "TripQuestionsDto": {
+        "description": "What the contract of a customer today asks of the driver, never its terms.",
+        "properties": {
+          "lastPlace": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TripPlaceDto",
+                "description": "The place of the driver's latest trip for the customer, when the contract\r\n            still offers it; `null` otherwise."
+              }
+            ]
+          },
+          "locationsAsked": {
+            "$ref": "#/components/schemas/TripLocationsAsked",
+            "description": "Which locations the contract asks for."
+          },
+          "places": {
+            "description": "The locations or pairs the contract offers; empty when it asks for none.",
+            "items": {
+              "$ref": "#/components/schemas/TripPlaceDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "locationsAsked",
+          "places",
+          "lastPlace"
+        ],
+        "type": "object"
+      },
+      "TripState": {
+        "description": "Where a trip is, read from its times alone: it is never stored.",
+        "enum": [
+          "Planned",
+          "InProgress",
+          "Ended"
+        ]
+      },
+      "TripVehicleDto": {
+        "description": "A vehicle the driver can choose for a trip.",
+        "properties": {
+          "description": {
+            "description": "The description, for example make and model.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The vehicle's identifier.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TripVehicleKind",
+            "description": "Whether it is a tractor, a standalone vehicle or a trailer."
+          },
+          "licensePlate": {
+            "description": "The licence plate.",
+            "type": "string"
+          },
+          "requiresTrailer": {
+            "description": "Whether a tractor must be chosen together with a trailer.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "licensePlate",
+          "description",
+          "kind",
+          "requiresTrailer"
+        ],
+        "type": "object"
+      },
+      "TripVehicleKind": {
+        "description": "What a vehicle is, for the role it can take in a trip.",
+        "enum": [
+          "Tractor",
+          "StandaloneVehicle",
+          "Trailer"
+        ]
+      },
+      "TripVehicleRole": {
+        "enum": [
+          "Leading",
+          "Trailer",
+          null
         ]
       },
       "UpdateContractRequest": {
@@ -3809,6 +4527,877 @@
         },
         "tags": [
           "Identity.Users"
+        ]
+      }
+    },
+    "/api/operations/driver/answers-check": {
+      "get": {
+        "operationId": "CheckTripAnswers",
+        "parameters": [
+          {
+            "description": "The leading vehicle answered; `null` when none.",
+            "in": "query",
+            "name": "vehicleId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The trailer answered; `null` when none.",
+            "in": "query",
+            "name": "trailerId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The customer answered; `null` when none.",
+            "in": "query",
+            "name": "customerId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The pickup location answered; `null` when none.",
+            "in": "query",
+            "name": "pickupLocationId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The delivery location answered; `null` when none.",
+            "in": "query",
+            "name": "deliveryLocationId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckTripAnswersResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/customers": {
+      "get": {
+        "operationId": "ListTripCustomers",
+        "parameters": [
+          {
+            "description": "Text matched, ignoring case, against part of the company name or the VAT number. When null or\r\nwhitespace, no search is applied.",
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListTripCustomersResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/home": {
+      "get": {
+        "operationId": "GetDriverHome",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDriverHomeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/locations": {
+      "get": {
+        "operationId": "ListTripLocations",
+        "parameters": [
+          {
+            "description": "Text matched, ignoring case, against part of the name or the municipality. When null or\r\nwhitespace, no search is applied.",
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TripLocationDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/new-trip": {
+      "get": {
+        "operationId": "GetNewTrip",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetNewTripResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/trip-questions": {
+      "get": {
+        "operationId": "GetTripQuestions",
+        "parameters": [
+          {
+            "description": "The customer the trip is for.",
+            "in": "query",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripQuestionsDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/trips/{tripId}": {
+      "delete": {
+        "operationId": "DeleteTrip",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      },
+      "get": {
+        "operationId": "GetTrip",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTripResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      },
+      "put": {
+        "operationId": "AddTrip",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTripRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDto"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/trips/{tripId}/end": {
+      "post": {
+        "operationId": "EndTrip",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndTripRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/trips/{tripId}/start": {
+      "post": {
+        "operationId": "StartTrip",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTripRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/vehicles": {
+      "get": {
+        "operationId": "ListTripVehicles",
+        "parameters": [
+          {
+            "description": "The role the vehicle is chosen for: `Leading` (tractors and standalone vehicles) or\r\n`Trailer`.",
+            "in": "query",
+            "name": "role",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TripVehicleRole"
+            }
+          },
+          {
+            "description": "Text matched, ignoring case, against part of the plate or the description. When null or\r\nwhitespace, no search is applied.",
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TripVehicleDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
         ]
       }
     },
@@ -6368,6 +7957,9 @@
     },
     {
       "name": "Registry.Locations"
+    },
+    {
+      "name": "Operations.Driver"
     }
   ]
 }

@@ -7,6 +7,7 @@ const setup = guardSetup([
   { path: 'login', component: Page },
   { path: 'users', component: Page },
   { path: 'customers', component: Page },
+  { path: 'driver', component: Page },
   { path: '', pathMatch: 'full', canActivate: [landingGuard], children: [] },
 ]);
 
@@ -14,6 +15,7 @@ describe('landingGuard', () => {
   it.each<[CurrentUser['role'], string]>([
     ['Admin', '/users'],
     ['BackOffice', '/customers'],
+    ['Driver', '/driver'],
   ])('sends a signed-in %s from the root to %s', async (role, landing) => {
     const router = setup(userWithRole(role));
 
@@ -22,8 +24,8 @@ describe('landingGuard', () => {
     expect(router.url).toBe(landing);
   });
 
-  it('ends a signed-in Driver, who has no landing page, on the login from the root', async () => {
-    const router = setup(userWithRole('Driver'));
+  it('ends a signed-in user of an unexpected role, who has no landing page, on the login from the root', async () => {
+    const router = setup({ ...userWithRole('Admin'), role: 'Unknown' as CurrentUser['role'] });
 
     await router.navigateByUrl('/');
 

@@ -127,6 +127,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/operations/driver/answers-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CheckTripAnswers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListTripCustomers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetDriverHome"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListTripLocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/new-trip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetNewTrip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/trip-questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetTripQuestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/trips/{tripId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetTrip"];
+        put: operations["AddTrip"];
+        post?: never;
+        delete: operations["DeleteTrip"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/trips/{tripId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EndTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/trips/{tripId}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StartTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/vehicles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListTripVehicles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/registry/contracts/simulation": {
         parameters: {
             query?: never;
@@ -516,6 +676,40 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * @description Request body for `PUT /api/operations/driver/trips/{tripId}`. The driver is the session's and
+         *     the trip is added on today in Italy, so the body names neither. The customer and the leading vehicle
+         *     are required; the trailer and the two locations are optional.
+         */
+        AddTripRequest: {
+            /**
+             * Format: uuid
+             * @description The customer the trip is done for.
+             */
+            customerId: null | string;
+            /**
+             * Format: uuid
+             * @description The delivery location; `null` when not named.
+             */
+            deliveryLocationId: null | string;
+            /**
+             * Format: uuid
+             * @description The pickup location; `null` when not named.
+             */
+            pickupLocationId: null | string;
+            /** @description `true` to start the trip now, in the same act that adds it. */
+            start: boolean;
+            /**
+             * Format: uuid
+             * @description The trailer; `null` when none.
+             */
+            trailerId: null | string;
+            /**
+             * Format: uuid
+             * @description The tractor or standalone vehicle.
+             */
+            vehicleId: null | string;
+        };
+        /**
          * @description How finely the rates of a Contract are set, and so which locations a trip must
          *     name (PRD §5.4).
          * @enum {unknown}
@@ -555,6 +749,22 @@ export interface components {
             vehicleRates: null | components["schemas"]["ContractVehicleRateRequest"][];
             /** Format: int32 */
             version: number | null;
+        };
+        /**
+         * @description Which answers of a trip still hold. An answer that was not sent is `true`: there is nothing to
+         *     empty.
+         */
+        CheckTripAnswersResponse: {
+            /** @description The customer is active and has a contract in force today. */
+            customer: boolean;
+            /** @description The delivery location is active and accepted by the contract in force. */
+            delivery: boolean;
+            /** @description The pickup location is active and accepted by the contract in force. */
+            pickup: boolean;
+            /** @description The trailer is active, a trailer, and fits the leading vehicle. */
+            trailer: boolean;
+            /** @description The leading vehicle is active and a tractor or a standalone vehicle. */
+            vehicle: boolean;
         };
         /** @description A contract as the API returns it. */
         ContractDto: {
@@ -1092,6 +1302,27 @@ export interface components {
             /** Format: int32 */
             version: number | null;
         };
+        /**
+         * @description Request body for `POST /api/operations/driver/trips/{tripId}/end`. The time absent ends the trip
+         *     now; the measure the contract asks for is given, the other is not.
+         */
+        EndTripRequest: {
+            /**
+             * Format: int32
+             * @description The kilograms carried, for a trip measured by weight.
+             */
+            kilograms: number | null;
+            /**
+             * Format: int32
+             * @description The kilometres driven, for a trip measured by distance.
+             */
+            kilometres: number | null;
+            /**
+             * Format: time
+             * @description The time the trip ended; `null` to end it now.
+             */
+            time: null | string;
+        };
         /** @description The signed-in user as the database knows it now. */
         GetCurrentUserResponse: {
             /**
@@ -1108,6 +1339,66 @@ export interface components {
             role: components["schemas"]["UserRole"];
             /** @description The user's normalised user name. */
             username: string;
+        };
+        /**
+         * @description What the driver home shows: the driver's name, the trip in progress, the planned trips and the trips the
+         *     driver can repeat.
+         */
+        GetDriverHomeResponse: {
+            /** @description The driver's first name. */
+            firstName: string;
+            inProgress: null | components["schemas"]["InProgressTripDto"];
+            /** @description The driver's last name. */
+            lastName: string;
+            /** @description The planned trips that have not expired, in the order they were added. */
+            planned: components["schemas"]["PlannedTripDto"][];
+            /**
+             * @description Every repeatable trip of the driver, built from ended trips, the one ended
+             *                 last first; the page shows the first four and offers the rest.
+             */
+            repeatableTrips: components["schemas"]["RepeatableTripDto"][];
+        };
+        /** @description What "Nuovo viaggio" proposes when it opens. */
+        GetNewTripResponse: {
+            /** @description Whether the driver has a trip in progress. */
+            hasTripInProgress: boolean;
+            trailer: null | components["schemas"]["TripVehicleDto"];
+            vehicle: null | components["schemas"]["TripVehicleDto"];
+        };
+        /** @description One trip of the driver and what its page needs besides it. */
+        GetTripResponse: {
+            /**
+             * Format: int32
+             * @description For a planned trip, 7 on the day it was added and 0 on its last day;
+             *                 `null` otherwise.
+             */
+            daysToExpiry: number | null;
+            endAsks: null | components["schemas"]["TripEndAsks"];
+            /**
+             * Format: time
+             * @description For a planned trip, the end time of the driver's latest trip ended today,
+             *                 proposed as the start time; `null` when none ended today and for any other trip.
+             */
+            proposedStart: null | string;
+            /** @description The trip. */
+            trip: components["schemas"]["TripDto"];
+        };
+        /** @description A trip in progress and what its end asks. */
+        InProgressTripDto: {
+            /** @description What ending it asks of the driver, by the contract of the trip day. */
+            endAsks: components["schemas"]["TripEndAsks"];
+            /** @description The trip. */
+            trip: components["schemas"]["TripDto"];
+        };
+        /** @description The customers offered today, split as the question shows them. */
+        ListTripCustomersResponse: {
+            /** @description The other customers, in the order the Registry gives them (by company name). */
+            others: components["schemas"]["TripCustomerDto"][];
+            /**
+             * @description The customers of the driver's latest trips, most recent first, five at most;
+             *                 empty when a search text is given.
+             */
+            recent: components["schemas"]["TripCustomerDto"][];
         };
         /** @description A single item in the paginated list of locations. */
         LocationListItemDto: {
@@ -1321,6 +1612,16 @@ export interface components {
              */
             totalPages?: number;
         };
+        /** @description A planned trip and the days left before it expires. */
+        PlannedTripDto: {
+            /**
+             * Format: int32
+             * @description 7 on the day it was added, 0 on its last day.
+             */
+            daysToExpiry: number;
+            /** @description The trip. */
+            trip: components["schemas"]["TripDto"];
+        };
         /** @description A simulated amount with the steps that led to it, as the engine computed them. */
         PriceSimulationDto: {
             /**
@@ -1496,6 +1797,19 @@ export interface components {
             refreshTokenExpiresAt: string;
         };
         /**
+         * @description What a past trip offers to do again: customer, locations, leading vehicle and trailer, named as the
+         *     registry names them now (a decommissioned vehicle keeps its name).
+         */
+        RepeatableTripDto: {
+            /** @description The customer. */
+            customer: components["schemas"]["TripCustomerDto"];
+            delivery: null | components["schemas"]["TripLocationDto"];
+            pickup: null | components["schemas"]["TripLocationDto"];
+            trailer: null | components["schemas"]["TripVehicleDto"];
+            /** @description The tractor or standalone vehicle. */
+            vehicle: components["schemas"]["TripVehicleDto"];
+        };
+        /**
          * @description A document a Contract asks for. The declaration order is the canonical order of
          *     a set of required documents (PRD §5.4).
          * @enum {unknown}
@@ -1560,10 +1874,151 @@ export interface components {
         /** @enum {unknown} */
         SortDirection: "Ascending" | "Descending" | null;
         /**
+         * @description Request body for `POST /api/operations/driver/trips/{tripId}/start`. Both members absent start the
+         *     trip now; otherwise both are given, as the day and time the driver typed.
+         */
+        StartTripRequest: {
+            /**
+             * Format: date
+             * @description The day the trip started; `null` to start it now.
+             */
+            day: null | string;
+            /**
+             * Format: time
+             * @description The time the trip started; `null` to start it now.
+             */
+            time: null | string;
+        };
+        /**
          * @description Whether a trip starts in the night band.
          * @enum {unknown}
          */
         TimeBand: "Day" | "Night";
+        /** @description A customer the driver can choose for a trip. */
+        TripCustomerDto: {
+            /** @description The company name. */
+            companyName: string;
+            /**
+             * Format: uuid
+             * @description The customer's identifier.
+             */
+            id: string;
+            /** @description The VAT number; `null` when the customer has none. */
+            vatNumber: null | string;
+        };
+        /**
+         * @description A trip in any state, as the driver app receives it: what was answered, named as the registry names it
+         *     now, and the times and measures once they exist. It carries no price.
+         */
+        TripDto: {
+            /** @description The customer. */
+            customer: components["schemas"]["TripCustomerDto"];
+            /**
+             * Format: date
+             * @description The day the trip started; `null` while it is planned.
+             */
+            day: null | string;
+            delivery: null | components["schemas"]["TripLocationDto"];
+            /**
+             * Format: time
+             * @description The end time; `null` until it is ended.
+             */
+            end: null | string;
+            /**
+             * Format: uuid
+             * @description The trip's identifier.
+             */
+            id: string;
+            /**
+             * Format: int32
+             * @description The kilograms carried; `null` unless the trip was measured by weight.
+             */
+            kilograms: number | null;
+            /**
+             * Format: int32
+             * @description The kilometres driven; `null` unless the trip was measured by distance.
+             */
+            kilometres: number | null;
+            /**
+             * Format: int64
+             * @description The trip number; `null` until it is ended.
+             */
+            number: number | null;
+            pickup: null | components["schemas"]["TripLocationDto"];
+            /**
+             * Format: time
+             * @description The start time; `null` while it is planned.
+             */
+            start: null | string;
+            /** @description Planned, in progress or ended. */
+            state: components["schemas"]["TripState"];
+            trailer: null | components["schemas"]["TripVehicleDto"];
+            /** @description The tractor or standalone vehicle. */
+            vehicle: components["schemas"]["TripVehicleDto"];
+        };
+        /**
+         * @description What the end of a trip still asks of the driver. It names the measure, never the way the contract prices.
+         * @enum {unknown}
+         */
+        TripEndAsks: "Nothing" | "Kilograms" | "Kilometres";
+        /** @description A location the driver can pick up from or deliver to. */
+        TripLocationDto: {
+            /**
+             * Format: uuid
+             * @description The location's identifier.
+             */
+            id: string;
+            /** @description The municipality it lies in. */
+            municipality: string;
+            /** @description The name of the place. */
+            name: string;
+        };
+        /**
+         * @description Which locations a trip for a customer on a day must name.
+         * @enum {unknown}
+         */
+        TripLocationsAsked: "None" | "Pickup" | "Delivery" | "Both";
+        /** @description A location, or a pair, a contract has a rate for. Only the sides the contract asks for are set. */
+        TripPlaceDto: {
+            delivery: null | components["schemas"]["TripLocationDto"];
+            pickup: null | components["schemas"]["TripLocationDto"];
+        };
+        /** @description What the contract of a customer today asks of the driver, never its terms. */
+        TripQuestionsDto: {
+            lastPlace: null | components["schemas"]["TripPlaceDto"];
+            /** @description Which locations the contract asks for. */
+            locationsAsked: components["schemas"]["TripLocationsAsked"];
+            /** @description The locations or pairs the contract offers; empty when it asks for none. */
+            places: components["schemas"]["TripPlaceDto"][];
+        };
+        /**
+         * @description Where a trip is, read from its times alone: it is never stored.
+         * @enum {unknown}
+         */
+        TripState: "Planned" | "InProgress" | "Ended";
+        /** @description A vehicle the driver can choose for a trip. */
+        TripVehicleDto: {
+            /** @description The description, for example make and model. */
+            description: string;
+            /**
+             * Format: uuid
+             * @description The vehicle's identifier.
+             */
+            id: string;
+            /** @description Whether it is a tractor, a standalone vehicle or a trailer. */
+            kind: components["schemas"]["TripVehicleKind"];
+            /** @description The licence plate. */
+            licensePlate: string;
+            /** @description Whether a tractor must be chosen together with a trailer. */
+            requiresTrailer: boolean;
+        };
+        /**
+         * @description What a vehicle is, for the role it can take in a trip.
+         * @enum {unknown}
+         */
+        TripVehicleKind: "Tractor" | "StandaloneVehicle" | "Trailer";
+        /** @enum {unknown} */
+        TripVehicleRole: "Leading" | "Trailer" | null;
         /**
          * @description Request body for `PUT /api/registry/customers/{customerId}/contracts/{contractId}`
          *     (PRD §5.4, RF-16): the terms of the contract, with its rate members as in
@@ -2265,6 +2720,708 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CheckTripAnswers: {
+        parameters: {
+            query?: {
+                /** @description The leading vehicle answered; `null` when none. */
+                vehicleId?: string;
+                /** @description The trailer answered; `null` when none. */
+                trailerId?: string;
+                /** @description The customer answered; `null` when none. */
+                customerId?: string;
+                /** @description The pickup location answered; `null` when none. */
+                pickupLocationId?: string;
+                /** @description The delivery location answered; `null` when none. */
+                deliveryLocationId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckTripAnswersResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListTripCustomers: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Text matched, ignoring case, against part of the company name or the VAT number. When null or
+                 *     whitespace, no search is applied.
+                 */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTripCustomersResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetDriverHome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetDriverHomeResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListTripLocations: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Text matched, ignoring case, against part of the name or the municipality. When null or
+                 *     whitespace, no search is applied.
+                 */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripLocationDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetNewTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetNewTripResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetTripQuestions: {
+        parameters: {
+            query: {
+                /** @description The customer the trip is for. */
+                customerId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripQuestionsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tripId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetTripResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AddTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tripId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddTripRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripDto"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tripId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    EndTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tripId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndTripRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    StartTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tripId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartTripRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListTripVehicles: {
+        parameters: {
+            query: {
+                /**
+                 * @description The role the vehicle is chosen for: `Leading` (tractors and standalone vehicles) or
+                 *     `Trailer`.
+                 */
+                role: components["schemas"]["TripVehicleRole"];
+                /**
+                 * @description Text matched, ignoring case, against part of the plate or the description. When null or
+                 *     whitespace, no search is applied.
+                 */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripVehicleDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

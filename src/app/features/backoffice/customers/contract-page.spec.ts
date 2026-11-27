@@ -1166,9 +1166,7 @@ describe('ContractPage', () => {
 
     const dialog = leaveDialog(harness)!;
     expect(text(dialog.querySelector('.pt-title'))).toBe('Uscire senza salvare?');
-    expect(text(dialog.querySelector('p:not(.pt-title)'))).toBe(
-      'Le modifiche a questo contratto andranno perse.',
-    );
+    expect(text(dialog.querySelector('p:not(.pt-title)'))).toBe('Le modifiche andranno perse.');
     const buttons = Array.from(dialog.querySelectorAll('.pt-dialog__actions button'));
     expect(buttons.map((b) => text(b))).toEqual(['Resta sulla pagina', 'Esci senza salvare']);
     expect(document.activeElement).toBe(buttons[0]);

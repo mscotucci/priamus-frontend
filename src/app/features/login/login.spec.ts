@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { ApiError, NoticeContent } from '../../core/api/api-error';
 import { CurrentUser } from '../../core/auth/auth-api';
@@ -152,19 +152,20 @@ describe('Login', () => {
     expect(password.value).toBe('secret');
   });
 
-  it('a Driver stays on the login with the unavailable notice', async () => {
+  it('a Driver signing in gets no notice about an unavailable app', async () => {
     const driver = userWithRole('Driver');
     const { element, username, password, type, submit } = render({
       signIn: () => Promise.resolve(driver),
     });
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     type(username, 'dan');
     type(password, 'secret');
 
     await submit();
 
-    expect(element.querySelector('.pt-notice--danger')?.textContent?.trim()).toBe(
-      "L'app autisti non è ancora disponibile.",
-    );
+    expect(element.querySelector('.pt-notice--danger')).toBeNull();
+    expect(element.textContent).not.toContain('non è ancora disponibile');
+    expect(navigate).toHaveBeenCalledWith('/driver');
   });
 
   it('shows the notice the session left, as the backend detail', () => {

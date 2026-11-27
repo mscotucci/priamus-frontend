@@ -1,0 +1,20 @@
+@if (linked()) {
+  <router-outlet />
+} @else {
+  <header class="pt-appbar pt-appbar--home min-[900px]:px-8!">
+    <div class="pt-brand">
+      <div class="pt-tile pt-tile--primary"><app-icon name="truck" size="lg" /></div>
+      <p class="pt-brand__name">{{ 'driver.brand' | translate }}</p>
+    </div>
+    <button type="button" class="pt-btn pt-btn--lg" (click)="facade.signOut()">
+      <app-icon name="sign-out" />{{ 'driver.signOut' | translate }}
+    </button>
+  </header>
+  <main
+    class="mx-auto flex w-full max-w-[640px] flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
+  >
+    <span class="pt-tile pt-tile--lg pt-tile--warn"><app-icon name="alert" size="lg" /></span>
+    <p class="pt-driver-name">{{ 'driver.unlinked.title' | translate }}</p>
+    <p class="pt-muted">{{ 'driver.unlinked.hint' | translate }}</p>
+  </main>
+}

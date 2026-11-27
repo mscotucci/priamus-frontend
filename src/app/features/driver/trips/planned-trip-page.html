@@ -1,0 +1,238 @@
+<header class="pt-appbar sticky top-0 z-10">
+  <a
+    class="pt-btn pt-btn--icon pt-btn--lg"
+    routerLink="/driver"
+    [attr.aria-label]="'driver.planned.back' | translate"
+    ><app-icon name="arrow-left"
+  /></a>
+  <h1 class="pt-appbar__title">{{ 'driver.planned.title' | translate }}</h1>
+</header>
+<main class="mx-auto flex w-full max-w-[640px] flex-1 flex-col gap-4 p-5 min-[900px]:p-8">
+  @if (notice(); as content) {
+    <app-notice [notice]="content" />
+  }
+  @if (read(); as read) {
+    @let trip = read.trip;
+    @if (asking()) {
+      <p>
+        <strong>{{ trip.customer.companyName }}</strong><br /><span class="pt-muted">
+          @if (trip.pickup; as pickup) {
+            {{ pickup.name }}
+          }
+          @if (trip.pickup || trip.delivery) {
+            →
+          }
+          @if (trip.delivery; as delivery) {
+            {{ delivery.name }}
+          }
+          @if (trip.pickup || trip.delivery) {
+            ·
+          }
+          <span class="pt-mono">{{ trip.vehicle.licensePlate }}</span>
+        </span>
+      </p>
+      <div class="pt-field" role="radiogroup" aria-labelledby="planned-when-label">
+        <span id="planned-when-label" class="pt-label">{{
+          'driver.planned.when.title' | translate
+        }}</span>
+        <div class="grid grid-cols-3 gap-2">
+          <label class="pt-choice pt-choice--solid pt-choice--stacked">
+            <input
+              class="sr-only"
+              type="radio"
+              name="day"
+              [checked]="day() === 'today'"
+              (change)="chooseDay('today')"
+            />
+            <span>{{ 'driver.planned.when.today' | translate }}</span>
+            <span class="pt-choice__hint">{{ todayLabel }}</span>
+          </label>
+          <label class="pt-choice pt-choice--solid pt-choice--stacked">
+            <input
+              class="sr-only"
+              type="radio"
+              name="day"
+              [checked]="day() === 'yesterday'"
+              (change)="chooseDay('yesterday')"
+            />
+            <span>{{ 'driver.planned.when.yesterday' | translate }}</span>
+            <span class="pt-choice__hint">{{ yesterdayLabel }}</span>
+          </label>
+          <label class="pt-choice pt-choice--solid pt-choice--stacked">
+            <input
+              class="sr-only"
+              type="radio"
+              name="day"
+              [checked]="day() === 'other'"
+              (change)="chooseDay('other')"
+            />
+            <span>{{ 'driver.planned.when.other' | translate }}</span>
+            <span class="pt-choice__hint">{{ otherLabel() }}</span>
+          </label>
+        </div>
+      </div>
+      @if (day() === 'other') {
+        <label class="pt-field">
+          <span class="pt-label">{{ 'driver.planned.when.otherDay' | translate }}</span>
+          <input
+            #otherField
+            class="pt-input pt-input--lg"
+            type="date"
+            [max]="today"
+            [appNativeValue]="otherDay()"
+            (input)="editOtherDay(otherField.value)"
+          />
+        </label>
+      }
+      <label class="pt-field">
+        <span class="pt-label">{{ 'driver.planned.when.time' | translate }}</span>
+        <input
+          #timeField
+          class="pt-input pt-input--lg"
+          type="time"
+          [appNativeValue]="time()"
+          (input)="editTime(timeField.value)"
+        />
+        @if (showProposalHint()) {
+          <span class="pt-field__hint">{{
+            'driver.planned.when.previousEndHint' | translate
+          }}</span>
+        }
+        @if (timeError(); as error) {
+          <span class="pt-field__error" role="alert">{{ error }}</span>
+        }
+      </label>
+    } @else {
+      <dl class="pt-summary">
+        <div class="pt-summary__row">
+          <span class="pt-tile pt-tile--primary"><app-icon name="building" /></span>
+          <div>
+            <dt class="pt-label">{{ 'driver.planned.customer' | translate }}</dt>
+            <dd>{{ trip.customer.companyName }}</dd>
+          </div>
+        </div>
+        <div class="pt-summary__row">
+          <span class="pt-tile pt-tile--primary"><app-icon name="pin" /></span>
+          <div>
+            <dt class="pt-label">{{ 'driver.planned.places' | translate }}</dt>
+            @if (trip.pickup || trip.delivery) {
+              @if (trip.pickup; as pickup) {
+                <dd>{{ pickup.name }}, {{ pickup.municipality }}</dd>
+              }
+              @if (trip.delivery; as delivery) {
+                <dd>→ {{ delivery.name }}, {{ delivery.municipality }}</dd>
+              }
+            } @else {
+              <dd>{{ 'driver.planned.noPlaces' | translate }}</dd>
+            }
+          </div>
+        </div>
+        <div class="pt-summary__row">
+          <span class="pt-tile pt-tile--primary"><app-icon name="truck" /></span>
+          <div>
+            <dt class="pt-label">{{ 'driver.planned.vehicle' | translate }}</dt>
+            <dd>
+              <span class="pt-mono">{{ trip.vehicle.licensePlate }}</span> ·
+              {{ trip.vehicle.description }}
+            </dd>
+            @if (trip.trailer; as trailer) {
+              <dd>
+                + <span class="pt-mono">{{ trailer.licensePlate }}</span> ·
+                {{ trailer.description }}
+              </dd>
+            }
+          </div>
+        </div>
+      </dl>
+      @if (otherInProgress() === true) {
+        <p class="pt-notice pt-notice--info">{{ 'driver.planned.inProgress' | translate }}</p>
+      }
+      @if (read.daysToExpiry !== null) {
+        @let expires = expiry(read.daysToExpiry);
+        <p class="pt-muted">{{ expires.key | translate: expires.params }}</p>
+      }
+    }
+  } @else if (facade.tripFailed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }" />
+  } @else {
+    <div class="flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'driver.planned.loading' | translate }}</span>
+    </div>
+  }
+</main>
+@if (read() && otherInProgress() !== null) {
+  <div class="pt-bottombar sticky bottom-0 min-[900px]:static min-[900px]:px-8!">
+    <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2">
+      @if (asking()) {
+        <button
+          type="button"
+          class="pt-btn pt-btn--xl pt-btn--primary w-full"
+          [disabled]="!canConfirm() || facade.saving()"
+          (click)="confirm()"
+        >
+          {{ 'driver.planned.when.confirm' | translate }}
+        </button>
+        <button
+          type="button"
+          class="pt-btn pt-btn--lg w-full"
+          [disabled]="facade.saving()"
+          (click)="cancel()"
+        >
+          {{ 'common.actions.cancel' | translate }}
+        </button>
+      } @else if (otherInProgress()) {
+        <button
+          type="button"
+          class="pt-btn pt-btn--lg w-full"
+          [disabled]="facade.saving()"
+          (click)="removeDialog.set(true)"
+        >
+          {{ 'driver.planned.remove.button' | translate }}
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="pt-btn pt-btn--xl pt-btn--primary w-full"
+          [disabled]="facade.saving()"
+          (click)="startNow()"
+        >
+          {{ 'driver.planned.startNow' | translate }}
+        </button>
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            class="pt-btn pt-btn--lg"
+            [disabled]="facade.saving()"
+            (click)="ask()"
+          >
+            {{ 'driver.planned.startAt' | translate }}
+          </button>
+          <button
+            type="button"
+            class="pt-btn pt-btn--lg"
+            [disabled]="facade.saving()"
+            (click)="removeDialog.set(true)"
+          >
+            {{ 'driver.planned.remove.button' | translate }}
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}
+@if (removeDialog()) {
+  <app-dialog
+    icon="alert"
+    tone="danger"
+    [title]="'driver.planned.remove.title' | translate"
+    (closeRequested)="removeDialog.set(false)"
+  >
+    <button actions type="button" class="pt-btn pt-btn--outline" (click)="removeDialog.set(false)">
+      {{ 'common.actions.cancel' | translate }}
+    </button>
+    <button actions type="button" class="pt-btn pt-btn--danger" (click)="removeTrip()">
+      {{ 'driver.planned.remove.button' | translate }}
+    </button>
+  </app-dialog>
+}

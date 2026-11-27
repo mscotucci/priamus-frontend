@@ -1,0 +1,130 @@
+<header class="pt-appbar sticky top-0 z-10">
+  <a
+    class="pt-btn pt-btn--icon pt-btn--lg"
+    routerLink="/driver"
+    [attr.aria-label]="'driver.end.back' | translate"
+    ><app-icon name="arrow-left"
+  /></a>
+  <h1 class="pt-appbar__title">{{ 'driver.end.title' | translate }}</h1>
+</header>
+<main class="mx-auto flex w-full max-w-[640px] flex-1 flex-col gap-4 p-5 min-[900px]:p-8">
+  @if (notice(); as content) {
+    <app-notice [notice]="content" />
+  }
+  @if (read(); as read) {
+    @let trip = read.trip;
+    <p>
+      <strong>{{ trip.customer.companyName }}</strong><br /><span class="pt-muted">
+        @if (trip.pickup; as pickup) {
+          {{ pickup.name }}
+        }
+        @if (trip.pickup || trip.delivery) {
+          →
+        }
+        @if (trip.delivery; as delivery) {
+          {{ delivery.name }}
+        }
+        @if (started(); as started) {
+          @if (trip.pickup || trip.delivery) {
+            ·
+          }
+          {{ started.key | translate: started.params }}
+        }
+      </span>
+    </p>
+    @if (asksTime()) {
+      <label class="pt-field">
+        <span class="pt-label">{{ 'driver.end.time' | translate }}</span>
+        <input
+          #endField
+          class="pt-input pt-input--lg"
+          type="time"
+          [appNativeValue]="end()"
+          (input)="editEnd(endField.value)"
+          (blur)="leave('end')"
+        />
+        @if (duration(); as duration) {
+          <span class="pt-field__hint">{{
+            'driver.end.duration'
+              | translate: { duration: duration.key | translate: duration.params }
+          }}</span>
+        }
+        @if (problemOf('end'); as problem) {
+          <span class="pt-field__error">{{ problem | translate }}</span>
+        }
+        @if (timeError(); as error) {
+          <span class="pt-field__error" role="alert">{{ error }}</span>
+        }
+      </label>
+    }
+    @switch (asks()) {
+      @case ('Kilograms') {
+        <label class="pt-field">
+          <span class="pt-label">{{ 'driver.end.kilograms' | translate }}</span>
+          <span class="pt-input-group">
+            <input
+              #kilogramsField
+              class="pt-input pt-input--lg"
+              type="text"
+              inputmode="numeric"
+              aria-describedby="weight-hint"
+              [appNativeValue]="kilograms()"
+              (input)="kilograms.set(kilogramsField.value)"
+              (blur)="leave('kilograms')"
+            />
+            <span class="pt-input-group__addon">{{ 'driver.end.unit.kg' | translate }}</span>
+          </span>
+          <span id="weight-hint" class="pt-field__hint">{{
+            'driver.end.weightHint' | translate
+          }}</span>
+          @if (problemOf('kilograms'); as problem) {
+            <span class="pt-field__error">{{ problem | translate }}</span>
+          }
+        </label>
+      }
+      @case ('Kilometres') {
+        <label class="pt-field">
+          <span class="pt-label">{{ 'driver.end.kilometres' | translate }}</span>
+          <span class="pt-input-group">
+            <input
+              #kilometresField
+              class="pt-input pt-input--lg"
+              type="text"
+              inputmode="numeric"
+              [appNativeValue]="kilometres()"
+              (input)="kilometres.set(kilometresField.value)"
+              (blur)="leave('kilometres')"
+            />
+            <span class="pt-input-group__addon">{{ 'driver.end.unit.km' | translate }}</span>
+          </span>
+          @if (problemOf('kilometres'); as problem) {
+            <span class="pt-field__error">{{ problem | translate }}</span>
+          }
+        </label>
+      }
+    }
+  } @else if (facade.tripFailed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }" />
+  } @else {
+    <div class="flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'driver.end.loading' | translate }}</span>
+    </div>
+  }
+</main>
+@if (read()) {
+  <div class="pt-bottombar sticky bottom-0 min-[900px]:static min-[900px]:px-8!">
+    <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2">
+      <button
+        type="button"
+        class="pt-btn pt-btn--xl pt-btn--primary w-full"
+        [disabled]="!canConfirm() || facade.saving()"
+        (click)="confirm()"
+      >
+        <app-icon name="check" />{{
+          (asksTime() ? 'driver.end.confirm' : 'driver.end.endNow') | translate
+        }}
+      </button>
+    </div>
+  </div>
+}

@@ -1,0 +1,56 @@
+@if (tractor(); as tractor) {
+  <div class="flex items-center gap-2">
+    <p class="min-w-0 flex-1">
+      <span class="pt-mono">{{ tractor.licensePlate }}</span> · {{ tractor.description }}
+    </p>
+    <button type="button" class="pt-link" (click)="changeLeading.emit()">
+      {{ 'driver.newTrip.vehicle.change' | translate }}
+    </button>
+  </div>
+}
+<label class="pt-search pt-search--lg">
+  <app-icon name="search" size="sm" />
+  <input
+    #search
+    type="search"
+    [placeholder]="'driver.newTrip.vehicle.search' | translate"
+    [attr.aria-label]="'driver.newTrip.vehicle.search' | translate"
+    (input)="searchFor(search.value)"
+  />
+</label>
+@if (tractor(); as tractor) {
+  @if (!tractor.requiresTrailer) {
+    <label class="pt-choice">
+      <input
+        class="sr-only"
+        type="radio"
+        name="vehicle"
+        [checked]="withoutTrailerSelected()"
+        (click)="pickTrailer(null)"
+      />
+      <span class="pt-tile pt-tile--primary"><app-icon name="truck" /></span>
+      <span class="min-w-0 flex-1">{{ 'driver.newTrip.vehicle.noTrailer' | translate }}</span>
+    </label>
+  }
+}
+@for (item of facade.vehicles(); track item.id) {
+  <label class="pt-choice">
+    <input
+      class="sr-only"
+      type="radio"
+      name="vehicle"
+      [checked]="item.id === (tractor() === null ? vehicle()?.id : trailer()?.id)"
+      (click)="tractor() === null ? pickLeading(item) : pickTrailer(item)"
+    />
+    <span class="pt-tile pt-tile--primary"><app-icon name="truck" /></span>
+    <span class="min-w-0 flex-1"
+      ><span class="pt-mono">{{ item.licensePlate }}</span
+      ><span class="pt-choice__hint">{{ item.description }}</span></span
+    >
+  </label>
+}
+@if (facade.vehiclesFailed()) {
+  <p class="pt-field__error">{{ 'errors.generic' | translate }}</p>
+} @else if (!facade.vehiclesLoading() && facade.vehicles().length === 0) {
+  <p class="pt-muted text-center">{{ 'driver.noResults' | translate }}</p>
+}
