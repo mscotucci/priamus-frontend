@@ -5,6 +5,7 @@ import type { components } from '../../../core/api/generated/api-types';
 type Schemas = components['schemas'];
 
 export type DriverHome = Schemas['GetDriverHomeResponse'];
+export type MyTrips = Schemas['MyTripsResponse'];
 export type NewTrip = Schemas['GetNewTripResponse'];
 export type TripCustomers = Schemas['ListTripCustomersResponse'];
 export type Trip = Schemas['TripDto'];
@@ -19,6 +20,10 @@ const URL = '/api/operations/driver';
 export class TripsApi {
   home(): HttpResourceRequest {
     return { url: `${URL}/home` };
+  }
+
+  myTrips(): HttpResourceRequest {
+    return { url: `${URL}/my-trips` };
   }
 
   newTrip(): HttpResourceRequest {

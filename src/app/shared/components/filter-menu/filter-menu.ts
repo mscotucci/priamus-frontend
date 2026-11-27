@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Icon } from '../icon/icon';
+import { placeUnder } from '../../popover/place-under';
 
 export interface FilterOption<T extends string> {
   value: T;
@@ -76,9 +77,7 @@ export class FilterMenu<T extends string> {
   );
 
   protected place(button: HTMLElement, menu: HTMLElement): void {
-    const box = button.getBoundingClientRect();
-    menu.style.top = `${box.bottom + 4}px`;
-    menu.style.left = `${box.left}px`;
+    placeUnder(button, menu);
   }
 
   protected onToggle(event: Event): void {

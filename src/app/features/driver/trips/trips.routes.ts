@@ -20,6 +20,10 @@ export const tripsRoutes: Routes = [
     loadComponent: () => import('./end-trip-page').then((m) => m.EndTripPage),
   },
   {
+    path: 'my-trips',
+    loadComponent: () => import('./my-trips-page').then((m) => m.MyTripsPage),
+  },
+  {
     path: 'ended',
     loadComponent: () => import('./trip-ended').then((m) => m.TripEnded),
   },

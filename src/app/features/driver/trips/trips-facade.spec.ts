@@ -12,7 +12,7 @@ import type {
   TripLocation,
   TripVehicle,
 } from './new-trip-answers';
-import type { DriverHome, Trip, TripRead } from './trips-api';
+import type { DriverHome, MyTrips, Trip, TripRead } from './trips-api';
 import { TripsFacade } from './trips-facade';
 
 const URL = '/api/operations/driver/home';
@@ -23,6 +23,8 @@ const HOME: DriverHome = {
   inProgress: null,
   planned: [],
   repeatableTrips: [],
+  endedToday: 0,
+  endedInLastSevenDays: 0,
 };
 
 const VEHICLES_URL = '/api/operations/driver/vehicles';
@@ -354,6 +356,60 @@ describe('TripsFacade', () => {
       .flush({ vehicle: true, trailer: true, customer: false, pickup: true, delivery: true });
 
     expect((await check).customer).toBe(false);
+  });
+
+  describe('reading my trips', () => {
+    const MY_TRIPS_URL = '/api/operations/driver/my-trips';
+    const MY_TRIPS: MyTrips = { today: '2026-11-27', trips: [{ ...TRIP, state: 'Ended' }] };
+
+    it('reads nothing until the page asks, then holds the trips and reads them again when asked again', async () => {
+      await settle();
+      http.expectNone(MY_TRIPS_URL);
+      expect(facade.myTrips()).toBeNull();
+      expect(facade.myTripsLoading()).toBe(false);
+
+      facade.needMyTrips();
+      await settle();
+      expect(facade.myTripsLoading()).toBe(true);
+      http.expectOne(MY_TRIPS_URL).flush(MY_TRIPS);
+      await settle();
+      expect(facade.myTrips()).toEqual(MY_TRIPS);
+      expect(facade.myTripsLoading()).toBe(false);
+
+      facade.needMyTrips();
+      await settle();
+      http.expectOne(MY_TRIPS_URL).flush({ ...MY_TRIPS, trips: [] });
+      await settle();
+      expect(facade.myTrips()?.trips).toEqual([]);
+    });
+
+    it('marks the read failed and reads again on reload', async () => {
+      facade.needMyTrips();
+      await settle();
+      http.expectOne(MY_TRIPS_URL).flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(facade.myTripsFailed()).toBe(true);
+      expect(facade.myTripsLoading()).toBe(false);
+
+      facade.reloadMyTrips();
+      await settle();
+      http.expectOne(MY_TRIPS_URL).flush(MY_TRIPS);
+      await settle();
+
+      expect(facade.myTripsFailed()).toBe(false);
+      expect(facade.myTrips()).toEqual(MY_TRIPS);
+    });
+  });
+
+  it('the counters of the home are the ones the server sends', async () => {
+    facade.needHome();
+    await settle();
+    http.expectOne(URL).flush({ ...HOME, endedToday: 3, endedInLastSevenDays: 14 });
+    await settle();
+
+    expect(facade.home()?.endedToday).toBe(3);
+    expect(facade.home()?.endedInLastSevenDays).toBe(14);
   });
 
   describe('reading one trip', () => {

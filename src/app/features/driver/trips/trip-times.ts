@@ -115,3 +115,16 @@ export function expiryText(
   const key = days === 0 ? 'today' : days === 1 ? 'tomorrow' : 'days';
   return { key: `${prefix}.${key}`, params: { days } };
 }
+
+/** "<pickup> → <delivery>", "→ <delivery>" or "<pickup> →"; null with no location. */
+export function placesOf(trip: {
+  pickup: { name: string } | null;
+  delivery: { name: string } | null;
+}): string | null {
+  const pickup = trip.pickup?.name;
+  const delivery = trip.delivery?.name;
+  if (pickup && delivery) {
+    return `${pickup} → ${delivery}`;
+  }
+  return delivery ? `→ ${delivery}` : pickup ? `${pickup} →` : null;
+}

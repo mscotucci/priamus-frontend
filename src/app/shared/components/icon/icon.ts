@@ -22,7 +22,9 @@ export type IconName =
   | 'calendar'
   | 'clock'
   | 'scale'
-  | 'ruler';
+  | 'ruler'
+  | 'route'
+  | 'tag';
 
 @Component({
   selector: 'app-icon',

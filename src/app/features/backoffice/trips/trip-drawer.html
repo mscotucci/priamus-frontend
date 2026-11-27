@@ -1,0 +1,154 @@
+<app-drawer
+  [eyebrow]="'trips.drawer.eyebrow' | translate"
+  [title]="title()"
+  (closeRequested)="facade.closeTrip()"
+>
+  @if (trip(); as trip) {
+    <dl class="m-0 grid grid-cols-2 gap-x-4 gap-y-3">
+      <div class="col-span-2">
+        <dt class="pt-label">{{ 'trips.drawer.field.customer' | translate }}</dt>
+        <dd class="m-0">
+          <strong>{{ trip.customer.companyName }}</strong>
+        </dd>
+      </div>
+      @if (trip.day !== null && trip.start !== null) {
+        <div>
+          <dt class="pt-label">{{ 'trips.drawer.field.day' | translate }}</dt>
+          <dd class="m-0">{{ trip.day | date: 'dd/MM/yyyy' }}</dd>
+        </div>
+        <div>
+          <dt class="pt-label">{{ 'trips.drawer.field.times' | translate }}</dt>
+          <dd class="pt-mono m-0">
+            {{ time(trip.start) }} –
+            {{ trip.end === null ? ('trips.drawer.openEnd' | translate) : time(trip.end) }}
+          </dd>
+        </div>
+      }
+      <div>
+        <dt class="pt-label">{{ 'trips.drawer.field.pickup' | translate }}</dt>
+        <dd class="m-0" [class.pt-muted]="trip.pickup === null">
+          {{ trip.pickup?.name ?? ('trips.drawer.noplace' | translate) }}
+        </dd>
+      </div>
+      <div>
+        <dt class="pt-label">{{ 'trips.drawer.field.delivery' | translate }}</dt>
+        <dd class="m-0" [class.pt-muted]="trip.delivery === null">
+          {{ trip.delivery?.name ?? ('trips.drawer.noplace' | translate) }}
+        </dd>
+      </div>
+      <div>
+        <dt class="pt-label">{{ 'trips.drawer.field.driver' | translate }}</dt>
+        <dd class="m-0">{{ trip.driver.firstName }} {{ trip.driver.lastName }}</dd>
+      </div>
+      <div>
+        <dt class="pt-label">{{ 'trips.drawer.field.vehicle' | translate }}</dt>
+        <dd class="m-0">
+          <span class="pt-mono">{{ trip.vehicle.licensePlate }}</span>
+          @if (trip.trailer; as trailer) {
+            <span class="pt-mono ml-1">{{
+              'trips.list.trailer' | translate: { plate: trailer.licensePlate }
+            }}</span>
+          }
+        </dd>
+      </div>
+      @if (trip.state === 'Ended') {
+        <div class="col-span-2">
+          <dt class="pt-label">{{ 'trips.drawer.field.documents' | translate }}</dt>
+          <dd class="m-0">{{ documents() }}</dd>
+        </div>
+      }
+    </dl>
+
+    @if (calculation(); as calculation) {
+      <div class="flex flex-col gap-2">
+        <p class="pt-label">{{ 'trips.drawer.calculation.title' | translate }}</p>
+        <div class="pt-calc">
+          <div class="pt-calc__row">
+            <span class="pt-muted">{{ 'trips.drawer.calculation.mode' | translate }}</span>
+            <span>{{
+              'customers.contracts.pricing.' + calculation.mode.toLowerCase() | translate
+            }}</span>
+          </div>
+          @for (row of calculation.lines; track $index) {
+            <div class="pt-calc__row">
+              <span class="pt-muted">{{ row.label }}</span>
+              <span [class.pt-mono]="row.mono">
+                {{ row.text }}
+                @if (row.plate) {
+                  <span class="pt-mono">{{ row.plate }}</span>
+                }
+              </span>
+            </div>
+          }
+          <div class="pt-calc__rule"></div>
+          <div class="pt-calc__row">
+            <span class="pt-label">{{ 'contracts.form.simulation.result.total' | translate }}</span>
+            <span class="pt-amount">{{ calculation.total }}</span>
+          </div>
+        </div>
+        <p class="pt-muted text-xs">
+          {{
+            'trips.drawer.calculation.note'
+              | translate: { day: (calculation.day | date: 'dd/MM/yyyy') }
+          }}
+        </p>
+      </div>
+    } @else if (trip.state === 'InProgress') {
+      <div class="pt-notice pt-notice--info">{{ 'trips.drawer.pending' | translate }}</div>
+    } @else if (expiry(); as expiry) {
+      <div class="pt-notice pt-notice--warn">{{ expiry }}</div>
+    }
+
+    <div class="flex flex-col gap-2">
+      <p class="pt-label">{{ 'trips.drawer.timeline.title' | translate }}</p>
+      <ol class="pt-timeline">
+        <li class="pt-timeline__item">
+          <span class="pt-timeline__dot"><app-icon name="check" size="xs" /></span>
+          <div>
+            <p class="m-0">{{ 'trips.drawer.timeline.added' | translate }}</p>
+            <p class="pt-timeline__meta m-0">
+              {{ trip.addedAt | date: 'dd/MM HH:mm' }} · {{ trip.driver.firstName }}
+              {{ trip.driver.lastName }}
+            </p>
+          </div>
+        </li>
+        @if (trip.day !== null && trip.start !== null) {
+          <li class="pt-timeline__item">
+            <span class="pt-timeline__dot"><app-icon name="check" size="xs" /></span>
+            <div>
+              <p class="m-0">{{ 'trips.drawer.timeline.started' | translate }}</p>
+              <p class="pt-timeline__meta m-0">
+                {{ trip.day | date: 'dd/MM' }} {{ time(trip.start) }}
+              </p>
+            </div>
+          </li>
+        }
+        @if (trip.endedOn !== null && trip.end !== null) {
+          <li class="pt-timeline__item">
+            <span class="pt-timeline__dot"><app-icon name="check" size="xs" /></span>
+            <div>
+              <p class="m-0">{{ 'trips.drawer.timeline.ended' | translate }}</p>
+              <p class="pt-timeline__meta m-0">
+                {{ trip.endedOn | date: 'dd/MM' }} {{ time(trip.end) }} ·
+                {{ 'trips.drawer.timeline.calculated' | translate }}
+              </p>
+            </div>
+          </li>
+        }
+      </ol>
+    </div>
+  } @else if (facade.tripMissing()) {
+    <app-notice [notice]="{ key: 'trips.drawer.gone' }" />
+  } @else if (facade.tripFailed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="facade.reloadTrip()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else {
+    <div class="flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'trips.drawer.loading' | translate }}</span>
+    </div>
+  }
+</app-drawer>

@@ -114,6 +114,23 @@
       >
       <app-icon name="chevron-right" />
     </a>
+    <a
+      class="pt-counters grid grid-cols-2 gap-3"
+      routerLink="my-trips"
+      [attr.aria-label]="
+        'driver.home.counters.label'
+          | translate: { today: home.endedToday, week: home.endedInLastSevenDays }
+      "
+    >
+      <div class="pt-card">
+        <span class="pt-label">{{ 'driver.home.counters.today' | translate }}</span>
+        <div class="pt-stat__value">{{ home.endedToday }}</div>
+      </div>
+      <div class="pt-card">
+        <span class="pt-label">{{ 'driver.home.counters.lastSevenDays' | translate }}</span>
+        <div class="pt-stat__value">{{ home.endedInLastSevenDays }}</div>
+      </div>
+    </a>
     @if (home.planned.length > 0) {
       <section class="flex flex-col gap-2">
         <h2 class="pt-section-title">{{ 'driver.home.planned.title' | translate }}</h2>

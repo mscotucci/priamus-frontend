@@ -33,13 +33,15 @@ export function documentsSentence(
   return names.charAt(0).toUpperCase() + names.slice(1);
 }
 
+/** Always groups thousands: Italian leaves out the separator on 4-digit numbers ("1059,44"). */
 const format = (value: number, decimals: { min: number; max: number }): string =>
   new Intl.NumberFormat(LANGUAGE, {
     minimumFractionDigits: decimals.min,
     maximumFractionDigits: decimals.max,
+    useGrouping: true,
   }).format(value);
 
-/** An amount with 2 decimals and the locale's separator, as in "30,00". */
+/** An amount with 2 decimals and the locale's separators, as in "30,00" or "1.059,44". */
 export const formatAmount = (value: number): string => format(value, { min: 2, max: 2 });
 
 /** A duration in whole minutes as hours and minutes: "2 h 20 min", "3 h", "50 min". */
@@ -61,6 +63,10 @@ export const formatTons = (kilograms: number, translate: TranslateService): stri
 /** A whole number of kilometres with the locale's grouping: "120 km". */
 export const formatKilometres = (kilometres: number, translate: TranslateService): string =>
   `${format(kilometres, { min: 0, max: 0 })} ${translate.instant('contracts.form.unit.threshold.bydistance')}`;
+
+/** Whole kilograms with the thousands separator always shown: "3.520 kg". */
+export const formatKilograms = (kilograms: number, translate: TranslateService): string =>
+  `${format(kilograms, { min: 0, max: 0 })} ${translate.instant('trips.list.unit.kilograms')}`;
 
 /** The ISO date (yyyy-mm-dd) of the day before the given ISO date. */
 export function dayBefore(iso: string): string {

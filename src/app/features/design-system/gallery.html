@@ -78,6 +78,12 @@
       <div class="flex flex-col items-center gap-1">
         <app-icon name="ruler" size="lg" /><span class="pt-muted">ruler</span>
       </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="route" size="lg" /><span class="pt-muted">route</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="tag" size="lg" /><span class="pt-muted">tag</span>
+      </div>
     </div>
     <div class="flex flex-wrap items-center gap-4">
       <app-icon name="truck" size="xs" />
@@ -426,6 +432,19 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
           ><span class="pt-action__hint">Mezzo, cliente, luoghi e orari</span></span
         >
         <app-icon name="chevron-right" />
+      </a>
+      <p class="pt-muted">
+        Contatori che aprono una pagina: pt-counters (bordo primario al passaggio, sfondo tenue al tocco)
+      </p>
+      <a class="pt-counters grid grid-cols-2 gap-3" href="#">
+        <div class="pt-card">
+          <span class="pt-label">Oggi</span>
+          <div class="pt-stat__value">2</div>
+        </div>
+        <div class="pt-card">
+          <span class="pt-label">Ultimi 7 giorni</span>
+          <div class="pt-stat__value">11</div>
+        </div>
       </a>
       <p class="pt-muted">
         Titolo di sezione e righe di riepilogo: pt-section-title, pt-summary, pt-summary__row
@@ -788,6 +807,37 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
         <button type="button" class="pt-menu__item" role="option" aria-selected="false">
           Autista
         </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-menu-search">
+    <h2 id="g-menu-search" class="pt-label">
+      Menu con ricerca — il campo largo quanto il menu, i record solo cercando
+    </h2>
+    <div class="pt-filter">
+      <button type="button" class="pt-filter__button" aria-expanded="true">
+        <span class="pt-muted">Luogo:</span> tutti <app-icon name="chevron" size="xs" />
+      </button>
+      <div class="pt-menu pt-menu--search mt-1">
+        <div class="px-3 py-2">
+          <label class="pt-search pt-search--sm">
+            <app-icon name="search" size="sm" />
+            <input type="search" value="porto" aria-label="Cerca luogo" />
+          </label>
+        </div>
+        <div role="listbox" aria-label="Luogo">
+          <button type="button" class="pt-menu__item" role="option" aria-selected="false">
+            Tutti
+          </button>
+          <button type="button" class="pt-menu__item" role="option" aria-selected="false">
+            Porto, Ortona
+          </button>
+          <button type="button" class="pt-menu__item" role="option" aria-selected="false">
+            Interporto d'Abruzzo, Manoppello
+          </button>
+        </div>
+        <p class="pt-muted px-3 py-2">Scrivi di più per restringere la ricerca.</p>
       </div>
     </div>
   </section>

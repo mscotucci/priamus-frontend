@@ -12,19 +12,15 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { fieldErrors, noticeOf, type NoticeContent } from '../../../core/api/api-error';
 import { Notice } from '../../../shared/components/notice/notice';
 import { CustomersFacade } from './customers-facade';
-import { locationLabel } from '../locations/location-label';
+import { calculationLines, type CalculationInput, type CalculationLine } from './calculation-lines';
 import {
   formatAmount,
-  formatDuration,
-  formatKilometres,
-  formatTons,
   locationRateLabel,
-  minimumSummary,
   rowKey,
   sortLocationRates,
   sortVehicleRates,
 } from './contract-labels';
-import { rateMembers, unitKey, type Minimum, type Rate } from './contract-rate';
+import { rateMembers, type Minimum, type Rate } from './contract-rate';
 import {
   LEVEL_KEY,
   locationRateRequestOf,
@@ -64,14 +60,6 @@ const SERVER_FIELD: Record<TripField, string> = {
   kilograms: 'kilograms',
   kilometres: 'kilometres',
 };
-
-interface Line {
-  label: string;
-  text: string;
-  plate?: string;
-  /** The value is a figure: shown in the monospaced font, as in the mockup. */
-  mono?: boolean;
-}
 
 /** What "Calcola" last produced, with the key of the inputs it was computed from. */
 interface Outcome {
@@ -194,9 +182,11 @@ export class ContractSimulation {
     return outcome !== null && outcome.result !== null && outcome.key !== this.key();
   });
 
-  protected readonly lines = computed<Line[] | null>(() => {
+  protected readonly lines = computed<CalculationLine[] | null>(() => {
     const current = this.current();
-    return current?.result ? this.linesOf(current.result, current.mode, current.start) : null;
+    return current?.result
+      ? calculationLines(this.inputOf(current.result, current.mode, current.start), this.translate)
+      : null;
   });
 
   protected readonly total = computed(() => {
@@ -339,96 +329,33 @@ export class ContractSimulation {
     };
   }
 
-  private rateSourceText(source: PriceSimulation['rateSource']): string {
-    const t = (name: string, params?: object): string =>
-      this.translate.instant(`contracts.form.simulation.result.${name}`, params);
-    const choice = this.locationChoice();
-    if (choice === null || source === 'Contract' || (source === 'Vehicle' && this.flat())) {
-      return t('contractRate');
-    }
-    if (source === 'Vehicle') {
-      return choice.delivery !== null && choice.pickup !== null
-        ? t('vehiclePairRate', { pair: locationRateLabel(choice) })
-        : t('vehicleLocationRate', {
-            location: locationLabel((choice.pickup ?? choice.delivery)!),
-          });
-    }
-    return source === 'Location'
-      ? t('locationRate', { location: locationLabel((choice.pickup ?? choice.delivery)!) })
-      : t('pairRate', { pair: locationRateLabel(choice) });
-  }
-
-  private linesOf(result: PriceSimulation, mode: PricingMode, start: string): Line[] {
-    const t = (name: string, params?: object): string =>
-      this.translate.instant(`contracts.form.simulation.result.${name}`, params);
-    const { start: from, end: to } = result.nightBand;
-    const band =
-      result.band === 'Day'
-        ? t('day', { start, from, to })
-        : result.nightSurcharge
-          ? t('night', { start, from, to })
-          : t('nightNoSurcharge');
+  private inputOf(result: PriceSimulation, mode: PricingMode, start: string): CalculationInput {
+    const choice = this.flat() ? null : this.locationChoice();
     const vehicle =
-      result.rateSource !== 'Vehicle' || !this.flat()
-        ? undefined
-        : this.vehicleRates().find((entry) => entry.vehicleId === result.vehicleId);
-    const quantity = result.quantity;
-    const price = formatAmount(result.unitPrice);
-    const base =
-      quantity === null
-        ? t('formulaTrip', { price })
-        : t('formula', {
-            quantity:
-              mode === 'ByHour'
-                ? formatDuration(quantity, this.translate)
-                : mode === 'ByWeight'
-                  ? formatTons(quantity, this.translate)
-                  : formatKilometres(quantity, this.translate),
-            price,
-            unit: this.translate.instant(unitKey('price', mode)),
-            amount: formatAmount(result.baseAmount),
-          });
-    const lines: Line[] = [
-      { label: t('band'), text: band },
-      vehicle
-        ? { label: t('rate'), text: t('vehicleRate'), plate: vehicle.licensePlate }
-        : { label: t('rate'), text: this.rateSourceText(result.rateSource) },
-      { label: t('base'), text: base, mono: true },
-    ];
-    const kind = result.minimumRule ?? 'None';
-    const rule = minimumSummary(
-      {
-        kind,
-        amount: result.minimumAmount,
-        threshold: result.minimumThreshold,
-        overage: result.minimumOveragePrice,
-      },
+      result.rateSource === 'Vehicle' && this.flat()
+        ? this.vehicleRates().find((entry) => entry.vehicleId === result.vehicleId)
+        : undefined;
+    return {
       mode,
-      this.translate,
-    );
-    lines.push({
-      label: t('minimum'),
-      mono: true,
-      text:
-        kind === 'None'
-          ? rule
-          : result.minimumApplied
-            ? t('minimumRaised', { rule, amount: formatAmount(result.amountAfterMinimum) })
-            : t(kind === 'FixedMinimum' ? 'minimumUnused' : 'minimumUnchanged', {
-                rule,
-              }),
-    });
-    // the rows follow the calculation: the night call fee is added after the minimum rule
-    if (result.nightCallFee !== null) {
-      lines.push({
-        label: t('callFee'),
-        mono: true,
-        text: t('callFeeAdded', {
-          fee: formatAmount(result.nightCallFee),
-          amount: formatAmount(result.total),
-        }),
-      });
-    }
-    return lines;
+      start,
+      nightBand: result.nightBand,
+      isNight: result.band !== 'Day',
+      nightSurcharge: result.nightSurcharge,
+      rateSource: result.rateSource,
+      rateVehiclePlate: vehicle?.licensePlate ?? null,
+      ratePickup: choice?.pickup ?? null,
+      rateDelivery: choice?.delivery ?? null,
+      quantity: result.quantity,
+      unitPrice: result.unitPrice,
+      baseAmount: result.baseAmount,
+      minimumKind: result.minimumRule ?? 'None',
+      minimumAmount: result.minimumAmount,
+      minimumThreshold: result.minimumThreshold,
+      minimumOveragePrice: result.minimumOveragePrice,
+      minimumApplied: result.minimumApplied,
+      amountAfterMinimum: result.amountAfterMinimum,
+      nightCallFee: result.nightCallFee,
+      total: result.total,
+    };
   }
 }

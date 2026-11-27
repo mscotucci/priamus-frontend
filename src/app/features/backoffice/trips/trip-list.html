@@ -1,0 +1,399 @@
+<app-topbar
+  [crumbs]="[{ label: 'shell.nav.operations' | translate }]"
+  [title]="'trips.list.title' | translate"
+  [line]="line()"
+/>
+<main class="pt-page flex flex-col gap-4">
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="pt-label">{{ 'trips.list.views' | translate }}</span>
+    @for (item of views; track item.view) {
+      <button
+        type="button"
+        class="pt-view"
+        [attr.aria-pressed]="facade.view() === item.view"
+        (click)="facade.setView(item.view)"
+      >
+        {{ item.key | translate }}
+      </button>
+    }
+  </div>
+  @if (figures(); as figures) {
+    <div class="grid gap-4 sm:grid-cols-3">
+      <div class="pt-card pt-stat">
+        <div>
+          <span class="pt-label">{{ 'trips.list.figure.trips' | translate }}</span>
+          <div class="pt-stat__value">{{ figures.trips }}</div>
+        </div>
+        <div class="pt-tile pt-tile--primary"><app-icon name="route" size="lg" /></div>
+      </div>
+      <div class="pt-card pt-stat">
+        <div>
+          <span class="pt-label">{{ 'trips.list.figure.customers' | translate }}</span>
+          <div class="pt-stat__value">{{ figures.customers }}</div>
+        </div>
+        <div class="pt-tile pt-tile--primary"><app-icon name="building" size="lg" /></div>
+      </div>
+      <div class="pt-card pt-stat pt-stat--highlight">
+        <div>
+          <span class="pt-label">{{ 'trips.list.figure.amount' | translate }}</span>
+          <div class="pt-stat__value">{{ amount(figures.amount) }}</div>
+        </div>
+        <div class="pt-tile pt-tile--primary"><app-icon name="tag" size="lg" /></div>
+      </div>
+    </div>
+  }
+  <div class="pt-card flex flex-wrap items-center gap-2">
+    <label class="pt-search pt-search--sm max-w-full">
+      <app-icon name="search" size="sm" />
+      <input
+        #searchField
+        class="w-72 min-w-0"
+        type="search"
+        maxlength="100"
+        [placeholder]="'trips.list.search.placeholder' | translate"
+        [attr.aria-label]="'trips.list.search.label' | translate"
+        (input)="searchFor(searchField.value)"
+      />
+    </label>
+    @if (ended()) {
+      <app-period-menu
+        [value]="facade.period()"
+        [today]="today"
+        (valueChange)="facade.setPeriod($event)"
+      />
+    }
+    <app-search-filter-menu
+      labelKey="trips.list.filter.customer"
+      searchLabelKey="trips.list.find.customer"
+      [value]="facade.customer()"
+      [options]="facade.customerOptions()"
+      [loading]="facade.customerOptionsLoading()"
+      [more]="facade.customerOptionsMore()"
+      (searchChange)="facade.searchCustomers($event)"
+      (valueChange)="facade.setCustomer($event)"
+    />
+    <app-search-filter-menu
+      labelKey="trips.list.filter.driver"
+      searchLabelKey="trips.list.find.driver"
+      [value]="facade.driver()"
+      [options]="facade.driverOptions()"
+      [loading]="facade.driverOptionsLoading()"
+      [more]="facade.driverOptionsMore()"
+      (searchChange)="facade.searchDrivers($event)"
+      (valueChange)="facade.setDriver($event)"
+    />
+    <app-search-filter-menu
+      labelKey="trips.list.filter.vehicle"
+      searchLabelKey="trips.list.find.vehicle"
+      [value]="facade.vehicle()"
+      [options]="facade.vehicleOptions()"
+      [loading]="facade.vehicleOptionsLoading()"
+      [more]="facade.vehicleOptionsMore()"
+      (searchChange)="facade.searchVehicles($event)"
+      (valueChange)="facade.setVehicle($event)"
+    />
+    <app-search-filter-menu
+      labelKey="trips.list.filter.location"
+      searchLabelKey="trips.list.find.location"
+      [value]="facade.location()"
+      [options]="facade.locationOptions()"
+      [loading]="facade.locationOptionsLoading()"
+      [more]="facade.locationOptionsMore()"
+      (searchChange)="facade.searchLocations($event)"
+      (valueChange)="facade.setLocation($event)"
+    />
+    @if (ended()) {
+      <app-filter-menu
+        labelKey="trips.list.filter.mode"
+        [options]="modes"
+        [value]="facade.mode()"
+        (valueChange)="facade.setMode($event)"
+      />
+    }
+    @if (facade.reloading()) {
+      <span class="pt-spinner pt-spinner--sm ml-auto" role="status"
+        ><span class="sr-only">{{ 'common.refreshing' | translate }}</span></span
+      >
+    }
+  </div>
+
+  <ng-template #parties let-trip>
+    <td class="pt-text" [id]="'trip-' + trip.id">
+      <strong>{{ trip.customer.companyName }}</strong>
+    </td>
+    @if (places(trip); as places) {
+      <td class="pt-text">{{ places }}</td>
+    } @else {
+      <td class="pt-muted">
+        <span aria-hidden="true">—</span
+        ><span class="sr-only">{{ 'trips.list.noplace' | translate }}</span>
+      </td>
+    }
+    <td>{{ driverName(trip) }}</td>
+    <td class="pt-code">
+      {{ trip.vehicle.licensePlate }}
+      @if (trip.trailer; as trailer) {
+        <br /><span class="pt-muted">{{
+          'trips.list.trailer' | translate: { plate: trailer.licensePlate }
+        }}</span>
+      }
+    </td>
+  </ng-template>
+
+  @if (facade.loading()) {
+    <div class="pt-card flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'trips.list.loading' | translate }}</span>
+    </div>
+  } @else if (facade.failed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button type="button" class="pt-btn pt-btn--outline pt-btn--sm" (click)="facade.reload()">
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (facade.total() === 0) {
+    <div class="pt-card pt-empty">
+      <p class="pt-title">{{ 'trips.list.empty.title' | translate }}</p>
+      <p class="pt-muted">{{ 'trips.list.empty.hint' | translate }}</p>
+    </div>
+  } @else {
+    <div class="pt-table-wrap">
+      <table class="pt-table" [attr.aria-busy]="facade.reloading() || null">
+        @switch (facade.view()) {
+          @case ('Ended') {
+            <thead>
+              <tr>
+                <th scope="col" class="pt-num">{{ 'trips.list.column.number' | translate }}</th>
+                <th
+                  scope="col"
+                  [attr.aria-sort]="
+                    facade.sortColumn() === 'day'
+                      ? facade.sortDirection() === 'Ascending'
+                        ? 'ascending'
+                        : 'descending'
+                      : null
+                  "
+                >
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1 uppercase"
+                    (click)="sortBy('day')"
+                  >
+                    {{ 'trips.list.column.day' | translate }}
+                    @if (facade.sortColumn() === 'day') {
+                      <app-icon
+                        name="chevron"
+                        size="xs"
+                        [class.rotate-180]="facade.sortDirection() === 'Ascending'"
+                      />
+                    }
+                  </button>
+                </th>
+                <th scope="col">{{ 'trips.list.column.customer' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.places' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.driver' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.vehicle' | translate }}</th>
+                <th scope="col" class="pt-num">{{ 'trips.list.column.quantity' | translate }}</th>
+                <th scope="col" class="pt-num">{{ 'trips.list.column.rate' | translate }}</th>
+                <th
+                  scope="col"
+                  class="pt-num"
+                  [attr.aria-sort]="
+                    facade.sortColumn() === 'total'
+                      ? facade.sortDirection() === 'Ascending'
+                        ? 'ascending'
+                        : 'descending'
+                      : null
+                  "
+                >
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1 uppercase"
+                    (click)="sortBy('total')"
+                  >
+                    {{ 'trips.list.column.amount' | translate }}
+                    @if (facade.sortColumn() === 'total') {
+                      <app-icon
+                        name="chevron"
+                        size="xs"
+                        [class.rotate-180]="facade.sortDirection() === 'Ascending'"
+                      />
+                    }
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (trip of facade.trips(); track trip.id) {
+                <tr>
+                  <td class="pt-num">
+                    <button
+                      type="button"
+                      class="pt-link"
+                      [attr.aria-describedby]="'trip-' + trip.id"
+                      (click)="facade.openTrip(trip.id)"
+                    >
+                      {{ trip.number }}
+                    </button>
+                  </td>
+                  <td class="pt-code">{{ trip.day | date: 'dd/MM' }}</td>
+                  <ng-container
+                    [ngTemplateOutlet]="parties"
+                    [ngTemplateOutletContext]="{ $implicit: trip }"
+                  />
+                  <td class="pt-num">{{ quantity(trip) }}</td>
+                  <td class="pt-num pt-text">
+                    <span class="whitespace-nowrap">{{ rate(trip) }}</span>
+                    @if (trip.nightPriceApplied) {
+                      &ngsp;<span class="pt-pill pt-pill--purple">{{
+                        'trips.list.night' | translate
+                      }}</span>
+                    }
+                  </td>
+                  <td class="pt-num">
+                    <strong>{{ amount(trip.total ?? 0) }}</strong>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="8">{{ totalText() }}</td>
+                <td class="pt-num">{{ amount(facade.figures()?.amount ?? 0) }}</td>
+              </tr>
+              <tr>
+                <td colspan="9">
+                  <app-paging
+                    [page]="facade.page()"
+                    [pageSize]="pageSize"
+                    [total]="facade.total()"
+                    rangeKey="trips.list.range"
+                    (pageChange)="facade.setPage($event)"
+                  />
+                </td>
+              </tr>
+            </tfoot>
+          }
+          @case ('InProgress') {
+            <thead>
+              <tr>
+                <th scope="col" aria-sort="descending">
+                  {{ 'trips.list.column.started' | translate }}
+                </th>
+                <th scope="col">{{ 'trips.list.column.customer' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.places' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.driver' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.vehicle' | translate }}</th>
+                <th scope="col">
+                  <span class="sr-only">{{ 'trips.list.column.actions' | translate }}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (trip of facade.trips(); track trip.id) {
+                <tr>
+                  <td class="pt-code">
+                    {{ trip.day | date: 'dd/MM' }} {{ (trip.start ?? '').slice(0, 5) }}
+                  </td>
+                  <ng-container
+                    [ngTemplateOutlet]="parties"
+                    [ngTemplateOutletContext]="{ $implicit: trip }"
+                  />
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      class="pt-btn pt-btn--outline pt-btn--sm"
+                      [attr.aria-describedby]="'trip-' + trip.id"
+                      (click)="facade.openTrip(trip.id)"
+                    >
+                      {{ 'trips.list.detail' | translate }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="6">
+                  <app-paging
+                    [page]="facade.page()"
+                    [pageSize]="pageSize"
+                    [total]="facade.total()"
+                    rangeKey="trips.list.range"
+                    (pageChange)="facade.setPage($event)"
+                  />
+                </td>
+              </tr>
+            </tfoot>
+          }
+          @default {
+            <thead>
+              <tr>
+                <th scope="col" aria-sort="ascending">
+                  {{ 'trips.list.column.added' | translate }}
+                </th>
+                <th scope="col">{{ 'trips.list.column.customer' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.places' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.driver' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.vehicle' | translate }}</th>
+                <th scope="col">{{ 'trips.list.column.expires' | translate }}</th>
+                <th scope="col">
+                  <span class="sr-only">{{ 'trips.list.column.actions' | translate }}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (trip of facade.trips(); track trip.id) {
+                <tr>
+                  <td class="pt-code">{{ trip.addedAt | date: 'dd/MM' }}</td>
+                  <ng-container
+                    [ngTemplateOutlet]="parties"
+                    [ngTemplateOutletContext]="{ $implicit: trip }"
+                  />
+                  <td>
+                    @if ((trip.daysToExpiry ?? 0) <= 1) {
+                      <span class="pt-pill pt-pill--warn">{{
+                        expiry(trip.daysToExpiry ?? 0)
+                      }}</span>
+                    } @else {
+                      {{ expiry(trip.daysToExpiry ?? 0) }}
+                    }
+                  </td>
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      class="pt-btn pt-btn--outline pt-btn--sm"
+                      [attr.aria-describedby]="'trip-' + trip.id"
+                      (click)="facade.openTrip(trip.id)"
+                    >
+                      {{ 'trips.list.detail' | translate }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="7">
+                  <app-paging
+                    [page]="facade.page()"
+                    [pageSize]="pageSize"
+                    [total]="facade.total()"
+                    rangeKey="trips.list.range"
+                    (pageChange)="facade.setPage($event)"
+                  />
+                </td>
+              </tr>
+            </tfoot>
+          }
+        }
+      </table>
+    </div>
+    @if (ended()) {
+      <p class="pt-muted text-xs">{{ 'trips.list.note' | translate }}</p>
+    }
+  }
+</main>
+@if (facade.openTripId() !== null) {
+  <app-trip-drawer />
+}

@@ -127,6 +127,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/operations/backoffice/trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListBackOfficeTrips"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/backoffice/trips/{tripId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetBackOfficeTrip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/operations/driver/answers-check": {
         parameters: {
             query?: never;
@@ -183,6 +215,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ListTripLocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/my-trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListMyTrips"];
         put?: never;
         post?: never;
         delete?: never;
@@ -708,6 +756,195 @@ export interface components {
              * @description The tractor or standalone vehicle.
              */
             vehicleId: null | string;
+        };
+        /** @description A driver as the back office names them. */
+        BackOfficeDriverDto: {
+            /** @description The first name. */
+            firstName: string;
+            /**
+             * Format: uuid
+             * @description The driver's identifier.
+             */
+            id: string;
+            /** @description The last name. */
+            lastName: string;
+        };
+        /** @description Every step of the calculation an ended trip was saved with; later changes of the contract never reach it. */
+        BackOfficeTripCalculationDto: {
+            /**
+             * Format: double
+             * @description The amount after the minimum rule, before the night call fee.
+             */
+            amountAfterMinimum: number;
+            /**
+             * Format: double
+             * @description The night call fee added; `null` when none is added.
+             */
+            appliedNightCallFee: number | null;
+            /**
+             * Format: double
+             * @description The amount before the minimum rule.
+             */
+            baseAmount: number;
+            /**
+             * Format: double
+             * @description The day price of the rate used.
+             */
+            dayPrice: number;
+            /** @description Whether the trip starts inside the night band. */
+            isNight: boolean;
+            /**
+             * Format: double
+             * @description The amount of the minimum rule; `null` when none.
+             */
+            minimumAmount: number | null;
+            /** @description Whether the minimum rule changed the base amount. */
+            minimumApplied: boolean;
+            /** @description The kind of minimum rule of the rate used. */
+            minimumKind: components["schemas"]["TripMinimumKind"];
+            /**
+             * Format: double
+             * @description The overage price of a tiered overage; `null` otherwise.
+             */
+            minimumOveragePrice: number | null;
+            /**
+             * Format: double
+             * @description The threshold of a tiered overage; `null` otherwise.
+             */
+            minimumThreshold: number | null;
+            /**
+             * Format: time
+             * @description First minute after that night band.
+             */
+            nightBandEnd: string;
+            /**
+             * Format: time
+             * @description First minute of the night band the trip was classified with.
+             */
+            nightBandStart: string;
+            /**
+             * Format: double
+             * @description The night call fee of the rate used; `null` without the night surcharge.
+             */
+            nightCallFee: number | null;
+            /**
+             * Format: double
+             * @description The night price of the rate used; `null` without the night surcharge.
+             */
+            nightPrice: number | null;
+            /** @description Whether the contract has the night surcharge. */
+            nightSurcharge: boolean;
+            /**
+             * Format: int32
+             * @description Minutes, kilograms or kilometres; `null` for a trip priced by trip.
+             */
+            quantity: number | null;
+            rateDelivery: null | components["schemas"]["TripLocationDto"];
+            ratePickup: null | components["schemas"]["TripLocationDto"];
+            /** @description Where the rate came from. */
+            rateSource: components["schemas"]["TripRateSource"];
+            rateVehicle: null | components["schemas"]["TripVehicleDto"];
+            /**
+             * Format: double
+             * @description The amount of the trip.
+             */
+            total: number;
+            /**
+             * Format: double
+             * @description The price used: day or night.
+             */
+            unitPrice: number;
+        };
+        /** @description What the ended view adds up, over every trip of the selection and not only the page. */
+        BackOfficeTripFigures: {
+            /**
+             * Format: double
+             * @description The sum of their totals.
+             */
+            amount: number;
+            /**
+             * Format: int32
+             * @description How many distinct customers they are done for.
+             */
+            customers: number;
+            /**
+             * Format: int32
+             * @description How many trips the selection has.
+             */
+            trips: number;
+        };
+        /** @description A trip of the back-office list, in any state; the measure and amount fields exist for an ended trip only. */
+        BackOfficeTripListItemDto: {
+            /**
+             * Format: date-time
+             * @description When the trip was added (UTC).
+             */
+            addedAt: string;
+            /** @description The customer. */
+            customer: components["schemas"]["TripCustomerDto"];
+            /**
+             * Format: date
+             * @description The day the trip started; `null` while it is planned.
+             */
+            day: null | string;
+            /**
+             * Format: int32
+             * @description Days left before a planned trip expires; `null` for any other state.
+             */
+            daysToExpiry: number | null;
+            delivery: null | components["schemas"]["TripLocationDto"];
+            /** @description The driver. */
+            driver: components["schemas"]["BackOfficeDriverDto"];
+            /**
+             * Format: time
+             * @description The end time; `null` until it is ended.
+             */
+            end: null | string;
+            /**
+             * Format: uuid
+             * @description The trip's identifier.
+             */
+            id: string;
+            measureKind: null | components["schemas"]["TripMeasureKind"];
+            /** @description Whether the night price was applied; `null` until the trip is ended. */
+            nightPriceApplied: null | boolean;
+            /**
+             * Format: int64
+             * @description The trip number; `null` until it is ended.
+             */
+            number: number | null;
+            pickup: null | components["schemas"]["TripLocationDto"];
+            /**
+             * Format: int32
+             * @description Minutes, kilograms or kilometres; `null` for a trip priced by trip and until it is ended.
+             */
+            quantity: number | null;
+            /**
+             * Format: time
+             * @description The start time; `null` while it is planned.
+             */
+            start: null | string;
+            /** @description Planned, in progress or ended. */
+            state: components["schemas"]["TripState"];
+            /**
+             * Format: double
+             * @description The amount of the trip; `null` until it is ended.
+             */
+            total: number | null;
+            trailer: null | components["schemas"]["TripVehicleDto"];
+            /**
+             * Format: double
+             * @description The unit price the trip was priced with; `null` until it is ended.
+             */
+            unitPrice: number | null;
+            /** @description The tractor or standalone vehicle. */
+            vehicle: components["schemas"]["TripVehicleDto"];
+        };
+        /** @description One page of trips of a view and, for the ended view, the figures of the whole selection. */
+        BackOfficeTripListResponse: {
+            figures: null | components["schemas"]["BackOfficeTripFigures"];
+            /** @description The page. */
+            trips: components["schemas"]["PagedResponseOfBackOfficeTripListItemDto"];
         };
         /**
          * @description How finely the rates of a Contract are set, and so which locations a trip must
@@ -1323,6 +1560,69 @@ export interface components {
              */
             time: null | string;
         };
+        /** @description One trip in any state, as the back office reads it: the list's fields, its timeline, what it requires and, once ended, the calculation it was saved with. */
+        GetBackOfficeTripResponse: {
+            /**
+             * Format: date-time
+             * @description When the trip was added (UTC).
+             */
+            addedAt: string;
+            calculation: null | components["schemas"]["BackOfficeTripCalculationDto"];
+            /** @description The customer. */
+            customer: components["schemas"]["TripCustomerDto"];
+            /**
+             * Format: date
+             * @description The day the trip started; `null` while it is planned.
+             */
+            day: null | string;
+            /**
+             * Format: int32
+             * @description Days left before a planned trip expires; `null` for any other state.
+             */
+            daysToExpiry: number | null;
+            delivery: null | components["schemas"]["TripLocationDto"];
+            /** @description The driver. */
+            driver: components["schemas"]["BackOfficeDriverDto"];
+            /**
+             * Format: time
+             * @description The end time; `null` until it is ended.
+             */
+            end: null | string;
+            /**
+             * Format: date
+             * @description The day the end time falls on: the trip day, or the day after when the trip crossed midnight; `null` until it is ended.
+             */
+            endedOn: null | string;
+            /**
+             * Format: date
+             * @description The day a planned trip expires; `null` for any other state.
+             */
+            expiresOn: null | string;
+            /**
+             * Format: uuid
+             * @description The trip's identifier.
+             */
+            id: string;
+            measureKind: null | components["schemas"]["TripMeasureKind"];
+            /**
+             * Format: int64
+             * @description The trip number; `null` until it is ended.
+             */
+            number: number | null;
+            pickup: null | components["schemas"]["TripLocationDto"];
+            /** @description The documents the trip required, as saved; empty when none. */
+            requiredDocuments: string[];
+            /**
+             * Format: time
+             * @description The start time; `null` while it is planned.
+             */
+            start: null | string;
+            /** @description Planned, in progress or ended. */
+            state: components["schemas"]["TripState"];
+            trailer: null | components["schemas"]["TripVehicleDto"];
+            /** @description The tractor or standalone vehicle. */
+            vehicle: components["schemas"]["TripVehicleDto"];
+        };
         /** @description The signed-in user as the database knows it now. */
         GetCurrentUserResponse: {
             /**
@@ -1341,10 +1641,21 @@ export interface components {
             username: string;
         };
         /**
-         * @description What the driver home shows: the driver's name, the trip in progress, the planned trips and the trips the
-         *     driver can repeat.
+         * @description What the driver home shows: the driver's name, the trip in progress, the planned trips, the trips the
+         *     driver can repeat and how many trips the driver ended today and in the last seven days.
          */
         GetDriverHomeResponse: {
+            /**
+             * Format: int32
+             * @description How many of the driver's ended trips have a day of today or one of the 6
+             *                 days before.
+             */
+            endedInLastSevenDays: number;
+            /**
+             * Format: int32
+             * @description How many of the driver's ended trips have today as their day.
+             */
+            endedToday: number;
             /** @description The driver's first name. */
             firstName: string;
             inProgress: null | components["schemas"]["InProgressTripDto"];
@@ -1455,6 +1766,19 @@ export interface components {
         };
         /** @enum {unknown} */
         MinimumRuleKind: "None" | "FixedMinimum" | "TieredOverage" | null;
+        /** @description The driver's ended trips of the last seven days, without any price. */
+        MyTripsResponse: {
+            /**
+             * Format: date
+             * @description The day in Italy the seven days end on.
+             */
+            today: string;
+            /**
+             * @description The driver's ended trips whose day is today or one of the 6 days before, the newest
+             *                 first (by day, then by start time).
+             */
+            trips: components["schemas"]["TripDto"][];
+        };
         /** @description The system night band as the API shows it. */
         NightBandDto: {
             /** @description First minute after the band, `HH:mm`. */
@@ -1466,6 +1790,35 @@ export interface components {
              * @description Version to send back with a change.
              */
             version: number;
+        };
+        /** @description Response envelope for a paginated query. Immutable record. */
+        PagedResponseOfBackOfficeTripListItemDto: {
+            /** @description The items returned in the current page. */
+            data: components["schemas"]["BackOfficeTripListItemDto"][];
+            /** @description True when there is a page after this one. */
+            hasNextPage?: boolean;
+            /** @description True when there is a page before this one. */
+            hasPreviousPage?: boolean;
+            /**
+             * Format: int32
+             * @description 1-based page number returned.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description Page size used to compute the result.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description Total number of items across all pages.
+             */
+            totalCount: number;
+            /**
+             * Format: int32
+             * @description Total number of pages, computed as `ceil(TotalCount / PageSize)`.
+             */
+            totalPages?: number;
         };
         /** @description Response envelope for a paginated query. Immutable record. */
         PagedResponseOfCustomerListItemDto: {
@@ -1978,6 +2331,13 @@ export interface components {
          * @enum {unknown}
          */
         TripLocationsAsked: "None" | "Pickup" | "Delivery" | "Both";
+        /** @enum {unknown} */
+        TripMeasureKind: "StartAndEnd" | "Weight" | "Distance" | "StartOnly" | null;
+        /**
+         * @description The kind of minimum rule of the rate a trip was priced with.
+         * @enum {unknown}
+         */
+        TripMinimumKind: "None" | "FixedMinimum" | "TieredOverage";
         /** @description A location, or a pair, a contract has a rate for. Only the sides the contract asks for are set. */
         TripPlaceDto: {
             delivery: null | components["schemas"]["TripLocationDto"];
@@ -1991,6 +2351,11 @@ export interface components {
             /** @description The locations or pairs the contract offers; empty when it asks for none. */
             places: components["schemas"]["TripPlaceDto"][];
         };
+        /**
+         * @description Where the rate a trip was priced with came from.
+         * @enum {unknown}
+         */
+        TripRateSource: "Contract" | "Vehicle" | "Location" | "LocationPair";
         /**
          * @description Where a trip is, read from its times alone: it is never stored.
          * @enum {unknown}
@@ -2729,6 +3094,149 @@ export interface operations {
             };
         };
     };
+    ListBackOfficeTrips: {
+        parameters: {
+            query?: {
+                /** @description The view: the state of the trips listed; `Ended` when absent. */
+                view?: components["schemas"]["TripState"];
+                /** @description First trip day of the period, included; given together with DateOnly? ListBackOfficeTripsRequest.To. */
+                from?: string;
+                /** @description Last trip day of the period, included; given together with DateOnly? ListBackOfficeTripsRequest.From. */
+                to?: string;
+                /** @description Only the trips of this customer. */
+                customerId?: string;
+                /** @description Only the trips of this driver. */
+                driverId?: string;
+                /** @description Only the trips done with this vehicle as the leading vehicle or as the trailer. */
+                vehicleId?: string;
+                /** @description Only the trips picking up from or delivering to this location. */
+                locationId?: string;
+                /** @description Only the trips measured this way. */
+                mode?: components["schemas"]["TripMeasureKind"];
+                /**
+                 * @description Text matched against the trip number (digits only) and the names of the customer, driver, vehicles
+                 *     and locations of the trip. When null or whitespace, no search is applied.
+                 */
+                search?: string;
+                /**
+                 * @description 1-based page number. Optional on the wire; values below 1 are coerced to 1
+                 *     on the setter. Read via int PagedRequest.EffectivePage to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPage when null).
+                 */
+                page?: number;
+                /**
+                 * @description Page size between 1 and int PagedRequest.MaxPageSize. Optional on the wire;
+                 *     non-positive values are coerced to int PagedRequest.DefaultPageSize, values
+                 *     greater than int PagedRequest.MaxPageSize are clamped to int PagedRequest.MaxPageSize.
+                 *     Read via int PagedRequest.EffectivePageSize to get the resolved value
+                 *     (defaulting to int PagedRequest.DefaultPageSize when null).
+                 */
+                pageSize?: number;
+                /**
+                 * @description Name of the column to sort by. Optional; handlers fall back to a default
+                 *     safe column when this is null or not in their whitelist.
+                 */
+                sortColumn?: string;
+                /**
+                 * @description Sort direction. Optional on the wire; readers should use
+                 *     bool PagedRequest.IsAscending which resolves null to
+                 *     SortDirection.Ascending.
+                 */
+                sortDirection?: components["schemas"]["SortDirection"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackOfficeTripListResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetBackOfficeTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tripId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetBackOfficeTripResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     CheckTripAnswers: {
         parameters: {
             query?: {
@@ -2918,6 +3426,44 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListMyTrips: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyTripsResponse"];
                 };
             };
             /** @description Unauthorized */

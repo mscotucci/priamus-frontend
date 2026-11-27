@@ -6,6 +6,10 @@ Work deferred on purpose, with the decision that deferred it. Items leave this f
 
 - **Unit prices asked for a tiered overage.** With the minimum rule "Scaglione con eccesso" a trip costs M + overage × Y (plus the night call fee at night): the day and night prices of question 6 are never used, yet the page asks for them. Decided at the grilling of the pricing engine on 2026-11-20 to leave the page as it is in that slice; to decide how the questions change (hide the prices, or reorder rate and minimum).
 
+## Lists (back office)
+
+- **List state in the URL, for every list.** View, period, filters, search, sort and page live only while the page is open: leaving a list and coming back starts again from its defaults (the trip list from "Conclusi" on the current month). Raised by Michele on 2026-11-27 at the grilling of the back-office trip list, where the filters are many; deferred to a later implementation, for all lists together.
+
 ## Design system
 
 - **Fonts load from Google Fonts** (`index.html`). The driver app is meant to be installed and used on the road: self-host Manrope and JetBrains Mono before it ships.

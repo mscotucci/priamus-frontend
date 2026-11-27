@@ -19,6 +19,7 @@ function render(user: CurrentUser) {
     providers: [
       provideTestI18n(),
       provideRouter([
+        { path: 'trips', children: [] },
         { path: 'users', children: [] },
         { path: 'settings', children: [] },
         { path: 'customers', children: [] },
@@ -44,52 +45,66 @@ describe('Layout', () => {
 
     expect(sidebar.querySelector('.pt-brand__name')?.textContent).toBe('Priamus');
     expect(sidebar.querySelector('.pt-brand__line')?.textContent).toBe('Gestione Viaggi');
-    expect(sidebar.querySelector('.pt-nav__group')?.textContent).toBe('Anagrafiche');
+    expect(sidebar.querySelector('.pt-nav__group')?.textContent).toBe('Operatività');
     const item = sidebar.querySelector('nav a.pt-nav-item')!;
-    expect(item.textContent?.trim()).toBe('Clienti');
+    expect(item.textContent?.trim()).toBe('Viaggi');
     expect(item.querySelector('svg')).not.toBeNull();
     expect(sidebar.querySelector('.pt-avatar')).not.toBeNull();
     expect(sidebar.querySelector('button[aria-label="Esci"]')).not.toBeNull();
   });
 
-  it('an Admin sees the group "Anagrafiche" with "Clienti", "Autisti", "Mezzi", "Luoghi" in that order, then the group "Sistema" with "Utenti" and "Impostazioni", and nothing is shown disabled', () => {
+  it('an Admin sees the group "Operatività" with "Viaggi" first, then the group "Anagrafiche" with "Clienti", "Autisti", "Mezzi", "Luoghi" in that order, then the group "Sistema" with "Utenti" and "Impostazioni", and nothing is shown disabled', () => {
     const { sidebar } = render(admin);
 
     const groups = [...sidebar.querySelectorAll('.pt-nav__group')].map((g) => g.textContent);
-    expect(groups).toEqual(['Anagrafiche', 'Sistema']);
+    expect(groups).toEqual(['Operatività', 'Anagrafiche', 'Sistema']);
     const items = sidebar.querySelectorAll('nav a');
-    expect(items).toHaveLength(6);
-    expect(items[0].getAttribute('href')).toBe('/customers');
-    expect(items[0].textContent?.trim()).toBe('Clienti');
-    expect(items[0].querySelector('use')?.getAttribute('href')).toBe('icons.svg#building');
-    expect(items[1].getAttribute('href')).toBe('/drivers');
-    expect(items[1].textContent?.trim()).toBe('Autisti');
-    expect(items[1].querySelector('use')?.getAttribute('href')).toBe('icons.svg#users');
-    expect(items[2].getAttribute('href')).toBe('/vehicles');
-    expect(items[3].getAttribute('href')).toBe('/locations');
-    expect(items[3].textContent?.trim()).toBe('Luoghi');
-    expect(items[3].querySelector('use')?.getAttribute('href')).toBe('icons.svg#pin');
-    expect(items[4].getAttribute('href')).toBe('/users');
-    expect(items[5].getAttribute('href')).toBe('/settings');
-    expect(items[5].textContent?.trim()).toBe('Impostazioni');
-    expect(items[5].querySelector('use')?.getAttribute('href')).toBe('icons.svg#settings');
+    expect(items).toHaveLength(7);
+    expect(items[0].getAttribute('href')).toBe('/trips');
+    expect(items[0].textContent?.trim()).toBe('Viaggi');
+    expect(items[0].querySelector('use')?.getAttribute('href')).toBe('icons.svg#route');
+    expect(items[1].getAttribute('href')).toBe('/customers');
+    expect(items[1].textContent?.trim()).toBe('Clienti');
+    expect(items[1].querySelector('use')?.getAttribute('href')).toBe('icons.svg#building');
+    expect(items[2].getAttribute('href')).toBe('/drivers');
+    expect(items[2].textContent?.trim()).toBe('Autisti');
+    expect(items[2].querySelector('use')?.getAttribute('href')).toBe('icons.svg#users');
+    expect(items[3].getAttribute('href')).toBe('/vehicles');
+    expect(items[4].getAttribute('href')).toBe('/locations');
+    expect(items[4].textContent?.trim()).toBe('Luoghi');
+    expect(items[4].querySelector('use')?.getAttribute('href')).toBe('icons.svg#pin');
+    expect(items[5].getAttribute('href')).toBe('/users');
+    expect(items[6].getAttribute('href')).toBe('/settings');
+    expect(items[6].textContent?.trim()).toBe('Impostazioni');
+    expect(items[6].querySelector('use')?.getAttribute('href')).toBe('icons.svg#settings');
     expect(sidebar.querySelector('[disabled], [aria-disabled="true"]')).toBeNull();
   });
 
-  it('a BackOffice user sees "Clienti", "Autisti", "Mezzi", "Luoghi" under "Anagrafiche", with no "Utenti" or "Impostazioni" item and no "Sistema" group', () => {
+  it('a BackOffice user sees "Viaggi" under "Operatività" above "Clienti", "Autisti", "Mezzi", "Luoghi" under "Anagrafiche", with no "Utenti" or "Impostazioni" item and no "Sistema" group', () => {
     const { sidebar, drawer } = render(backOffice);
 
     const items = sidebar.querySelectorAll('nav a');
-    expect(items).toHaveLength(4);
-    expect(items[0].getAttribute('href')).toBe('/customers');
-    expect(items[1].getAttribute('href')).toBe('/drivers');
-    expect(items[2].getAttribute('href')).toBe('/vehicles');
-    expect(items[3].getAttribute('href')).toBe('/locations');
-    expect(sidebar.querySelectorAll('.pt-nav__group')).toHaveLength(1);
-    expect(sidebar.querySelector('.pt-nav__group')?.textContent).toBe('Anagrafiche');
+    expect(items).toHaveLength(5);
+    expect(items[0].getAttribute('href')).toBe('/trips');
+    expect(items[1].getAttribute('href')).toBe('/customers');
+    expect(items[2].getAttribute('href')).toBe('/drivers');
+    expect(items[3].getAttribute('href')).toBe('/vehicles');
+    expect(items[4].getAttribute('href')).toBe('/locations');
+    expect(
+      [...sidebar.querySelectorAll('.pt-nav__group')].map((group) => group.textContent),
+    ).toEqual(['Operatività', 'Anagrafiche']);
     expect(drawer.textContent).not.toContain('Utenti');
     expect(drawer.textContent).not.toContain('Impostazioni');
     expect(drawer.textContent).not.toContain('Sistema');
+  });
+
+  it('a Driver has no "Viaggi" link and no "Operatività" group', () => {
+    const { sidebar, drawer } = render(userWithRole('Driver'));
+
+    expect(sidebar.querySelector('nav a[href="/trips"]')).toBeNull();
+    expect(drawer.querySelector('nav a[href="/trips"]')).toBeNull();
+    expect(sidebar.textContent).not.toContain('Operatività');
+    expect(sidebar.querySelector('nav')?.textContent).not.toContain('Viaggi');
   });
 
   it('the "Luoghi" item draws the pin icon of the icon set', () => {
@@ -213,7 +228,7 @@ describe('Layout', () => {
     const { drawer } = render(admin);
 
     expect(drawer.open).toBe(false);
-    expect(drawer.querySelector('nav a')?.textContent?.trim()).toBe('Clienti');
+    expect(drawer.querySelector('nav a')?.textContent?.trim()).toBe('Viaggi');
     expect(drawer.querySelector('button[aria-label="Chiudi il menu"]')).not.toBeNull();
     expect(drawer.querySelector('button[aria-label="Esci"]')).not.toBeNull();
   });

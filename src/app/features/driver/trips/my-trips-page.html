@@ -1,0 +1,78 @@
+<header class="pt-appbar sticky top-0 z-10">
+  <a
+    class="pt-btn pt-btn--icon pt-btn--lg"
+    routerLink="/driver"
+    [attr.aria-label]="'driver.myTrips.back' | translate"
+    ><app-icon name="arrow-left"
+  /></a>
+  <h1 class="pt-appbar__title">{{ 'driver.myTrips.title' | translate }}</h1>
+</header>
+<main class="mx-auto flex w-full max-w-[640px] flex-1 flex-col gap-5 p-5 min-[900px]:p-8">
+  @if (facade.myTripsLoading()) {
+    <div class="flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'driver.home.loading' | translate }}</span>
+    </div>
+  } @else if (facade.myTripsFailed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button
+        type="button"
+        class="pt-btn pt-btn--outline pt-btn--sm"
+        (click)="facade.reloadMyTrips()"
+      >
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else if (facade.myTrips()) {
+    @if (groups().length === 0) {
+      <div class="pt-card pt-empty">
+        <p class="pt-title">{{ 'driver.myTrips.empty.title' | translate }}</p>
+        <p class="pt-muted">{{ 'driver.myTrips.empty.hint' | translate }}</p>
+      </div>
+    } @else {
+      <p class="pt-muted">{{ 'driver.myTrips.intro' | translate }}</p>
+      @for (group of groups(); track group.day) {
+        <section class="flex flex-col gap-2">
+          <h2 class="pt-section-title">{{ group.title.key | translate: group.title.params }}</h2>
+          @for (trip of group.trips; track trip.id) {
+            <div class="pt-card flex items-start gap-3">
+              <span class="pt-tile pt-tile--primary"><app-icon name="building" /></span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-baseline justify-between gap-2">
+                  <p class="m-0">
+                    <strong>{{ trip.customer.companyName }}</strong>
+                  </p>
+                  <p class="pt-muted m-0 shrink-0">
+                    {{ 'driver.myTrips.number' | translate: { number: trip.number } }}
+                  </p>
+                </div>
+                <p class="pt-muted m-0">
+                  {{ places(trip) ?? ('driver.myTrips.noPlaces' | translate) }}
+                </p>
+                <p class="pt-muted m-0">
+                  <span class="pt-mono">{{ trip.vehicle.licensePlate }}</span>
+                  @if (trip.trailer; as trailer) {
+                    + <span class="pt-mono">{{ trailer.licensePlate }}</span>
+                  }
+                </p>
+                <p class="m-0">
+                  <strong>
+                    @if (trip.kilograms !== null) {
+                      {{ trip.kilograms | number }} {{ 'driver.end.unit.kg' | translate }}
+                    } @else if (trip.kilometres !== null) {
+                      {{ trip.kilometres | number }} {{ 'driver.end.unit.km' | translate }}
+                    } @else {
+                      @let length = duration(trip);
+                      {{ length.key | translate: length.params }}
+                    }
+                  </strong>
+                  · {{ clock(trip.start) }} – {{ clock(trip.end) }}
+                </p>
+              </div>
+            </div>
+          }
+        </section>
+      }
+    }
+  }
+</main>

@@ -16,6 +16,7 @@ import {
 import {
   DriverHome,
   EndTripRequest,
+  MyTrips,
   NewTrip,
   StartTripRequest,
   Trip,
@@ -69,6 +70,22 @@ export class TripsFacade {
     () => this.homeNeeded() && this.home() === null && !this.homeFailed(),
   );
   readonly homeFailed = computed(() => this.homeResource.status() === 'error');
+
+  private readonly myTripsNeeded = signal(false);
+  private readonly myTripsResource = httpResource<MyTrips>(() =>
+    this.myTripsNeeded() ? this.api.myTrips() : undefined,
+  );
+
+  /** The driver's ended trips of the last seven days; `null` until it is read. */
+  readonly myTrips = computed<MyTrips | null>(() =>
+    this.myTripsResource.hasValue() && !this.myTripsResource.isLoading()
+      ? this.myTripsResource.value()
+      : null,
+  );
+  readonly myTripsLoading = computed(
+    () => this.myTripsNeeded() && this.myTrips() === null && !this.myTripsFailed(),
+  );
+  readonly myTripsFailed = computed(() => this.myTripsResource.status() === 'error');
 
   private readonly newTripNeeded = signal(false);
   private readonly newTripResource = httpResource<NewTrip>(() =>
@@ -166,6 +183,14 @@ export class TripsFacade {
       this.homeResource.reload();
     }
     this.homeNeeded.set(true);
+  }
+
+  /** "I miei viaggi" asks for its trips: a read made earlier is read again. */
+  needMyTrips(): void {
+    if (this.myTripsNeeded()) {
+      this.myTripsResource.reload();
+    }
+    this.myTripsNeeded.set(true);
   }
 
   /** A page that proposes from today's trips asks for it: a read made earlier is read again. */
@@ -362,6 +387,10 @@ export class TripsFacade {
 
   reloadHome(): void {
     this.homeResource.reload();
+  }
+
+  reloadMyTrips(): void {
+    this.myTripsResource.reload();
   }
 
   signOut(): Promise<void> {

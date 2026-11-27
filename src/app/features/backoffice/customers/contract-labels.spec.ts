@@ -2,10 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { TranslateService } from '@ngx-translate/core';
 import { provideTestI18n } from '../../../core/i18n/i18n-testing';
 import {
+  formatAmount,
   CONTRACT_STATUS_PILL,
   dayBefore,
   documentsSentence,
   formatDuration,
+  formatKilograms,
   formatKilometres,
   formatTons,
   locationRateLabel,
@@ -226,10 +228,16 @@ describe('contract labels', () => {
     expect(formatDuration(1439, service)).toBe('23 h 59 min');
   });
 
+  it('formatAmount always shows the thousands separator, 4-digit amounts included', () => {
+    expect(formatAmount(1059.44)).toBe('1.059,44');
+    expect(formatAmount(38412.5)).toBe('38.412,50');
+    expect(formatAmount(75)).toBe('75,00');
+  });
+
   it('formatKilometres shows whole kilometres with the unit', () => {
     const service = translate();
 
-    expect(formatKilometres(9999, service)).toBe('9999 km');
+    expect(formatKilometres(9999, service)).toBe('9.999 km');
     expect(formatKilometres(120, service)).toBe('120 km');
   });
 
@@ -241,5 +249,12 @@ describe('contract labels', () => {
     [99999, '99,999 ton'],
   ])('formatTons shows %i kg as %s', (kilograms, expected) => {
     expect(formatTons(kilograms, translate())).toBe(expected);
+  });
+
+  it('formatKilograms groups the thousands even under ten thousand', () => {
+    const service = translate();
+
+    expect(formatKilograms(3520, service)).toBe('3.520 kg');
+    expect(formatKilograms(850, service)).toBe('850 kg');
   });
 });

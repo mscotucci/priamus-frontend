@@ -57,6 +57,10 @@
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+/* An area focused only by code (tabindex -1, e.g. the page after its drawer's opener left) shows no ring */
+.pt-root [tabindex='-1']:focus-visible {
+  outline: none;
+}
 /* A choice card shows the focus of its input on the card, not on the input */
 .pt-root .pt-choice:has(input:focus-visible) {
   outline: 2px solid var(--primary);
@@ -320,20 +324,31 @@
 .pt-filter__button .pt-icon--xs {
   opacity: 0.6;
 }
+/* A menu scrolls inside when it is taller than the room it is given (its max-height is set where it opens) */
 .pt-menu {
   min-width: 180px;
+  overflow-y: auto;
   padding: var(--space-1-5) 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-popover);
 }
+/* A menu opened on a search field: room to type from the start, the field as wide as the menu */
+.pt-menu--search {
+  min-width: 288px;
+}
+.pt-menu--search .pt-search {
+  display: flex;
+  width: 100%;
+}
+/* A long name wraps onto more lines: the item grows instead of running over the next one */
 .pt-menu__item {
   display: flex;
   align-items: center;
   width: 100%;
-  height: var(--control-md);
-  padding: 0 var(--space-3);
+  min-height: var(--control-md);
+  padding: var(--space-1-5) var(--space-3);
   border: 0;
   background: none;
   color: var(--text);
@@ -1148,6 +1163,12 @@ select.pt-input option:checked {
   color: var(--primary);
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
+}
+/* In a table the link is a row's identifier (a trip number) among plain values: underlined, it reads as one */
+.pt-table .pt-link {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 .pt-driver .pt-label {
   font-size: var(--text-label-lg-size);
@@ -1326,6 +1347,23 @@ select.pt-input option:checked {
   font-size: var(--text-body-size);
   line-height: var(--text-body-line);
   opacity: 0.85;
+}
+/* Counter cards that open a page: the cards answer the pointer and the touch, as a choice card does */
+.pt-counters {
+  color: inherit;
+  text-decoration: none;
+}
+.pt-counters .pt-card {
+  transition:
+    border-color 120ms,
+    background-color 120ms;
+}
+.pt-counters:hover .pt-card {
+  border-color: var(--primary);
+}
+.pt-counters:active .pt-card {
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 /* What was recorded: icon, label, value */
 .pt-summary {

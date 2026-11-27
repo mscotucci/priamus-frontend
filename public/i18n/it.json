@@ -6,7 +6,8 @@
   "common": {
     "actions": {
       "retry": "Riprova",
-      "cancel": "Annulla"
+      "cancel": "Annulla",
+      "close": "Chiudi"
     },
     "leave": {
       "title": "Uscire senza salvare?",
@@ -44,6 +45,11 @@
         "title": "Nuovo viaggio",
         "hint": "Mezzo, cliente e luoghi"
       },
+      "counters": {
+        "today": "Oggi",
+        "lastSevenDays": "Ultimi 7 giorni",
+        "label": "I miei viaggi: {{today}} oggi, {{week}} negli ultimi 7 giorni"
+      },
       "inProgress": {
         "title": "In corso",
         "startedLabel": "Iniziato",
@@ -80,6 +86,22 @@
         "title": "Ripeti un viaggio",
         "all": "Mostra tutti",
         "noPlaces": "Senza luoghi"
+      }
+    },
+    "myTrips": {
+      "back": "Torna alla home",
+      "title": "I miei viaggi",
+      "intro": "Viaggi conclusi negli ultimi 7 giorni.",
+      "day": {
+        "today": "Oggi, {{date}}",
+        "yesterday": "Ieri, {{date}}",
+        "other": "{{date}}"
+      },
+      "number": "n. {{number}}",
+      "noPlaces": "Nessun luogo",
+      "empty": {
+        "title": "Nessun viaggio concluso negli ultimi 7 giorni",
+        "hint": "I viaggi compaiono qui quando li termini."
       }
     },
     "noResults": "Nessun risultato.",
@@ -259,6 +281,8 @@
     },
     "nav": {
       "label": "Navigazione principale",
+      "operations": "Operatività",
+      "trips": "Viaggi",
       "registry": "Anagrafiche",
       "system": "Sistema",
       "customers": "Clienti",
@@ -1297,10 +1321,141 @@
       "done": "Utente {{username}} riattivato"
     }
   },
+  "trips": {
+    "drawer": {
+      "eyebrow": "Dettaglio viaggio",
+      "title": {
+        "pending": "Viaggio",
+        "ended": "Viaggio n. {{number}}",
+        "inprogress": "Viaggio in corso",
+        "planned": "Viaggio da fare"
+      },
+      "loading": "Caricamento viaggio…",
+      "gone": "Questo viaggio non c'è più.",
+      "field": {
+        "customer": "Cliente",
+        "day": "Giorno",
+        "times": "Orari",
+        "pickup": "Partenza",
+        "delivery": "Consegna",
+        "driver": "Autista",
+        "vehicle": "Mezzo",
+        "documents": "Documenti richiesti"
+      },
+      "noplace": "—",
+      "openEnd": "…",
+      "calculation": {
+        "title": "Calcolo dell'importo",
+        "mode": "Modalità",
+        "note": "Tariffa del contratto in vigore il {{day}}, salvata sul viaggio quando è terminato."
+      },
+      "pending": "L'importo si calcola quando l'autista termina il viaggio.",
+      "expires": {
+        "today": "Scade oggi, {{date}}, se l'autista non lo inizia.",
+        "tomorrow": "Scade domani, {{date}}, se l'autista non lo inizia.",
+        "other": "Scade il {{date}}, se l'autista non lo inizia."
+      },
+      "timeline": {
+        "title": "Cronologia",
+        "added": "Inserito",
+        "started": "Iniziato",
+        "ended": "Terminato",
+        "calculated": "importo calcolato"
+      }
+    },
+    "list": {
+      "title": "Viaggi",
+      "count": {
+        "one": "{{count}} viaggio",
+        "other": "{{count}} viaggi"
+      },
+      "line": "{{period}} · {{count}}",
+      "views": "Viste",
+      "view": {
+        "ended": "Conclusi",
+        "inprogress": "In corso",
+        "planned": "Da fare"
+      },
+      "figure": {
+        "trips": "Viaggi",
+        "customers": "Clienti",
+        "amount": "Importo totale"
+      },
+      "search": {
+        "placeholder": "Cerca numero, cliente, luogo, targa…",
+        "label": "Cerca numero, cliente, luogo, targa"
+      },
+      "filter": {
+        "customer": "Cliente:",
+        "driver": "Autista:",
+        "vehicle": "Mezzo:",
+        "location": "Luogo:",
+        "mode": "Modalità:"
+      },
+      "find": {
+        "customer": "Cerca cliente",
+        "driver": "Cerca autista",
+        "vehicle": "Cerca mezzo",
+        "location": "Cerca luogo"
+      },
+      "column": {
+        "number": "N.",
+        "day": "Data",
+        "customer": "Cliente",
+        "places": "Luoghi",
+        "driver": "Autista",
+        "vehicle": "Mezzo",
+        "quantity": "Quantità",
+        "rate": "Tariffa",
+        "amount": "Importo",
+        "started": "Iniziato",
+        "added": "Inserito",
+        "expires": "Scade",
+        "actions": "Azioni"
+      },
+      "detail": "Dettaglio",
+      "noplace": "Nessun luogo",
+      "night": "Notte",
+      "trailer": "+ {{plate}}",
+      "unit": {
+        "kilograms": "kg",
+        "trip": "1 viaggio"
+      },
+      "expiry": {
+        "today": "oggi",
+        "one": "tra 1 giorno",
+        "other": "tra {{count}} giorni"
+      },
+      "total": {
+        "one": "Totale del viaggio selezionato",
+        "other": "Totale dei {{count}} viaggi selezionati"
+      },
+      "range": "Viaggi {{from}}–{{to}} di {{total}}",
+      "note": "Importi calcolati con la tariffa del giorno del viaggio.",
+      "loading": "Caricamento viaggi…",
+      "empty": {
+        "title": "Nessun viaggio trovato",
+        "hint": "Prova a cambiare il periodo, la ricerca o i filtri."
+      }
+    }
+  },
   "filter": {
     "all": {
       "label": "Tutti",
       "value": "tutti"
-    }
+    },
+    "loading": "Caricamento…",
+    "hint": "Scrivi per cercare.",
+    "none": "Nessun risultato.",
+    "more": "Scrivi di più per restringere la ricerca."
+  },
+  "period": {
+    "name": "Periodo",
+    "label": "Periodo:",
+    "today": "Oggi",
+    "week": "Questa settimana",
+    "from": "Dal",
+    "to": "Al",
+    "order": "La data finale non può essere prima di quella iniziale."
   }
 }

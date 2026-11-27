@@ -32,6 +32,8 @@ const HOME: DriverHome = {
   inProgress: null,
   planned: [],
   repeatableTrips: [],
+  endedToday: 0,
+  endedInLastSevenDays: 0,
 };
 
 const vehicle = (plate: string, kind: TripVehicle['kind'] = 'Tractor'): TripVehicle => ({
@@ -88,6 +90,7 @@ const routes = [
     children: [
       { path: '', component: DriverHomePage },
       { path: 'new-trip', component: OtherPage },
+      { path: 'my-trips', component: OtherPage },
       { path: 'trips/:tripId/end', component: OtherPage },
     ],
   },
@@ -140,7 +143,7 @@ describe('DriverHome', () => {
     return harness.routeNativeElement as HTMLElement;
   };
 
-  it('shows the brand and "Esci", the name from the API, today and the action, and nothing else', async () => {
+  it('shows the brand and "Esci", the name from the API, today, the action and the counters, and nothing else', async () => {
     const element = await open();
 
     expect(text(element.querySelector('.pt-brand__name'))).toBe('Priamus Trips');
@@ -150,8 +153,62 @@ describe('DriverHome', () => {
     expect(text(element.querySelector('.pt-action__title'))).toBe('Nuovo viaggio');
     expect(text(element.querySelector('.pt-action__hint'))).toBe('Mezzo, cliente e luoghi');
     expect(element.querySelector('.pt-action')?.getAttribute('href')).toBe('/driver/new-trip');
-    expect(element.querySelectorAll('main > *').length).toBe(2);
+    expect(element.querySelectorAll('main > *').length).toBe(3);
     http.verify();
+  });
+
+  describe('the counters of the ended trips', () => {
+    const link = (element: HTMLElement) =>
+      element.querySelector<HTMLAnchorElement>('a[href="/driver/my-trips"]')!;
+
+    it('shows "Oggi" and "Ultimi 7 giorni" right after the action card, in one link that says both counts', async () => {
+      const element = await open({ ...HOME, endedToday: 3, endedInLastSevenDays: 14 });
+
+      const counters = link(element);
+
+      expect(counters.previousElementSibling).toBe(element.querySelector('.pt-action'));
+      expect(Array.from(counters.querySelectorAll('.pt-card')).map((card) => text(card))).toEqual([
+        'Oggi3',
+        'Ultimi 7 giorni14',
+      ]);
+      expect(counters.getAttribute('aria-label')).toBe(
+        'I miei viaggi: 3 oggi, 14 negli ultimi 7 giorni',
+      );
+    });
+
+    it('shows the counters, and the link, also when both read 0', async () => {
+      const element = await open();
+
+      expect(
+        Array.from(link(element).querySelectorAll('.pt-card')).map((card) => text(card)),
+      ).toEqual(['Oggi0', 'Ultimi 7 giorni0']);
+      expect(link(element).getAttribute('aria-label')).toBe(
+        'I miei viaggi: 0 oggi, 0 negli ultimi 7 giorni',
+      );
+    });
+
+    it('opens "I miei viaggi" on a tap', async () => {
+      const element = await open({ ...HOME, endedToday: 1, endedInLastSevenDays: 1 });
+
+      link(element).click();
+      await settle();
+
+      expect(TestBed.inject(Router).url).toBe('/driver/my-trips');
+    });
+
+    it('keeps "Da fare" and "Ripeti un viaggio" after the counters', async () => {
+      const element = await open({
+        ...HOME,
+        planned: [{ trip: tripDto('Comune di Penne'), daysToExpiry: 3 }],
+        repeatableTrips: [trip('Edilcave SpA')],
+      });
+
+      const titles = Array.from(element.querySelectorAll('main > *')).map((node) =>
+        node.matches('a[href="/driver/my-trips"]') ? 'counters' : text(node.querySelector('h2')),
+      );
+
+      expect(titles.slice(-3)).toEqual(['counters', 'Da fare', 'Ripeti un viaggio']);
+    });
   });
 
   it('asks the server for the home alone', async () => {
@@ -227,7 +284,7 @@ describe('DriverHome', () => {
       const element = await open({ ...HOME, repeatableTrips: FIVE });
 
       expect(text(element.querySelector('.pt-section-title'))).toBe('Ripeti un viaggio');
-      expect(element.querySelector('.pt-action + section')).not.toBeNull();
+      expect(element.querySelector('a[href="/driver/my-trips"] + section')).not.toBeNull();
       expect(cards(element).map((card) => [company(card), ...lines(card)])).toEqual([
         ['Calcestruzzi Vestina S.p.A.', 'Magazzino A → Cantiere X', 'AB123CD + XA456ZZ'],
         ['Comune di Penne', '→ Depuratore', 'XY123AB'],

@@ -26,6 +26,7 @@ import {
   durationKey,
   expiryText,
   isOverdue,
+  placesOf,
   startedAt,
 } from './trip-times';
 import { Trip } from './trips-api';
@@ -216,19 +217,6 @@ function kindOf(trip: Trip): DayKind {
 /** `HH:mm` of the start of a trip in progress. */
 function timeOf(trip: Trip): string {
   return (trip.start ?? '').slice(0, 5);
-}
-
-/** "<pickup> → <delivery>", "→ <delivery>" or "<pickup> →"; null with no location. */
-function placesOf(trip: {
-  pickup: { name: string } | null;
-  delivery: { name: string } | null;
-}): string | null {
-  const pickup = trip.pickup?.name;
-  const delivery = trip.delivery?.name;
-  if (pickup && delivery) {
-    return `${pickup} → ${delivery}`;
-  }
-  return delivery ? `→ ${delivery}` : pickup ? `${pickup} →` : null;
 }
 
 function capitalized(text: string): string {
