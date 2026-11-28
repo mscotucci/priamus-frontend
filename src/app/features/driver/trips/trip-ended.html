@@ -12,6 +12,9 @@
         <p class="pt-muted first-letter:uppercase">{{ trip.day | date: 'EEEE d MMMM y' }}</p>
       </div>
     </div>
+    @if (missingNotice(); as notice) {
+      <p class="pt-notice pt-notice--warn m-0">{{ notice }}</p>
+    }
     <dl class="pt-summary">
       <div class="pt-summary__row">
         <span class="pt-tile pt-tile--primary"><app-icon name="clock" /></span>
@@ -87,13 +90,36 @@
     </dl>
   </main>
   <div class="pt-bottombar sticky bottom-0 min-[900px]:static min-[900px]:px-8!">
-    <div class="mx-auto grid w-full max-w-[640px] gap-2 min-[900px]:grid-cols-2">
-      <button type="button" class="pt-btn pt-btn--xl pt-btn--primary w-full" (click)="sameRoute()">
-        <app-icon name="plus" />{{ 'driver.ended.sameRoute' | translate }}
-      </button>
-      <button type="button" class="pt-btn pt-btn--lg w-full" (click)="goHome()">
-        {{ 'driver.ended.home' | translate }}
-      </button>
-    </div>
+    @if (missingNotice() !== null) {
+      <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2">
+        <a
+          class="pt-btn pt-btn--xl pt-btn--primary w-full"
+          [routerLink]="['/driver', 'trips', trip.id, 'documents']"
+        >
+          <app-icon name="file" />{{ 'driver.ended.documents.attach' | translate }}
+        </a>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" class="pt-btn pt-btn--lg w-full" (click)="sameRoute()">
+            <app-icon name="plus" />{{ 'driver.ended.sameRoute' | translate }}
+          </button>
+          <button type="button" class="pt-btn pt-btn--lg w-full" (click)="goHome()">
+            {{ 'driver.ended.home' | translate }}
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="mx-auto grid w-full max-w-[640px] gap-2 min-[900px]:grid-cols-2">
+        <button
+          type="button"
+          class="pt-btn pt-btn--xl pt-btn--primary w-full"
+          (click)="sameRoute()"
+        >
+          <app-icon name="plus" />{{ 'driver.ended.sameRoute' | translate }}
+        </button>
+        <button type="button" class="pt-btn pt-btn--lg w-full" (click)="goHome()">
+          {{ 'driver.ended.home' | translate }}
+        </button>
+      </div>
+    }
   </div>
 }

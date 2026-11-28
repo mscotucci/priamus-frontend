@@ -24,7 +24,9 @@ export type IconName =
   | 'scale'
   | 'ruler'
   | 'route'
-  | 'tag';
+  | 'tag'
+  | 'image'
+  | 'file';
 
 @Component({
   selector: 'app-icon',

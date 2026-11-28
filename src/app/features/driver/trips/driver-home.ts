@@ -19,20 +19,21 @@ import { Notice } from '../../../shared/components/notice/notice';
 import { RepeatableTrip } from './new-trip-answers';
 import { bringNoticeIntoView, outcomeNotice } from './trip-notices';
 import {
-  DayKind,
   TripEndAsks,
-  dayKind,
-  dayOf,
   durationKey,
   expiryText,
   isOverdue,
+  kindOf,
   placesOf,
   startedAt,
+  timeOf,
 } from './trip-times';
-import { Trip } from './trips-api';
+import { DriverHome as DriverHomeRead, Trip } from './trips-api';
 import { ActOutcome, TripsFacade } from './trips-facade';
 
 const SHOWN = 4;
+
+type InProgressDocuments = NonNullable<DriverHomeRead['inProgress']>['documents'];
 
 /** What the dialog of a trip started on an earlier day says, ready to show. */
 interface EndNowDialog {
@@ -94,6 +95,33 @@ export class DriverHome {
   }
 
   protected readonly places = placesOf;
+
+  /** A required document with no file is still to attach. */
+  protected hasMissing(documents: InProgressDocuments): boolean {
+    return documents.some((item) => item.required && item.attachmentCount === 0);
+  }
+
+  /** What the required documents have and lack, "DDT allegato · manca il formulario rifiuti"; documents not required are left out. */
+  protected documentsText(documents: InProgressDocuments): string {
+    const required = documents.filter((item) => item.required);
+    const phrase = (kind: 'attached' | 'missing', document: string) =>
+      this.translate.instant(
+        `driver.home.inProgress.documents.${kind}.${document.toLowerCase()}`,
+      ) as string;
+    const parts = [
+      ...required
+        .filter((item) => item.attachmentCount > 0)
+        .map((item) => phrase('attached', item.document)),
+      ...required
+        .filter((item) => item.attachmentCount === 0)
+        .map((item) => phrase('missing', item.document)),
+    ];
+    if (parts.length === 0) {
+      return this.translate.instant('driver.home.inProgress.documents.none');
+    }
+    const text = parts.join(' · ');
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
 
   /** "Oggi alle <time>", "Ieri, <weekday> <day> <month>, alle <time>" or "<weekday> <day> <month>, alle <time>". */
   protected startedText(trip: Trip): { key: string; params: Record<string, string> } {
@@ -207,16 +235,6 @@ export class DriverHome {
       },
     );
   }
-}
-
-/** Whether the trip in progress started today, yesterday or another day, on the device's clock. */
-function kindOf(trip: Trip): DayKind {
-  return dayKind(trip.day ?? '', dayOf(new Date()));
-}
-
-/** `HH:mm` of the start of a trip in progress. */
-function timeOf(trip: Trip): string {
-  return (trip.start ?? '').slice(0, 5);
 }
 
 function capitalized(text: string): string {

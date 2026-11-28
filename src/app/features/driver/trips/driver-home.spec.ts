@@ -73,7 +73,7 @@ const started = (day: string, start: string, extra: Partial<Trip> = {}) =>
   tripDto('Calcestruzzi Vestina S.p.A.', { id: 't1', state: 'InProgress', day, start, ...extra });
 const inProgress = (trip: Trip, endAsks: 'Nothing' | 'Kilograms' | 'Kilometres' = 'Nothing') => ({
   ...HOME,
-  inProgress: { trip, endAsks },
+  inProgress: { trip, endAsks, documents: [] },
 });
 
 const text = (element: Node | null | undefined) =>
@@ -399,6 +399,7 @@ describe('DriverHome', () => {
         ['Cliente', ['Calcestruzzi Vestina S.p.A.']],
         ['Luoghi', ['Magazzino A, Penne', '→ Cantiere X, Chieti Scalo']],
         ['Mezzo', ['AB123CD + XA456ZZ']],
+        ['Documenti', ['Nessuno richiesto']],
       ]);
       expect(Array.from(sections[0].querySelectorAll('button')).map((b) => text(b))).toEqual([
         'Termina ora',
@@ -406,6 +407,67 @@ describe('DriverHome', () => {
         'Elimina',
       ]);
       http.verify();
+    });
+
+    describe('the row "Documenti"', () => {
+      const withDocuments = (
+        documents: { document: string; required: boolean; attachmentCount: number }[],
+      ) => {
+        const home = inProgress(started(TODAY, '07:30:00'));
+        return {
+          ...home,
+          inProgress: { ...home.inProgress, documents },
+        } as unknown as ReturnType<typeof inProgress>;
+      };
+      const documentsRow = (element: HTMLElement) =>
+        Array.from(element.querySelectorAll<HTMLElement>('.pt-summary__row')).find(
+          (row) => text(row.querySelector('dt')) === 'Documenti',
+        )!;
+
+      it('is a link with a chevron to the documents of the trip, before the end buttons, and says what is attached and what is missing among the required', async () => {
+        const { element } = await openWith(
+          withDocuments([
+            { document: 'DeliveryNote', required: true, attachmentCount: 1 },
+            { document: 'DeliverySlip', required: false, attachmentCount: 2 },
+            { document: 'WasteForm', required: true, attachmentCount: 0 },
+          ]),
+        );
+
+        const row = documentsRow(element);
+        expect(row.tagName).toBe('A');
+        expect(row.getAttribute('href')).toBe('/driver/trips/t1/documents');
+        expect(row.querySelector('use[href$="#chevron-right"]')).not.toBeNull();
+        expect(text(row.querySelector('dd'))).toBe('DDT allegato · manca il formulario rifiuti');
+        expect(row.querySelector('.pt-tile--warn')).not.toBeNull();
+        expect(precedes(row, element.querySelector('.pt-btn--xl')!)).toBe(true);
+        http.verify();
+      });
+
+      it('says "Nessuno richiesto" when nothing is required, even with a file attached, and its tile is not warning', async () => {
+        const { element } = await openWith(
+          withDocuments([{ document: 'DeliveryNote', required: false, attachmentCount: 1 }]),
+        );
+
+        const row = documentsRow(element);
+        expect(text(row.querySelector('dd'))).toBe('Nessuno richiesto');
+        expect(row.querySelector('.pt-tile--warn')).toBeNull();
+        expect(row.querySelector('.pt-tile--primary')).not.toBeNull();
+        http.verify();
+      });
+
+      it('with every required document attached it lists them and the tile is not warning', async () => {
+        const { element } = await openWith(
+          withDocuments([
+            { document: 'DeliveryNote', required: true, attachmentCount: 1 },
+            { document: 'DeliverySlip', required: true, attachmentCount: 1 },
+          ]),
+        );
+
+        const row = documentsRow(element);
+        expect(text(row.querySelector('dd'))).toBe('DDT allegato · bolla allegata');
+        expect(row.querySelector('.pt-tile--warn')).toBeNull();
+        http.verify();
+      });
     });
 
     it('tells yesterday with its date, and a trip without places', async () => {

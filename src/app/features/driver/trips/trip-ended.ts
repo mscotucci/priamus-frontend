@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { TranslatePipe } from '@ngx-translate/core';
+import { RouterLink } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Icon } from '../../../shared/components/icon/icon';
 import { locationLines } from './new-trip-answers';
 import { durationKey, durationMinutes } from './trip-times';
@@ -9,13 +10,14 @@ import { TripsFacade } from './trips-facade';
 /** "Viaggio concluso": the trip just ended, as the server recorded it. */
 @Component({
   selector: 'app-trip-ended',
-  imports: [DatePipe, DecimalPipe, TranslatePipe, Icon],
+  imports: [DatePipe, DecimalPipe, RouterLink, TranslatePipe, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-1 flex-col' },
   templateUrl: './trip-ended.html',
 })
 export class TripEnded {
   private readonly facade = inject(TripsFacade);
+  private readonly translate = inject(TranslateService);
 
   protected readonly trip = this.facade.ended;
   /** `HH:mm` of the start and of the end; the server sends seconds too. */
@@ -34,6 +36,40 @@ export class TripEnded {
     return trip === null ? [] : locationLines({ pickup: trip.pickup, delivery: trip.delivery });
   });
 
+  /**
+   * The required documents of the trip just ended that have no file yet, as the notice says them; null
+   * when none is missing, while they are read, or when the read failed.
+   */
+  protected readonly missingNotice = computed(() => {
+    const trip = this.trip();
+    const read = this.facade.documents();
+    if (trip === null || read?.trip.id !== trip.id || this.facade.documentsReloading()) {
+      return null;
+    }
+    const names = read.documents
+      .filter((item) => item.required && item.attachments.length === 0)
+      .map(
+        (item) =>
+          this.translate.instant(
+            `driver.ended.documents.the.${item.document.toLowerCase()}`,
+          ) as string,
+      );
+    if (names.length === 0) {
+      return null;
+    }
+    const list =
+      names.length === 1
+        ? names[0]
+        : (this.translate.instant('driver.ended.documents.join', {
+            head: names.slice(0, -1).join(', '),
+            last: names[names.length - 1],
+          }) as string);
+    return this.translate.instant(
+      `driver.ended.documents.missing.${names.length === 1 ? 'one' : 'many'}`,
+      { names: list },
+    ) as string;
+  });
+
   protected sameRoute(): void {
     void this.facade.repeatEnded();
   }
@@ -43,8 +79,11 @@ export class TripEnded {
   }
 
   constructor() {
-    if (this.trip() === null) {
+    const trip = this.trip();
+    if (trip === null) {
       void this.facade.goHome();
+    } else {
+      this.facade.needDocuments(trip.id);
     }
   }
 }

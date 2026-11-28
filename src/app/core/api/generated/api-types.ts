@@ -159,6 +159,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/operations/backoffice/trips/{tripId}/attachments/{attachmentId}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetAttachmentFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/operations/driver/answers-check": {
         parameters: {
             query?: never;
@@ -282,6 +298,38 @@ export interface paths {
         put: operations["AddTrip"];
         post?: never;
         delete: operations["DeleteTrip"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/trips/{tripId}/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["AddAttachment"];
+        post?: never;
+        delete: operations["RemoveAttachment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operations/driver/trips/{tripId}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetTripDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -757,6 +805,11 @@ export interface components {
              */
             vehicleId: null | string;
         };
+        /**
+         * @description The kind of file an attachment keeps, told from its first bytes.
+         * @enum {unknown}
+         */
+        AttachmentFileKind: "Jpeg" | "Pdf";
         /** @description A driver as the back office names them. */
         BackOfficeDriverDto: {
             /** @description The first name. */
@@ -854,6 +907,15 @@ export interface components {
              * @description The price used: day or night.
              */
             unitPrice: number;
+        };
+        /** @description One document of a trip, as the back office reads it. */
+        BackOfficeTripDocumentDto: {
+            /** @description Its files in the order they were added. */
+            attachments: components["schemas"]["TripAttachmentDto"][];
+            /** @description Which document. */
+            document: components["schemas"]["TripDocument"];
+            /** @description Whether the contract requires it. */
+            required: boolean;
         };
         /** @description What the ended view adds up, over every trip of the selection and not only the page. */
         BackOfficeTripFigures: {
@@ -1560,7 +1622,7 @@ export interface components {
              */
             time: null | string;
         };
-        /** @description One trip in any state, as the back office reads it: the list's fields, its timeline, what it requires and, once ended, the calculation it was saved with. */
+        /** @description One trip in any state, as the back office reads it: the list's fields, its timeline, its documents with their files and, once ended, the calculation it was saved with. */
         GetBackOfficeTripResponse: {
             /**
              * Format: date-time
@@ -1581,6 +1643,8 @@ export interface components {
              */
             daysToExpiry: number | null;
             delivery: null | components["schemas"]["TripLocationDto"];
+            /** @description DDT, bolla and formulario rifiuti: the required ones first, then the others, each group in this order; empty while the trip is planned. */
+            documents: components["schemas"]["BackOfficeTripDocumentDto"][];
             /** @description The driver. */
             driver: components["schemas"]["BackOfficeDriverDto"];
             /**
@@ -1610,8 +1674,6 @@ export interface components {
              */
             number: number | null;
             pickup: null | components["schemas"]["TripLocationDto"];
-            /** @description The documents the trip required, as saved; empty when none. */
-            requiredDocuments: string[];
             /**
              * Format: time
              * @description The start time; `null` while it is planned.
@@ -1696,6 +1758,8 @@ export interface components {
         };
         /** @description A trip in progress and what its end asks. */
         InProgressTripDto: {
+            /** @description The three trip documents, the required ones first, each with how many files it holds. */
+            documents: components["schemas"]["TripDocumentStateDto"][];
             /** @description What ending it asks of the driver, by the contract of the trip day. */
             endAsks: components["schemas"]["TripEndAsks"];
             /** @description The trip. */
@@ -1766,6 +1830,16 @@ export interface components {
         };
         /** @enum {unknown} */
         MinimumRuleKind: "None" | "FixedMinimum" | "TieredOverage" | null;
+        /** @description An ended trip and how many of its required documents have no file yet. */
+        MyTripDto: {
+            /**
+             * Format: int32
+             * @description The required documents with no attachment.
+             */
+            missingDocuments: number;
+            /** @description The trip. */
+            trip: components["schemas"]["TripDto"];
+        };
         /** @description The driver's ended trips of the last seven days, without any price. */
         MyTripsResponse: {
             /**
@@ -1777,7 +1851,7 @@ export interface components {
              * @description The driver's ended trips whose day is today or one of the 6 days before, the newest
              *                 first (by day, then by start time).
              */
-            trips: components["schemas"]["TripDto"][];
+            trips: components["schemas"]["MyTripDto"][];
         };
         /** @description The system night band as the API shows it. */
         NightBandDto: {
@@ -2247,6 +2321,21 @@ export interface components {
          * @enum {unknown}
          */
         TimeBand: "Day" | "Night";
+        /** @description A file attached to a document of a trip. */
+        TripAttachmentDto: {
+            /**
+             * Format: date-time
+             * @description When the attachment was added (UTC).
+             */
+            addedAt: string;
+            /** @description Photo (JPEG) or PDF, told from the file's first bytes. */
+            fileKind: components["schemas"]["AttachmentFileKind"];
+            /**
+             * Format: uuid
+             * @description The attachment's identifier, chosen by the client.
+             */
+            id: string;
+        };
         /** @description A customer the driver can choose for a trip. */
         TripCustomerDto: {
             /** @description The company name. */
@@ -2258,6 +2347,43 @@ export interface components {
             id: string;
             /** @description The VAT number; `null` when the customer has none. */
             vatNumber: null | string;
+        };
+        /**
+         * @description The document an attachment is a photo or a PDF of. The names equal the ones the Registry gives to the
+         *     documents a contract requires; the daily summary is not one of them.
+         * @enum {unknown}
+         */
+        TripDocument: "DeliveryNote" | "DeliverySlip" | "WasteForm";
+        /** @description One document of a trip. */
+        TripDocumentDto: {
+            /** @description Its files in the order they were added. */
+            attachments: components["schemas"]["TripAttachmentDto"][];
+            /** @description Which document. */
+            document: components["schemas"]["TripDocument"];
+            /** @description Whether the contract requires it. */
+            required: boolean;
+        };
+        /** @description Whether a document of a trip is required and how many files are attached to it. */
+        TripDocumentStateDto: {
+            /**
+             * Format: int32
+             * @description How many files are attached.
+             */
+            attachmentCount: number;
+            /** @description Which document. */
+            document: components["schemas"]["TripDocument"];
+            /** @description Whether the contract requires it. */
+            required: boolean;
+        };
+        /** @description A trip of the driver and its three documents with the files attached. */
+        TripDocumentsResponse: {
+            /**
+             * @description DDT, bolla and formulario rifiuti: the required ones first, then the others, each
+             *                 group in this order.
+             */
+            documents: components["schemas"]["TripDocumentDto"][];
+            /** @description The trip. */
+            trip: components["schemas"]["TripDto"];
         };
         /**
          * @description A trip in any state, as the driver app receives it: what was answered, named as the registry names it
@@ -3237,6 +3363,54 @@ export interface operations {
             };
         };
     };
+    GetAttachmentFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tripId: string;
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     CheckTripAnswers: {
         parameters: {
             query?: {
@@ -3750,6 +3924,189 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AddAttachment: {
+        parameters: {
+            query: {
+                document: components["schemas"]["TripDocument"];
+            };
+            header?: never;
+            path: {
+                tripId: string;
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripAttachmentDto"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripAttachmentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RemoveAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tripId: string;
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetTripDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tripId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripDocumentsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

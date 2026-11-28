@@ -10,6 +10,7 @@ export type TripListResponse = Schemas['BackOfficeTripListResponse'];
 export type TripListItem = Schemas['BackOfficeTripListItemDto'];
 export type TripFigures = Schemas['BackOfficeTripFigures'];
 export type TripDetail = Schemas['GetBackOfficeTripResponse'];
+export type TripAttachmentItem = Schemas['TripAttachmentDto'];
 export type CustomerOptionItem = Schemas['CustomerListItemDto'];
 export type DriverOptionItem = Schemas['DriverListItemDto'];
 export type VehicleOptionItem = Schemas['VehicleListItemDto'];
@@ -80,6 +81,11 @@ export class BackofficeTripsApi {
 
   trip(id: string): HttpResourceRequest {
     return { url: `${URL}/${id}` };
+  }
+
+  /** The file of an attachment of a trip; read with the session, never through a plain link. */
+  attachmentFile(tripId: string, attachmentId: string): string {
+    return `${URL}/${tripId}/attachments/${attachmentId}/file`;
   }
 
   customers(search: string): HttpResourceRequest {

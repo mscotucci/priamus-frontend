@@ -75,6 +75,19 @@
               </dd>
             </div>
           </div>
+          <a class="pt-summary__row no-underline" [routerLink]="['trips', trip.id, 'documents']">
+            <span
+              class="pt-tile"
+              [class.pt-tile--warn]="hasMissing(progress.documents)"
+              [class.pt-tile--primary]="!hasMissing(progress.documents)"
+              ><app-icon name="file"
+            /></span>
+            <div class="flex-1">
+              <dt class="pt-label">{{ 'driver.home.inProgress.documents.label' | translate }}</dt>
+              <dd>{{ documentsText(progress.documents) }}</dd>
+            </div>
+            <app-icon name="chevron-right" />
+          </a>
         </dl>
         @if (!overdue()) {
           <button

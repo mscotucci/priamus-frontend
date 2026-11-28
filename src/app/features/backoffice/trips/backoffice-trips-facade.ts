@@ -1,5 +1,6 @@
-import { HttpErrorResponse, httpResource } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Injectable, computed, inject, linkedSignal, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import type { Period } from '../../../shared/components/period-menu/period-menu';
 import type { SearchFilterOption } from '../../../shared/components/search-filter-menu/search-filter-menu';
 import { monthDays } from '../../../shared/dates/day';
@@ -32,6 +33,7 @@ export const currentMonth = (now: Date = new Date()): Period => monthDays(now);
 @Injectable()
 export class BackofficeTripsFacade {
   private readonly api = inject(BackofficeTripsApi);
+  private readonly http = inject(HttpClient);
 
   private readonly viewState = signal<TripView>('Ended');
   private readonly periodState = signal<Period>(currentMonth());
@@ -269,5 +271,12 @@ export class BackofficeTripsFacade {
 
   closeTrip(): void {
     this.tripId.set(null);
+  }
+
+  /** The file of an attachment of a trip, fetched with the user's session. Rejects when the read fails. */
+  attachmentFile(tripId: string, attachmentId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(this.api.attachmentFile(tripId, attachmentId), { responseType: 'blob' }),
+    );
   }
 }

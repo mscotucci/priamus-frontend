@@ -99,6 +99,16 @@ export function startedAt(trip: StartedTrip): Date | null {
   return trip.day && trip.start ? new Date(`${trip.day}T${trip.start.slice(0, 5)}:00`) : null;
 }
 
+/** Whether the trip started today, yesterday or another day, on the device's clock. */
+export function kindOf(trip: StartedTrip): DayKind {
+  return dayKind(trip.day ?? '', dayOf(new Date()));
+}
+
+/** `HH:mm` of the start of a trip. */
+export function timeOf(trip: StartedTrip): string {
+  return (trip.start ?? '').slice(0, 5);
+}
+
 const HOURS_24 = 24 * 60 * 60 * 1000;
 
 /** The trip started 24 hours ago or more: it can only be ended at a typed time. */

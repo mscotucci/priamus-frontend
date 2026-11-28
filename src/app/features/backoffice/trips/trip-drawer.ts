@@ -6,6 +6,7 @@ import {
   computed,
   effect,
   inject,
+  signal,
   untracked,
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -13,10 +14,11 @@ import { Drawer } from '../../../shared/components/drawer/drawer';
 import { Icon } from '../../../shared/components/icon/icon';
 import { Notice } from '../../../shared/components/notice/notice';
 import { calculationLines } from '../customers/calculation-lines';
-import { documentsSentence, formatAmount } from '../customers/contract-labels';
-import type { PricingMode, RequiredDocument } from '../customers/contracts-api';
+import { formatAmount } from '../customers/contract-labels';
+import type { PricingMode } from '../customers/contracts-api';
 import type { TripMode } from './backoffice-trips-api';
 import { BackofficeTripsFacade } from './backoffice-trips-facade';
+import { TripAttachment } from './trip-attachment';
 
 /** How the contract forms name the way each trip was measured. */
 const PRICING_MODE: Record<TripMode, PricingMode> = {
@@ -35,7 +37,7 @@ const TITLE_KEY = {
 /** The read-only detail of the trip the list opened. */
 @Component({
   selector: 'app-trip-drawer',
-  imports: [DatePipe, TranslatePipe, Drawer, Icon, Notice],
+  imports: [DatePipe, TranslatePipe, Drawer, Icon, Notice, TripAttachment],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './trip-drawer.html',
 })
@@ -45,6 +47,8 @@ export class TripDrawer {
   private readonly locale = inject(LOCALE_ID);
 
   protected readonly trip = this.facade.trip;
+  /** The trip whose file could not be opened, for the notice of the documents section. */
+  protected readonly openFailedFor = signal<string | null>(null);
 
   protected readonly title = computed(() => {
     const trip = this.trip();
@@ -52,6 +56,27 @@ export class TripDrawer {
       trip === null ? 'trips.drawer.title.pending' : TITLE_KEY[trip.state],
       { number: trip?.number },
     );
+  });
+
+  /**
+   * The documents section: what the contract requires and what is attached, in the response order.
+   * A planned trip has none; a document that is not required shows only when it has files.
+   */
+  protected readonly documents = computed(() => {
+    const trip = this.trip();
+    if (trip === null || trip.state === 'Planned') {
+      return null;
+    }
+    return trip.documents
+      .filter((entry) => entry.required || entry.attachments.length > 0)
+      .map((entry) => ({
+        document: entry.document,
+        nameKey: `driver.documents.name.${entry.document.toLowerCase()}`,
+        required: entry.required,
+        photos: entry.attachments.filter((file) => file.fileKind === 'Jpeg'),
+        pdfs: entry.attachments.filter((file) => file.fileKind === 'Pdf'),
+        missing: entry.attachments.length === 0,
+      }));
   });
 
   /** "Scade domani, 28/11, se l'autista non lo inizia." for a planned trip. */
@@ -69,13 +94,6 @@ export class TripDrawer {
           : 'trips.drawer.expires.other',
       { date: formatDate(trip.expiresOn, 'dd/MM', this.locale) },
     );
-  });
-
-  protected readonly documents = computed(() => {
-    const trip = this.trip();
-    return trip === null
-      ? ''
-      : documentsSentence(trip.requiredDocuments as RequiredDocument[], this.translate);
   });
 
   /** The calculation the ended trip was saved with, in the words of "Prova la configurazione". */
@@ -119,6 +137,11 @@ export class TripDrawer {
   });
 
   constructor() {
+    // another trip, or none: what an earlier trip failed to open is forgotten
+    effect(() => {
+      this.facade.openTripId();
+      untracked(() => this.openFailedFor.set(null));
+    });
     // a trip that is gone since the list was read: the list is read again
     effect(() => {
       if (this.facade.tripMissing()) {

@@ -59,6 +59,13 @@
         ],
         "type": "object"
       },
+      "AttachmentFileKind": {
+        "description": "The kind of file an attachment keeps, told from its first bytes.",
+        "enum": [
+          "Jpeg",
+          "Pdf"
+        ]
+      },
       "BackOfficeDriverDto": {
         "description": "A driver as the back office names them.",
         "properties": {
@@ -288,6 +295,32 @@
           "minimumApplied",
           "appliedNightCallFee",
           "total"
+        ],
+        "type": "object"
+      },
+      "BackOfficeTripDocumentDto": {
+        "description": "One document of a trip, as the back office reads it.",
+        "properties": {
+          "attachments": {
+            "description": "Its files in the order they were added.",
+            "items": {
+              "$ref": "#/components/schemas/TripAttachmentDto"
+            },
+            "type": "array"
+          },
+          "document": {
+            "$ref": "#/components/schemas/TripDocument",
+            "description": "Which document."
+          },
+          "required": {
+            "description": "Whether the contract requires it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document",
+          "required",
+          "attachments"
         ],
         "type": "object"
       },
@@ -2162,7 +2195,7 @@
         "type": "object"
       },
       "GetBackOfficeTripResponse": {
-        "description": "One trip in any state, as the back office reads it: the list's fields, its timeline, what it requires and, once ended, the calculation it was saved with.",
+        "description": "One trip in any state, as the back office reads it: the list's fields, its timeline, its documents with their files and, once ended, the calculation it was saved with.",
         "properties": {
           "addedAt": {
             "description": "When the trip was added (UTC).",
@@ -2212,6 +2245,13 @@
                 "description": "The delivery location; `null` when none was named."
               }
             ]
+          },
+          "documents": {
+            "description": "DDT, bolla and formulario rifiuti: the required ones first, then the others, each group in this order; empty while the trip is planned.",
+            "items": {
+              "$ref": "#/components/schemas/BackOfficeTripDocumentDto"
+            },
+            "type": "array"
           },
           "driver": {
             "$ref": "#/components/schemas/BackOfficeDriverDto",
@@ -2278,13 +2318,6 @@
               }
             ]
           },
-          "requiredDocuments": {
-            "description": "The documents the trip required, as saved; empty when none.",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
           "start": {
             "description": "The start time; `null` while it is planned.",
             "format": "time",
@@ -2331,7 +2364,7 @@
           "vehicle",
           "trailer",
           "measureKind",
-          "requiredDocuments",
+          "documents",
           "calculation"
         ],
         "type": "object"
@@ -2520,6 +2553,13 @@
       "InProgressTripDto": {
         "description": "A trip in progress and what its end asks.",
         "properties": {
+          "documents": {
+            "description": "The three trip documents, the required ones first, each with how many files it holds.",
+            "items": {
+              "$ref": "#/components/schemas/TripDocumentStateDto"
+            },
+            "type": "array"
+          },
           "endAsks": {
             "$ref": "#/components/schemas/TripEndAsks",
             "description": "What ending it asks of the driver, by the contract of the trip day."
@@ -2531,7 +2571,8 @@
         },
         "required": [
           "trip",
-          "endAsks"
+          "endAsks",
+          "documents"
         ],
         "type": "object"
       },
@@ -2673,6 +2714,29 @@
           null
         ]
       },
+      "MyTripDto": {
+        "description": "An ended trip and how many of its required documents have no file yet.",
+        "properties": {
+          "missingDocuments": {
+            "description": "The required documents with no attachment.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "trip": {
+            "$ref": "#/components/schemas/TripDto",
+            "description": "The trip."
+          }
+        },
+        "required": [
+          "trip",
+          "missingDocuments"
+        ],
+        "type": "object"
+      },
       "MyTripsResponse": {
         "description": "The driver's ended trips of the last seven days, without any price.",
         "properties": {
@@ -2684,7 +2748,7 @@
           "trips": {
             "description": "The driver's ended trips whose day is today or one of the 6 days before, the newest\r\n            first (by day, then by start time).",
             "items": {
-              "$ref": "#/components/schemas/TripDto"
+              "$ref": "#/components/schemas/MyTripDto"
             },
             "type": "array"
           }
@@ -3829,6 +3893,31 @@
           "Night"
         ]
       },
+      "TripAttachmentDto": {
+        "description": "A file attached to a document of a trip.",
+        "properties": {
+          "addedAt": {
+            "description": "When the attachment was added (UTC).",
+            "format": "date-time",
+            "type": "string"
+          },
+          "fileKind": {
+            "$ref": "#/components/schemas/AttachmentFileKind",
+            "description": "Photo (JPEG) or PDF, told from the file's first bytes."
+          },
+          "id": {
+            "description": "The attachment's identifier, chosen by the client.",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fileKind",
+          "addedAt"
+        ],
+        "type": "object"
+      },
       "TripCustomerDto": {
         "description": "A customer the driver can choose for a trip.",
         "properties": {
@@ -3853,6 +3942,89 @@
           "id",
           "companyName",
           "vatNumber"
+        ],
+        "type": "object"
+      },
+      "TripDocument": {
+        "description": "The document an attachment is a photo or a PDF of. The names equal the ones the Registry gives to the\r\ndocuments a contract requires; the daily summary is not one of them.",
+        "enum": [
+          "DeliveryNote",
+          "DeliverySlip",
+          "WasteForm"
+        ]
+      },
+      "TripDocumentDto": {
+        "description": "One document of a trip.",
+        "properties": {
+          "attachments": {
+            "description": "Its files in the order they were added.",
+            "items": {
+              "$ref": "#/components/schemas/TripAttachmentDto"
+            },
+            "type": "array"
+          },
+          "document": {
+            "$ref": "#/components/schemas/TripDocument",
+            "description": "Which document."
+          },
+          "required": {
+            "description": "Whether the contract requires it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document",
+          "required",
+          "attachments"
+        ],
+        "type": "object"
+      },
+      "TripDocumentStateDto": {
+        "description": "Whether a document of a trip is required and how many files are attached to it.",
+        "properties": {
+          "attachmentCount": {
+            "description": "How many files are attached.",
+            "format": "int32",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "document": {
+            "$ref": "#/components/schemas/TripDocument",
+            "description": "Which document."
+          },
+          "required": {
+            "description": "Whether the contract requires it.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document",
+          "required",
+          "attachmentCount"
+        ],
+        "type": "object"
+      },
+      "TripDocumentsResponse": {
+        "description": "A trip of the driver and its three documents with the files attached.",
+        "properties": {
+          "documents": {
+            "description": "DDT, bolla and formulario rifiuti: the required ones first, then the others, each\r\n            group in this order.",
+            "items": {
+              "$ref": "#/components/schemas/TripDocumentDto"
+            },
+            "type": "array"
+          },
+          "trip": {
+            "$ref": "#/components/schemas/TripDto",
+            "description": "The trip."
+          }
+        },
+        "required": [
+          "trip",
+          "documents"
         ],
         "type": "object"
       },
@@ -5543,6 +5715,69 @@
         ]
       }
     },
+    "/api/operations/backoffice/trips/{tripId}/attachments/{attachmentId}/file": {
+      "get": {
+        "operationId": "GetAttachmentFile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Operations.BackOffice"
+        ]
+      }
+    },
     "/api/operations/driver/answers-check": {
       "get": {
         "operationId": "CheckTripAnswers",
@@ -6172,6 +6407,239 @@
               }
             },
             "description": "Unprocessable Entity"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/trips/{tripId}/attachments/{attachmentId}": {
+      "delete": {
+        "operationId": "RemoveAttachment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      },
+      "put": {
+        "operationId": "AddAttachment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "document",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TripDocument"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripAttachmentDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripAttachmentDto"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        },
+        "tags": [
+          "Operations.Driver"
+        ]
+      }
+    },
+    "/api/operations/driver/trips/{tripId}/documents": {
+      "get": {
+        "operationId": "GetTripDocuments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tripId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDocumentsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
           }
         },
         "tags": [

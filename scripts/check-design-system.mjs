@@ -852,6 +852,7 @@ const checks = [
         '.pt-driver', '.pt-btn--xl', '.pt-link', '.pt-choice', '.pt-choice--solid:has(input:checked)', '.pt-choice--stacked', '.pt-question', '.pt-question__title', '.pt-question__value',
         '.pt-appbar', '.pt-appbar--home', '.pt-appbar__title', '.pt-action', '.pt-action__tile', '.pt-action__title', '.pt-action__hint',
         '.pt-summary', '.pt-summary__row', '.pt-bottombar', '.pt-section-title', '.pt-driver-name',
+        '.pt-file', '.pt-file__name', '.pt-file__hint', '.pt-thumb',
       ]
         .filter((sel) => lacksRule(top, sel))
         .map((sel) => `${sel} has no rule`);

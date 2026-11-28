@@ -34,8 +34,12 @@
       @for (group of groups(); track group.day) {
         <section class="flex flex-col gap-2">
           <h2 class="pt-section-title">{{ group.title.key | translate: group.title.params }}</h2>
-          @for (trip of group.trips; track trip.id) {
-            <div class="pt-card flex items-start gap-3">
+          @for (item of group.trips; track item.trip.id) {
+            @let trip = item.trip;
+            <a
+              class="pt-card flex items-start gap-3 no-underline"
+              [routerLink]="['/driver', 'trips', trip.id, 'documents']"
+            >
               <span class="pt-tile pt-tile--primary"><app-icon name="building" /></span>
               <div class="min-w-0 flex-1">
                 <div class="flex items-baseline justify-between gap-2">
@@ -68,8 +72,17 @@
                   </strong>
                   · {{ clock(trip.start) }} – {{ clock(trip.end) }}
                 </p>
+                @if (item.missingDocuments > 0) {
+                  <span class="pt-pill pt-pill--warn">{{
+                    (item.missingDocuments === 1
+                      ? 'driver.myTrips.missing.one'
+                      : 'driver.myTrips.missing.many'
+                    ) | translate: { count: item.missingDocuments }
+                  }}</span>
+                }
               </div>
-            </div>
+              <span class="flex self-center"><app-icon name="chevron-right" /></span>
+            </a>
           }
         </section>
       }

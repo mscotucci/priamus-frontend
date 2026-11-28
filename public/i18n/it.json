@@ -61,6 +61,20 @@
         "customer": "Cliente",
         "places": "Luoghi",
         "vehicle": "Mezzo",
+        "documents": {
+          "label": "Documenti",
+          "none": "Nessuno richiesto",
+          "attached": {
+            "deliverynote": "DDT allegato",
+            "deliveryslip": "bolla allegata",
+            "wasteform": "formulario rifiuti allegato"
+          },
+          "missing": {
+            "deliverynote": "manca il DDT",
+            "deliveryslip": "manca la bolla",
+            "wasteform": "manca il formulario rifiuti"
+          }
+        },
         "endAt": "Terminato alle…",
         "endNow": {
           "button": "Termina ora",
@@ -91,7 +105,11 @@
     "myTrips": {
       "back": "Torna alla home",
       "title": "I miei viaggi",
-      "intro": "Viaggi conclusi negli ultimi 7 giorni.",
+      "intro": "Viaggi conclusi negli ultimi 7 giorni. Tocca un viaggio per i suoi documenti.",
+      "missing": {
+        "one": "Manca un documento",
+        "many": "Mancano {{count}} documenti"
+      },
       "day": {
         "today": "Oggi, {{date}}",
         "yesterday": "Ieri, {{date}}",
@@ -248,7 +266,20 @@
       "locations": "Luoghi",
       "vehicle": "Mezzo",
       "sameRoute": "Stesso giro",
-      "home": "Torna alla home"
+      "home": "Torna alla home",
+      "documents": {
+        "attach": "Allega i documenti",
+        "the": {
+          "deliverynote": "il DDT",
+          "deliveryslip": "la bolla",
+          "wasteform": "il formulario rifiuti"
+        },
+        "join": "{{head}} e {{last}}",
+        "missing": {
+          "one": "Manca {{names}}. Puoi allegarlo ora o nei prossimi 7 giorni da «I miei viaggi».",
+          "many": "Mancano {{names}}. Puoi allegarli ora o nei prossimi 7 giorni da «I miei viaggi»."
+        }
+      }
     },
     "unlinked": {
       "title": "Non puoi ancora registrare viaggi",
@@ -263,6 +294,65 @@
       "h1mN": "1 ora e {{minutes}} minuti",
       "hNm1": "{{hours}} ore e 1 minuto",
       "hNmN": "{{hours}} ore e {{minutes}} minuti"
+    },
+    "documents": {
+      "title": "Documenti",
+      "back": "Indietro",
+      "loading": "Caricamento…",
+      "intro": "Una foto o un PDF per ogni documento. Puoi terminare il viaggio anche senza.",
+      "state": {
+        "inProgress": {
+          "today": "In corso · iniziato oggi alle {{time}}",
+          "yesterday": "In corso · iniziato ieri, {{date}}, alle {{time}}",
+          "other": "In corso · iniziato {{date}}, alle {{time}}"
+        },
+        "ended": "n. {{number}} · {{date}}"
+      },
+      "name": {
+        "deliverynote": "DDT",
+        "deliveryslip": "Bolla",
+        "wasteform": "Formulario rifiuti"
+      },
+      "pill": {
+        "attached": "Richiesto · allegato",
+        "missing": "Richiesto · manca"
+      },
+      "file": {
+        "photo": "Foto {{number}}",
+        "pdf": "PDF {{number}}"
+      },
+      "added": {
+        "today": "oggi {{time}}",
+        "yesterday": "ieri {{time}}",
+        "other": "{{date}} {{time}}"
+      },
+      "add": "Aggiungi",
+      "sending": {
+        "photo": "Invio della foto…",
+        "pdf": "Invio del PDF…"
+      },
+      "refusal": {
+        "unsupported": "Si possono allegare solo foto o PDF.",
+        "tooLarge": "Il file è troppo grande: al massimo 10 MB.",
+        "rateLimited": "Troppi invii in poco tempo. Riprova tra un minuto."
+      },
+      "remove": {
+        "label": {
+          "photo": "Rimuovi foto {{number}} {{document}}",
+          "pdf": "Rimuovi PDF {{number}} {{document}}"
+        },
+        "title": "Rimuovere {{file}} {{document}}?",
+        "photo": "la foto {{number}}",
+        "pdf": "il PDF {{number}}",
+        "of": {
+          "deliverynote": "del DDT",
+          "deliveryslip": "della bolla",
+          "wasteform": "del formulario rifiuti"
+        },
+        "button": "Rimuovi"
+      },
+      "missing": "Questo viaggio non ha documenti da mostrare: non esiste più o è concluso da più di 7 giorni.",
+      "home": "Torna alla home"
     }
   },
   "role": {
@@ -1339,11 +1429,19 @@
         "pickup": "Partenza",
         "delivery": "Consegna",
         "driver": "Autista",
-        "vehicle": "Mezzo",
-        "documents": "Documenti richiesti"
+        "vehicle": "Mezzo"
       },
       "noplace": "—",
       "openEnd": "…",
+      "documents": {
+        "title": "Documenti",
+        "required": "Richiesto",
+        "missing": "Richiesto · mancante",
+        "empty": "Nessuno richiesto e nessuno allegato.",
+        "photo": "{{document}}, foto {{number}}, aggiunta il {{date}} alle {{time}}",
+        "pdf": "PDF {{number}}",
+        "pdfLabel": "{{document}}, PDF {{number}}, aggiunto il {{date}} alle {{time}}"
+      },
       "calculation": {
         "title": "Calcolo dell'importo",
         "mode": "Modalità",

@@ -51,13 +51,62 @@
           }
         </dd>
       </div>
-      @if (trip.state === 'Ended') {
-        <div class="col-span-2">
-          <dt class="pt-label">{{ 'trips.drawer.field.documents' | translate }}</dt>
-          <dd class="m-0">{{ documents() }}</dd>
-        </div>
-      }
     </dl>
+
+    @if (documents(); as documents) {
+      <div class="flex flex-col gap-3">
+        <p class="pt-label">{{ 'trips.drawer.documents.title' | translate }}</p>
+        @if (openFailedFor() === trip.id) {
+          <app-notice [notice]="{ key: 'errors.generic' }" />
+        }
+        @for (entry of documents; track entry.document) {
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <strong>{{ entry.nameKey | translate }}</strong>
+              @if (entry.required) {
+                <span
+                  class="pt-pill"
+                  [class.pt-pill--success]="!entry.missing"
+                  [class.pt-pill--warn]="entry.missing"
+                  >{{
+                    (entry.missing
+                      ? 'trips.drawer.documents.missing'
+                      : 'trips.drawer.documents.required'
+                    ) | translate
+                  }}</span
+                >
+              }
+            </div>
+            @if (entry.photos.length > 0) {
+              <div class="flex flex-wrap gap-2">
+                @for (file of entry.photos; track file.id) {
+                  <app-trip-attachment
+                    [tripId]="trip.id"
+                    [attachment]="file"
+                    [documentName]="entry.nameKey | translate"
+                    [number]="$index + 1"
+                    (failed)="openFailedFor.set(trip.id)"
+                    (opened)="openFailedFor.set(null)"
+                  />
+                }
+              </div>
+            }
+            @for (file of entry.pdfs; track file.id) {
+              <app-trip-attachment
+                [tripId]="trip.id"
+                [attachment]="file"
+                [documentName]="entry.nameKey | translate"
+                [number]="$index + 1"
+                (failed)="openFailedFor.set(trip.id)"
+                (opened)="openFailedFor.set(null)"
+              />
+            }
+          </div>
+        } @empty {
+          <p class="pt-muted m-0">{{ 'trips.drawer.documents.empty' | translate }}</p>
+        }
+      </div>
+    }
 
     @if (calculation(); as calculation) {
       <div class="flex flex-col gap-2">

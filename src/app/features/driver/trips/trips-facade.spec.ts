@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { HttpRequest, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
@@ -360,7 +361,10 @@ describe('TripsFacade', () => {
 
   describe('reading my trips', () => {
     const MY_TRIPS_URL = '/api/operations/driver/my-trips';
-    const MY_TRIPS: MyTrips = { today: '2026-11-27', trips: [{ ...TRIP, state: 'Ended' }] };
+    const MY_TRIPS: MyTrips = {
+      today: '2026-11-27',
+      trips: [{ trip: { ...TRIP, state: 'Ended' }, missingDocuments: 0 }],
+    };
 
     it('reads nothing until the page asks, then holds the trips and reads them again when asked again', async () => {
       await settle();
@@ -730,6 +734,28 @@ describe('TripsFacade', () => {
       expect(facade.ended()).toBeNull();
     });
 
+    it('back goes back when the app has a history', async () => {
+      const location = TestBed.inject(Location);
+      vi.spyOn(location, 'getState').mockReturnValue({ navigationId: 3 });
+      const back = vi.spyOn(location, 'back').mockImplementation(() => undefined);
+
+      facade.back();
+
+      expect(back).toHaveBeenCalledOnce();
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('back goes to the home when the page was opened with no history of the app', async () => {
+      const location = TestBed.inject(Location);
+      vi.spyOn(location, 'getState').mockReturnValue({ navigationId: 1 });
+      const back = vi.spyOn(location, 'back').mockImplementation(() => undefined);
+
+      facade.back();
+
+      expect(back).not.toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(['/driver']);
+    });
+
     it('asking again for the new trip reads it again and holds the old proposal back meanwhile', async () => {
       const old = { vehicle: null, trailer: null, hasTripInProgress: false };
       facade.needNewTrip();
@@ -746,6 +772,173 @@ describe('TripsFacade', () => {
       await settle();
 
       expect(facade.newTrip()?.vehicle).toEqual(TRACTOR);
+    });
+  });
+
+  describe('documents and attachments of a trip', () => {
+    const DOCUMENTS_URL = `${TRIP_URL}/documents`;
+    const DOCUMENTS = {
+      trip: TRIP,
+      documents: [
+        { document: 'DeliveryNote', required: true, attachments: [] },
+        { document: 'DeliverySlip', required: false, attachments: [] },
+        { document: 'WasteForm', required: false, attachments: [] },
+      ],
+    } as const;
+
+    it('reads nothing until a page asks, holds the documents, and reads them again when asked again', async () => {
+      await settle();
+      http.expectNone(DOCUMENTS_URL);
+      expect(facade.documents()).toBeNull();
+
+      facade.needDocuments('trip');
+      await settle();
+      http.expectOne(DOCUMENTS_URL).flush(DOCUMENTS);
+      await settle();
+
+      expect(facade.documents()).toEqual(DOCUMENTS);
+
+      facade.reloadDocuments();
+      await settle();
+      http.expectOne(DOCUMENTS_URL).flush({ ...DOCUMENTS, documents: [] });
+      await settle();
+
+      expect(facade.documents()?.documents).toEqual([]);
+    });
+
+    it('says the documents are being read again only while the read is under way', async () => {
+      facade.needDocuments('trip');
+      await settle();
+      expect(facade.documentsReloading()).toBe(false);
+      http.expectOne(DOCUMENTS_URL).flush(DOCUMENTS);
+      await settle();
+      expect(facade.documentsReloading()).toBe(false);
+
+      facade.reloadDocuments();
+      await settle();
+      const reread = http.expectOne(DOCUMENTS_URL);
+      expect(facade.documentsReloading()).toBe(true);
+
+      reread.flush(DOCUMENTS);
+      await settle();
+      expect(facade.documentsReloading()).toBe(false);
+    });
+
+    it('keeps the last documents while they are read again, then shows the new ones', async () => {
+      facade.needDocuments('trip');
+      await settle();
+      http.expectOne(DOCUMENTS_URL).flush(DOCUMENTS);
+      await settle();
+
+      facade.reloadDocuments();
+      await settle();
+      const reread = http.expectOne(DOCUMENTS_URL);
+
+      expect(facade.documents()).toEqual(DOCUMENTS);
+
+      reread.flush({ ...DOCUMENTS, documents: [] });
+      await settle();
+
+      expect(facade.documents()?.documents).toEqual([]);
+    });
+
+    it('tells a trip with no documents for the driver (404) from any other failure of the read', async () => {
+      facade.needDocuments('trip');
+      await settle();
+      http.expectOne(DOCUMENTS_URL).flush(null, { status: 404, statusText: 'Not Found' });
+      await settle();
+
+      expect(facade.documentsMissing()).toBe(true);
+      expect(facade.documentsFailed()).toBe(false);
+      expect(facade.documents()).toBeNull();
+
+      facade.needDocuments('other');
+      await settle();
+      http
+        .expectOne('/api/operations/driver/trips/other/documents')
+        .flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(facade.documentsMissing()).toBe(false);
+      expect(facade.documentsFailed()).toBe(true);
+    });
+
+    it('keeps nothing of the documents of a trip when another trip is asked for', async () => {
+      facade.needDocuments('trip');
+      await settle();
+      http.expectOne(DOCUMENTS_URL).flush(DOCUMENTS);
+      await settle();
+      expect(facade.documents()).not.toBeNull();
+
+      facade.needDocuments('other');
+      await settle();
+
+      expect(facade.documents()).toBeNull();
+      http.expectOne('/api/operations/driver/trips/other/documents');
+    });
+
+    it('adds a file as the body of a PUT under the identifier given, with the document, without setting saving', async () => {
+      const file = new Blob(['x'], { type: 'image/jpeg' });
+
+      const first = facade.addAttachment('trip', 'WasteForm', 'a1', file);
+      expect(facade.saving()).toBe(false);
+      const request = http.expectOne((r) => r.method === 'PUT');
+      request.flush(
+        { id: 'a', fileKind: 'Jpeg', addedAt: '2026-11-28T09:20:00Z' },
+        { status: 201, statusText: 'Created' },
+      );
+
+      expect(await first).toEqual({ kind: 'done' });
+      expect(request.request.body).toBe(file);
+      expect(request.request.params.get('document')).toBe('WasteForm');
+      expect(request.request.url).toBe(`${TRIP_URL}/attachments/a1`);
+
+      const second = facade.addAttachment('trip', 'WasteForm', 'a1', file);
+      const again = http.expectOne((r) => r.method === 'PUT');
+      again.flush(null, { status: 200, statusText: 'OK' });
+
+      expect(await second).toEqual({ kind: 'done' });
+      expect(again.request.url).toBe(request.request.url);
+    });
+
+    it.each([
+      [0, null, { kind: 'notReached' }],
+      [404, null, { kind: 'missing' }],
+      [413, null, { kind: 'tooLarge' }],
+      [429, null, { kind: 'rateLimited' }],
+      [
+        422,
+        {
+          errorCode: 'Operations.Attachment.UnsupportedFile',
+          detail: 'Si possono allegare solo foto o PDF.',
+        },
+        { kind: 'rule', detail: 'Si possono allegare solo foto o PDF.' },
+      ],
+      [422, null, { kind: 'failed' }],
+      [500, null, { kind: 'failed' }],
+    ])('adding answered with status %i comes to %j', async (status, body, expected) => {
+      const outcome = facade.addAttachment('trip', 'DeliveryNote', 'a1', new Blob(['x']));
+
+      http.expectOne((r) => r.method === 'PUT').flush(body, { status, statusText: 'x' });
+
+      expect(await outcome).toEqual(expected);
+    });
+
+    it('removes an attachment with a DELETE and tells how it came out', async () => {
+      const done = facade.removeAttachment('trip', 'a1');
+      http
+        .expectOne((r) => r.method === 'DELETE' && r.url === `${TRIP_URL}/attachments/a1`)
+        .flush(null, { status: 204, statusText: 'No Content' });
+      expect(await done).toEqual({ kind: 'done' });
+      expect(facade.saving()).toBe(false);
+
+      const gone = facade.removeAttachment('trip', 'a1');
+      http.expectOne((r) => r.method === 'DELETE').flush(null, { status: 404, statusText: 'x' });
+      expect(await gone).toEqual({ kind: 'missing' });
+
+      const lost = facade.removeAttachment('trip', 'a1');
+      http.expectOne((r) => r.method === 'DELETE').error(new ProgressEvent('error'));
+      expect(await lost).toEqual({ kind: 'notReached' });
     });
   });
 });

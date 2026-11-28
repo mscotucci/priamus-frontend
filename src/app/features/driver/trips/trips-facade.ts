@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
@@ -21,6 +22,8 @@ import {
   StartTripRequest,
   Trip,
   TripCustomers,
+  TripDocument,
+  TripDocuments,
   TripRead,
   TripsApi,
   VehicleRole,
@@ -41,12 +44,28 @@ export type ActOutcome =
   | { kind: 'failed' }
   | { kind: 'ignored' };
 
+/**
+ * What adding or removing an attachment came to, told by status: `done`; `notReached` (no answer from
+ * the server); `tooLarge` (413 from the server or a proxy: the file is over the limit); `rule` (422: the
+ * server's text); `rateLimited` (429); `missing` (404: the trip or the attachment is gone, or out of its
+ * seven days); `failed` (anything else).
+ */
+export type AttachmentOutcome =
+  | { kind: 'done' }
+  | { kind: 'notReached' }
+  | { kind: 'tooLarge' }
+  | { kind: 'rule'; detail: string }
+  | { kind: 'rateLimited' }
+  | { kind: 'missing' }
+  | { kind: 'failed' };
+
 @Injectable()
 export class TripsFacade {
   private readonly api = inject(TripsApi);
   private readonly http = inject(HttpClient);
   private readonly session = inject(Session);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
 
   private readonly savingState = signal(false);
   /** An act on a trip is in flight. */
@@ -122,6 +141,34 @@ export class TripsFacade {
   readonly tripFailed = computed(() => {
     const error = this.tripError();
     return this.tripResource.status() === 'error' && error?.status !== 404;
+  });
+
+  private readonly documentsTripId = signal<string | null>(null);
+  private readonly documentsResource = httpResource<TripDocuments>(() => {
+    const id = this.documentsTripId();
+    return id === null ? undefined : this.api.documents(id);
+  });
+
+  /**
+   * The documents of the trip asked for; `null` until they are read, or when the read failed. While they
+   * are read again the last ones stay.
+   */
+  readonly documents = computed<TripDocuments | null>(() =>
+    this.documentsResource.hasValue() ? this.documentsResource.value() : null,
+  );
+  /** The documents are being read again: the ones held are still shown. */
+  readonly documentsReloading = computed(() => this.documentsResource.status() === 'reloading');
+  private readonly documentsError = computed(() => {
+    const error =
+      this.documentsResource.status() === 'error' ? this.documentsResource.error() : null;
+    return error instanceof HttpErrorResponse ? error : null;
+  });
+  /** The trip has no documents for this driver: it does not exist, or is out of its seven days. */
+  readonly documentsMissing = computed(() => this.documentsError()?.status === 404);
+  /** The read of the documents failed for any other reason. */
+  readonly documentsFailed = computed(() => {
+    const error = this.documentsError();
+    return this.documentsResource.status() === 'error' && error?.status !== 404;
   });
 
   private readonly vehicleRole = signal<VehicleRole | null>(null);
@@ -207,6 +254,14 @@ export class TripsFacade {
       this.tripResource.reload();
     }
     this.tripId.set(tripId);
+  }
+
+  /** A page that shows the documents of a trip asks for them: documents read earlier are read again. */
+  needDocuments(tripId: string): void {
+    if (this.documentsTripId() === tripId) {
+      this.documentsResource.reload();
+    }
+    this.documentsTripId.set(tripId);
   }
 
   /** Opens "Nuovo viaggio" starting from the answers of a past trip. */
@@ -343,6 +398,39 @@ export class TripsFacade {
     });
   }
 
+  /**
+   * Attaches the file to a document of the trip under the identifier given: the same identifier sent
+   * again (a retry) leaves one attachment on the server. It does not set `saving`: one document is busy,
+   * the rest of the page stays usable.
+   */
+  async addAttachment(
+    tripId: string,
+    document: TripDocument,
+    attachmentId: string,
+    file: Blob,
+  ): Promise<AttachmentOutcome> {
+    try {
+      await firstValueFrom(
+        this.http.put(this.api.attachment(tripId, attachmentId), file, {
+          params: { document },
+        }),
+      );
+      return { kind: 'done' };
+    } catch (error) {
+      return attachmentOutcomeOf(error);
+    }
+  }
+
+  /** Removes an attachment; the server answers 204 for one already removed, and 404 (`missing`) for an unknown one or one out of the seven days. */
+  async removeAttachment(tripId: string, attachmentId: string): Promise<AttachmentOutcome> {
+    try {
+      await firstValueFrom(this.http.delete<void>(this.api.attachment(tripId, attachmentId)));
+      return { kind: 'done' };
+    } catch (error) {
+      return attachmentOutcomeOf(error);
+    }
+  }
+
   /** Which of the answers the registry still accepts. */
   checkAnswers(answers: NewTripAnswers): Promise<AnswersCheck> {
     const { url, params } = this.api.answersCheck({
@@ -376,6 +464,16 @@ export class TripsFacade {
     return this.router.navigate(['/driver', 'ended']);
   }
 
+  /** Back to where the page was opened from; with no history of the app (a reload, a link) to the home. */
+  back(): void {
+    const state = this.location.getState() as { navigationId?: number } | null;
+    if ((state?.navigationId ?? 0) > 1) {
+      this.location.back();
+    } else {
+      void this.goHome();
+    }
+  }
+
   /** Goes to the home; the trip just ended is no longer shown once the driver is there. */
   async goHome(): Promise<boolean> {
     const arrived = await this.router.navigate(['/driver']);
@@ -387,6 +485,10 @@ export class TripsFacade {
 
   reloadHome(): void {
     this.homeResource.reload();
+  }
+
+  reloadDocuments(): void {
+    this.documentsResource.reload();
   }
 
   reloadMyTrips(): void {
@@ -426,5 +528,25 @@ function outcomeOf(error: unknown): ActOutcome {
   const api = toApiError(error);
   return error.status === 422 && api.kind === 'domain' && api.detail !== null
     ? { kind: 'rule', detail: api.detail, errorCode: api.errorCode }
+    : { kind: 'failed' };
+}
+
+function attachmentOutcomeOf(error: unknown): AttachmentOutcome {
+  if (!(error instanceof HttpErrorResponse)) {
+    return { kind: 'failed' };
+  }
+  switch (error.status) {
+    case 0:
+      return { kind: 'notReached' };
+    case 404:
+      return { kind: 'missing' };
+    case 413:
+      return { kind: 'tooLarge' };
+    case 429:
+      return { kind: 'rateLimited' };
+  }
+  const api = toApiError(error);
+  return error.status === 422 && api.kind === 'domain' && api.detail !== null
+    ? { kind: 'rule', detail: api.detail }
     : { kind: 'failed' };
 }

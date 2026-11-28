@@ -1,0 +1,165 @@
+<header class="pt-appbar sticky top-0 z-10">
+  <button
+    type="button"
+    class="pt-btn pt-btn--icon pt-btn--lg"
+    [attr.aria-label]="'driver.documents.back' | translate"
+    (click)="facade.back()"
+  >
+    <app-icon name="arrow-left" />
+  </button>
+  <h1 class="pt-appbar__title">{{ 'driver.documents.title' | translate }}</h1>
+</header>
+<main class="mx-auto flex w-full max-w-[640px] flex-1 flex-col gap-4 p-5 min-[900px]:p-8">
+  @if (read(); as read) {
+    @let line = state()!;
+    <p>
+      <strong>{{ read.trip.customer.companyName }}</strong><br /><span class="pt-muted">{{
+        line.key | translate: line.params
+      }}</span>
+    </p>
+    <p class="pt-muted">{{ 'driver.documents.intro' | translate }}</p>
+    @for (card of cards(); track card.document) {
+      <div class="pt-card flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="pt-section-title m-0">{{ card.nameKey | translate }}</h2>
+          @if (card.required) {
+            @if (card.files.length > 0) {
+              <span class="pt-pill pt-pill--success">{{
+                'driver.documents.pill.attached' | translate
+              }}</span>
+            } @else {
+              <span class="pt-pill pt-pill--warn">{{
+                'driver.documents.pill.missing' | translate
+              }}</span>
+            }
+          }
+        </div>
+        @if (card.files.length > 0) {
+          <ul class="m-0 flex list-none flex-col gap-2 p-0">
+            @for (file of card.files; track file.id) {
+              <li class="pt-file">
+                <span class="pt-tile pt-tile--primary"
+                  ><app-icon [name]="file.kind === 'pdf' ? 'file' : 'image'"
+                /></span>
+                <span class="pt-file__name"
+                  >{{ 'driver.documents.file.' + file.kind | translate: { number: file.number }
+                  }}<span class="pt-file__hint">{{
+                    file.added.key | translate: file.added.params
+                  }}</span></span
+                >
+                <button
+                  type="button"
+                  class="pt-btn pt-btn--icon pt-btn--lg"
+                  [attr.aria-label]="
+                    'driver.documents.remove.label.' + file.kind
+                      | translate
+                        : {
+                            number: file.number,
+                            document:
+                              'driver.documents.remove.of.' + card.document.toLowerCase()
+                              | translate,
+                          }
+                  "
+                  (click)="askRemove(card.document, file)"
+                >
+                  <app-icon name="close" />
+                </button>
+              </li>
+            }
+          </ul>
+        }
+        @if (sending()[card.document]; as kind) {
+          <p class="m-0 flex items-center gap-2" role="status">
+            <span class="pt-spinner pt-spinner--sm"></span
+            ><span class="pt-muted">{{ 'driver.documents.sending.' + kind | translate }}</span>
+          </p>
+        } @else {
+          <input
+            #picker
+            class="hidden"
+            type="file"
+            accept="image/*,application/pdf"
+            (change)="pick(card.document, picker)"
+          />
+          <button
+            type="button"
+            class="pt-btn pt-btn--lg w-full"
+            [class.pt-btn--primary]="card.required && card.files.length === 0"
+            (click)="picker.click()"
+          >
+            <app-icon name="plus" />{{ 'driver.documents.add' | translate }}
+          </button>
+        }
+        @if (refusals()[card.document]; as refusal) {
+          <p class="pt-field__error m-0" role="alert">
+            @if ('detail' in refusal) {
+              {{ refusal.detail }}
+            } @else {
+              {{ refusal.key | translate }}
+            }
+          </p>
+          @if (kept()[card.document]) {
+            <button
+              type="button"
+              class="pt-btn pt-btn--outline pt-btn--sm self-start"
+              (click)="retry(card.document)"
+            >
+              {{ 'common.actions.retry' | translate }}
+            </button>
+          }
+        }
+      </div>
+    }
+  } @else if (facade.documentsMissing()) {
+    <app-notice [notice]="{ key: 'driver.documents.missing' }" />
+    <a class="pt-btn pt-btn--lg w-full" routerLink="/driver">{{
+      'driver.documents.home' | translate
+    }}</a>
+  } @else if (facade.documentsFailed()) {
+    <app-notice [notice]="{ key: 'errors.generic' }">
+      <button
+        type="button"
+        class="pt-btn pt-btn--outline pt-btn--sm"
+        (click)="facade.reloadDocuments()"
+      >
+        {{ 'common.actions.retry' | translate }}
+      </button>
+    </app-notice>
+  } @else {
+    <div class="flex h-32 items-center justify-center gap-3" role="status">
+      <span class="pt-spinner"></span
+      ><span class="pt-muted">{{ 'driver.documents.loading' | translate }}</span>
+    </div>
+  }
+</main>
+@if (removing(); as target) {
+  <app-dialog
+    icon="alert"
+    tone="danger"
+    [title]="
+      'driver.documents.remove.title'
+        | translate
+          : {
+              file: 'driver.documents.remove.' + target.kind | translate: { number: target.number },
+              document: 'driver.documents.remove.of.' + target.document.toLowerCase() | translate,
+            }
+    "
+    (closeRequested)="removing.set(null)"
+  >
+    @if (removeError(); as error) {
+      <app-notice [notice]="error" />
+    }
+    <button actions type="button" class="pt-btn pt-btn--outline" (click)="removing.set(null)">
+      {{ 'common.actions.cancel' | translate }}
+    </button>
+    <button
+      actions
+      type="button"
+      class="pt-btn pt-btn--danger"
+      [disabled]="removeBusy()"
+      (click)="remove()"
+    >
+      {{ 'driver.documents.remove.button' | translate }}
+    </button>
+  </app-dialog>
+}

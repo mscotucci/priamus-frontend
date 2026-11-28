@@ -5,14 +5,14 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { Icon } from '../../../shared/components/icon/icon';
 import { Notice } from '../../../shared/components/notice/notice';
 import { dayKind, durationKey, durationMinutes, placesOf } from './trip-times';
-import { Trip } from './trips-api';
+import { MyTrips, Trip } from './trips-api';
 import { TripsFacade } from './trips-facade';
 
 /** The trips of one day, with the title that says which day it is. */
 interface DayGroup {
   day: string;
   title: { key: string; params: { date: string } };
-  trips: Trip[];
+  trips: MyTrips['trips'];
 }
 
 /** "I miei viaggi": the driver's own ended trips of the last seven days, grouped by the day they started. */
@@ -33,14 +33,14 @@ export class MyTripsPage {
   protected readonly groups = computed<DayGroup[]>(() => {
     const read = this.facade.myTrips();
     const groups: DayGroup[] = [];
-    for (const trip of read?.trips ?? []) {
-      const day = trip.day ?? '';
+    for (const item of read?.trips ?? []) {
+      const day = item.trip.day ?? '';
       let group = groups.find((g) => g.day === day);
       if (!group) {
         group = { day, title: this.titleOf(day, read!.today), trips: [] };
         groups.push(group);
       }
-      group.trips.push(trip);
+      group.trips.push(item);
     }
     return groups;
   });

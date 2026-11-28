@@ -285,4 +285,24 @@ describe('BackofficeTripsFacade', () => {
     expect(facade.vehicleOptions()).toEqual([{ id: 'v1', label: 'AB123CD Motrice' }]);
     expect(facade.locationOptions()).toEqual([{ id: 'l1', label: 'Cava Nord, Spoltore' }]);
   });
+
+  it('fetches the file of an attachment as a blob, with the session', async () => {
+    lastRequest().flush(answer(0));
+    const file = new Blob(['x'], { type: 'image/jpeg' });
+
+    const read = facade.attachmentFile('t1', 'a1');
+    const request = http.expectOne(`${URL}/t1/attachments/a1/file`);
+    request.flush(file);
+
+    expect(request.request.responseType).toBe('blob');
+    expect(await read).toBeInstanceOf(Blob);
+  });
+
+  it('rejects when the file cannot be read', async () => {
+    lastRequest().flush(answer(0));
+    const read = facade.attachmentFile('t1', 'a1');
+    http.expectOne(`${URL}/t1/attachments/a1/file`).flush(null, { status: 404, statusText: 'x' });
+
+    await expect(read).rejects.toBeDefined();
+  });
 });

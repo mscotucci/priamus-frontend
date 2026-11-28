@@ -20,6 +20,10 @@ export const tripsRoutes: Routes = [
     loadComponent: () => import('./end-trip-page').then((m) => m.EndTripPage),
   },
   {
+    path: 'trips/:tripId/documents',
+    loadComponent: () => import('./documents-page').then((m) => m.DocumentsPage),
+  },
+  {
     path: 'my-trips',
     loadComponent: () => import('./my-trips-page').then((m) => m.MyTripsPage),
   },

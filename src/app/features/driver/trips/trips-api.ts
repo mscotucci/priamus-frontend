@@ -10,6 +10,8 @@ export type NewTrip = Schemas['GetNewTripResponse'];
 export type TripCustomers = Schemas['ListTripCustomersResponse'];
 export type Trip = Schemas['TripDto'];
 export type TripRead = Schemas['GetTripResponse'];
+export type TripDocuments = Schemas['TripDocumentsResponse'];
+export type TripDocument = Schemas['TripDocument'];
 export type StartTripRequest = Schemas['StartTripRequest'];
 export type EndTripRequest = Schemas['EndTripRequest'];
 export type VehicleRole = 'Leading' | 'Trailer';
@@ -47,6 +49,16 @@ export class TripsApi {
   /** The trip itself: `PUT` adds it, `GET` reads it, `DELETE` removes it while it is planned. */
   trip(tripId: string): string {
     return `${URL}/trips/${tripId}`;
+  }
+
+  /** What the trip needs attached and what is: `GET`. */
+  documents(tripId: string): HttpResourceRequest {
+    return { url: `${URL}/trips/${tripId}/documents` };
+  }
+
+  /** One attachment of a trip: `PUT` adds it (the body is the file), `DELETE` removes it. */
+  attachment(tripId: string, attachmentId: string): string {
+    return `${URL}/trips/${tripId}/attachments/${attachmentId}`;
   }
 
   startTrip(tripId: string): string {

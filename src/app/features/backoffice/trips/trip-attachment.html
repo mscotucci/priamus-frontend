@@ -1,0 +1,49 @@
+@if (attachment(); as file) {
+  @if (file.fileKind === 'Jpeg') {
+    <button
+      type="button"
+      class="pt-thumb p-0"
+      [attr.aria-label]="
+        'trips.drawer.documents.photo'
+          | translate
+            : {
+                document: documentName(),
+                number: number(),
+                date: (file.addedAt | date: 'dd/MM'),
+                time: (file.addedAt | date: 'HH:mm'),
+              }
+      "
+      (click)="open()"
+    >
+      @if (photoUrl(); as url) {
+        <img alt="" [src]="url" />
+      } @else if (photoFailed()) {
+        <span class="flex h-full w-full items-center justify-center"
+          ><app-icon name="image"
+        /></span>
+      }
+    </button>
+  } @else {
+    <button
+      type="button"
+      class="pt-file text-left"
+      [attr.aria-label]="
+        'trips.drawer.documents.pdfLabel'
+          | translate
+            : {
+                document: documentName(),
+                number: number(),
+                date: (file.addedAt | date: 'dd/MM'),
+                time: (file.addedAt | date: 'HH:mm'),
+              }
+      "
+      (click)="open()"
+    >
+      <span class="pt-tile pt-tile--primary"><app-icon name="file" /></span>
+      <span class="pt-link">{{
+        'trips.drawer.documents.pdf' | translate: { number: number() }
+      }}</span>
+      <span class="pt-muted text-xs">{{ file.addedAt | date: 'dd/MM HH:mm' }}</span>
+    </button>
+  }
+}

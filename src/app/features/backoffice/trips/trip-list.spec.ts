@@ -145,7 +145,7 @@ const detail = (trip: TripListItem): TripDetail => ({
   ...trip,
   endedOn: trip.day,
   expiresOn: null,
-  requiredDocuments: [],
+  documents: [],
   calculation: null,
 });
 

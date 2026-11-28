@@ -14,7 +14,7 @@ import { TripDrawer } from './trip-drawer';
 
 registerLocaleData(localeIt);
 
-const URL = '/api/operations/backoffice/trips';
+const URL_BASE = '/api/operations/backoffice/trips';
 
 const vehicle = (id: string, licensePlate: string) => ({
   id,
@@ -69,7 +69,7 @@ const ended: TripDetail = {
   vehicle: vehicle('v1', 'PE-117-MR'),
   trailer: vehicle('v2', 'AB-29104'),
   measureKind: 'StartAndEnd',
-  requiredDocuments: ['DeliveryNote', 'WasteForm'],
+  documents: [],
   calculation,
 };
 
@@ -86,7 +86,7 @@ const inProgress: TripDetail = {
   delivery: place('p2', 'Cantiere A14'),
   trailer: null,
   measureKind: null,
-  requiredDocuments: [],
+  documents: [],
   calculation: null,
 };
 
@@ -128,7 +128,7 @@ describe('TripDrawer', () => {
     document.body.appendChild(fixture.nativeElement);
     TestBed.inject(BackofficeTripsFacade).openTrip(trip.id);
     await settle(fixture);
-    http.expectOne(`${URL}/${trip.id}`).flush(trip);
+    http.expectOne(`${URL_BASE}/${trip.id}`).flush(trip);
     await settle(fixture);
     return fixture;
   };
@@ -220,18 +220,6 @@ describe('TripDrawer', () => {
     ]);
   });
 
-  it.each([
-    [['DeliveryNote', 'WasteForm'], 'DDT, formulario rifiuti'],
-    [[], 'Nessuno'],
-  ])(
-    'lists the documents the trip required (%j), or "Nessuno"',
-    async (documents, shown) => {
-      const fixture = await open({ ...ended, requiredDocuments: documents });
-
-      expect(field(el(fixture), 'Documenti richiesti')).toBe(shown);
-    },
-  );
-
   it('the timeline of an ended trip has the three steps with date, time and driver', async () => {
     const fixture = await open(ended);
 
@@ -300,26 +288,28 @@ describe('TripDrawer', () => {
 
     expect(text(el(fixture).querySelector('[role="status"]'))).toBe('Caricamento viaggio…');
     expect(el(fixture).querySelector('dl')).toBeNull();
-    http.expectOne(`${URL}/t1`);
+    http.expectOne(`${URL_BASE}/t1`);
   });
 
   it('a trip that is gone says so and the list reads again', async () => {
     const facade = TestBed.inject(BackofficeTripsFacade);
     facade.loadList();
     TestBed.tick();
-    http.expectOne((request) => request.url === URL).flush({ trips: { data: [], totalCount: 0 } });
+    http
+      .expectOne((request) => request.url === URL_BASE)
+      .flush({ trips: { data: [], totalCount: 0 } });
     const fixture = TestBed.createComponent(TripDrawer);
     document.body.appendChild(fixture.nativeElement);
     facade.openTrip('t1');
     await settle(fixture);
 
     http
-      .expectOne(`${URL}/t1`)
+      .expectOne(`${URL_BASE}/t1`)
       .flush({ errorCode: 'Operations.Trip.NotFound' }, { status: 404, statusText: 'Not Found' });
     await settle(fixture);
 
     expect(text(el(fixture).querySelector('.pt-notice'))).toBe("Questo viaggio non c'è più.");
-    http.expectOne((request) => request.url === URL);
+    http.expectOne((request) => request.url === URL_BASE);
   });
 
   it('when the trip cannot be read it says so with "Riprova", which reads the trip again', async () => {
@@ -328,21 +318,202 @@ describe('TripDrawer', () => {
     TestBed.inject(BackofficeTripsFacade).openTrip(ended.id);
     await settle(fixture);
 
-    http.expectOne(`${URL}/${ended.id}`).flush({}, { status: 500, statusText: 'Server Error' });
+    http
+      .expectOne(`${URL_BASE}/${ended.id}`)
+      .flush({}, { status: 500, statusText: 'Server Error' });
     await settle(fixture);
     const notice = el(fixture).querySelector('app-notice')!;
 
     expect(text(notice)).toContain('Si è verificato un errore. Riprova tra poco.');
-    http.expectNone((request) => request.url === URL);
+    http.expectNone((request) => request.url === URL_BASE);
     const retry = Array.from(notice.querySelectorAll('button')).find(
       (button) => text(button) === 'Riprova',
     )!;
     retry.click();
     await settle(fixture);
-    http.expectOne(`${URL}/${ended.id}`).flush(ended);
+    http.expectOne(`${URL_BASE}/${ended.id}`).flush(ended);
     await settle(fixture);
 
     expect(el(fixture).querySelector('app-notice')).toBeNull();
     expect(text(el(fixture).querySelector('.pt-drawer__head .pt-title'))).toBe('Viaggio n. 1250');
+  });
+  describe('documents section', () => {
+    const FILE_URL = `${URL_BASE}/t1/attachments`;
+    const at = (hour: number, minute: number) => new Date(2026, 10, 28, hour, minute).toISOString();
+    const withDocuments: TripDetail = {
+      ...ended,
+      documents: [
+        {
+          document: 'DeliveryNote',
+          required: true,
+          attachments: [
+            { id: 'a1', fileKind: 'Jpeg', addedAt: at(7, 41) },
+            { id: 'a2', fileKind: 'Jpeg', addedAt: at(7, 42) },
+          ],
+        },
+        { document: 'WasteForm', required: true, attachments: [] },
+        {
+          document: 'DeliverySlip',
+          required: false,
+          attachments: [{ id: 'a3', fileKind: 'Pdf', addedAt: at(9, 20) }],
+        },
+      ],
+    };
+    let revokeUrl: ReturnType<typeof vi.fn<(url: string) => void>>;
+
+    beforeEach(() => {
+      let count = 0;
+      revokeUrl = vi.fn<(url: string) => void>();
+      vi.spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:file-${++count}`);
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(revokeUrl);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    const section = (element: HTMLElement) =>
+      Array.from(element.querySelectorAll('p.pt-label')).find(
+        (label) => text(label) === 'Documenti',
+      )?.parentElement ?? undefined;
+
+    it('shows each document with its pill, the thumbnails and the PDF line of its files', async () => {
+      const fixture = await open(withDocuments);
+      http.expectOne(`${FILE_URL}/a1/file`).flush(new Blob(['1'], { type: 'image/jpeg' }));
+      http.expectOne(`${FILE_URL}/a2/file`).flush(new Blob(['2'], { type: 'image/jpeg' }));
+      await settle(fixture);
+      const documents = section(el(fixture))!;
+
+      expect(Array.from(documents.querySelectorAll('strong')).map(text)).toEqual([
+        'DDT',
+        'Formulario rifiuti',
+        'Bolla',
+      ]);
+      expect(Array.from(documents.querySelectorAll('.pt-pill')).map(text)).toEqual([
+        'Richiesto',
+        'Richiesto · mancante',
+      ]);
+      expect(documents.querySelector('.pt-pill--success')).not.toBeNull();
+      expect(documents.querySelector('.pt-pill--warn')).not.toBeNull();
+      expect(documents.querySelectorAll('.pt-thumb')).toHaveLength(2);
+      expect(Array.from(documents.querySelector('.pt-file')!.children).map(text)).toEqual([
+        '',
+        'PDF 1',
+        '28/11 09:20',
+      ]);
+      expect(documents.querySelector('a')).toBeNull();
+    });
+
+    it('says "Nessuno richiesto e nessuno allegato." when there is nothing', async () => {
+      const fixture = await open(ended);
+
+      expect(text(section(el(fixture))!.querySelector('p.pt-muted'))).toBe(
+        'Nessuno richiesto e nessuno allegato.',
+      );
+    });
+
+    it('shows no section for a planned trip', async () => {
+      const fixture = await open(planned(3, '2026-12-02'));
+
+      expect(section(el(fixture))).toBeUndefined();
+    });
+
+    it('shows a trip in progress with the documents its contract requires', async () => {
+      const fixture = await open({
+        ...inProgress,
+        id: 't1',
+        documents: [{ document: 'DeliveryNote', required: true, attachments: [] }],
+      });
+
+      expect(text(section(el(fixture))!.querySelector('.pt-pill--warn'))).toBe(
+        'Richiesto · mancante',
+      );
+    });
+    it('releases the object URLs when the drawer goes away', async () => {
+      const fixture = await open({ ...withDocuments, documents: [withDocuments.documents[0]] });
+      http.expectOne(`${FILE_URL}/a1/file`).flush(new Blob(['1']));
+      http.expectOne(`${FILE_URL}/a2/file`).flush(new Blob(['2']));
+      await settle(fixture);
+
+      fixture.destroy();
+
+      expect(revokeUrl).toHaveBeenCalledWith('blob:file-1');
+      expect(revokeUrl).toHaveBeenCalledWith('blob:file-2');
+    });
+
+    it('releases the object URLs when the drawer changes trip', async () => {
+      const fixture = await open({ ...withDocuments, documents: [withDocuments.documents[0]] });
+      http.expectOne(`${FILE_URL}/a1/file`).flush(new Blob(['1']));
+      http.expectOne(`${FILE_URL}/a2/file`).flush(new Blob(['2']));
+      await settle(fixture);
+      expect(revokeUrl).not.toHaveBeenCalled();
+
+      TestBed.inject(BackofficeTripsFacade).openTrip('t9');
+      await settle(fixture);
+
+      expect(revokeUrl).toHaveBeenCalledWith('blob:file-1');
+      expect(revokeUrl).toHaveBeenCalledWith('blob:file-2');
+      http.expectOne(`${URL_BASE}/t9`);
+    });
+
+    it('tells a file that could not be opened with the generic notice in the section, for that trip only', async () => {
+      vi.spyOn(window, 'open').mockReturnValue(null);
+      const fixture = await open({ ...withDocuments, documents: [withDocuments.documents[2]] });
+      expect(section(el(fixture))!.querySelector('app-notice')).toBeNull();
+
+      el(fixture).querySelector<HTMLElement>('.pt-file')!.click();
+      await settle(fixture);
+
+      expect(text(section(el(fixture))!.querySelector('app-notice'))).toBe(
+        'Si è verificato un errore. Riprova tra poco.',
+      );
+      http.expectNone(`${FILE_URL}/a3/file`);
+
+      TestBed.inject(BackofficeTripsFacade).openTrip('t9');
+      await settle(fixture);
+      http.expectOne(`${URL_BASE}/t9`).flush({ ...withDocuments, id: 't9' });
+      await settle(fixture);
+
+      expect(section(el(fixture))!.querySelector('app-notice')).toBeNull();
+    });
+
+    it('forgets a notice about a file that could not be opened when the drawer shows another trip, and back again', async () => {
+      vi.spyOn(window, 'open').mockReturnValue(null);
+      const withPdf = { ...withDocuments, documents: [withDocuments.documents[2]] };
+      const fixture = await open(withPdf);
+      el(fixture).querySelector<HTMLElement>('.pt-file')!.click();
+      await settle(fixture);
+      expect(section(el(fixture))!.querySelector('app-notice')).not.toBeNull();
+
+      const facade = TestBed.inject(BackofficeTripsFacade);
+      facade.openTrip('t9');
+      await settle(fixture);
+      http.expectOne(`${URL_BASE}/t9`).flush({ ...withPdf, id: 't9' });
+      await settle(fixture);
+      facade.openTrip('t1');
+      await settle(fixture);
+      http.expectOne(`${URL_BASE}/t1`).flush(withPdf);
+      await settle(fixture);
+
+      expect(section(el(fixture))!.querySelector('app-notice')).toBeNull();
+    });
+
+    it('removes the notice when a file opens afterwards', async () => {
+      const tab = { opener: {} as unknown, location: { href: '' }, close: vi.fn() };
+      vi.spyOn(window, 'open')
+        .mockReturnValueOnce(null)
+        .mockReturnValue(tab as unknown as Window);
+      const fixture = await open({ ...withDocuments, documents: [withDocuments.documents[2]] });
+      el(fixture).querySelector<HTMLElement>('.pt-file')!.click();
+      await settle(fixture);
+      expect(section(el(fixture))!.querySelector('app-notice')).not.toBeNull();
+
+      el(fixture).querySelector<HTMLElement>('.pt-file')!.click();
+      http.expectOne(`${FILE_URL}/a3/file`).flush(new Blob(['pdf']));
+      await settle(fixture);
+
+      expect(tab.location.href).toBe('blob:file-1');
+      expect(section(el(fixture))!.querySelector('app-notice')).toBeNull();
+    });
   });
 });

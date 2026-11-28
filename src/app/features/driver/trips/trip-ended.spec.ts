@@ -86,8 +86,15 @@ describe('TripEnded', () => {
       }),
     );
 
+  interface DocumentRead {
+    document: string;
+    required: boolean;
+    attachments: unknown[];
+  }
+  const DOCUMENTS_URL = '/api/operations/driver/trips/trip/documents';
+
   /** Opens the page the way an end does: the facade holds the trip just ended, then the route is entered. */
-  const open = async (trip: Partial<Trip> = {}) => {
+  const open = async (trip: Partial<Trip> = {}, documents: DocumentRead[] | 'failure' = []) => {
     const harness = await RouterTestingHarness.create('/driver');
     await settle(harness.fixture);
     flushHome();
@@ -96,6 +103,13 @@ describe('TripEnded', () => {
     http.expectOne('/api/operations/driver/trips/trip/end').flush({ ...TRIP, ...trip });
     await ending;
     await harness.navigateByUrl('/driver/ended');
+    await settle(harness.fixture);
+    const read = http.expectOne(DOCUMENTS_URL);
+    if (documents === 'failure') {
+      read.flush(null, { status: 500, statusText: 'Server Error' });
+    } else {
+      read.flush({ trip: { ...TRIP, ...trip }, documents });
+    }
     await settle(harness.fixture);
     return { harness, element: harness.routeNativeElement as HTMLElement };
   };
@@ -238,6 +252,92 @@ describe('TripEnded', () => {
 
     expect(TestBed.inject(Router).url).toBe('/driver');
     expect(text(opened.harness.routeNativeElement)).not.toContain('Viaggio concluso');
+  });
+
+  describe('the documents of the trip just ended', () => {
+    const required = (document: string, attachments: unknown[] = []): DocumentRead => ({
+      document,
+      required: true,
+      attachments,
+    });
+    const bar = (opened: Awaited<ReturnType<typeof open>>) =>
+      opened.element.querySelector('.pt-bottombar')!;
+
+    it('a missing required document shows the warning that names it and "Allega i documenti" as the main button, over "Stesso giro" and "Torna alla home" side by side', async () => {
+      const opened = await open({}, [required('DeliveryNote', [{}]), required('WasteForm')]);
+
+      expect(text(opened.element.querySelector('.pt-notice--warn'))).toBe(
+        'Manca il formulario rifiuti. Puoi allegarlo ora o nei prossimi 7 giorni da «I miei viaggi».',
+      );
+      const attach = bar(opened).querySelector<HTMLAnchorElement>('a.pt-btn--xl.pt-btn--primary')!;
+      expect(text(attach)).toBe('Allega i documenti');
+      expect(attach.querySelector('use[href$="#file"]')).not.toBeNull();
+      expect(attach.getAttribute('href')).toBe('/driver/trips/trip/documents');
+      const side = bar(opened).querySelector('.grid')!;
+      expect(Array.from(side.querySelectorAll('button')).map((b) => text(b))).toEqual([
+        'Stesso giro',
+        'Torna alla home',
+      ]);
+      expect(side.classList).toContain('grid-cols-2');
+      expect(bar(opened).querySelector('button.pt-btn--primary')).toBeNull();
+    });
+
+    it('several missing documents are named in one sentence', async () => {
+      const opened = await open({}, [required('DeliveryNote'), required('DeliverySlip')]);
+
+      expect(text(opened.element.querySelector('.pt-notice--warn'))).toBe(
+        'Mancano il DDT e la bolla. Puoi allegarli ora o nei prossimi 7 giorni da «I miei viaggi».',
+      );
+    });
+
+    it('"Allega i documenti" opens the page "Documenti" of the trip', async () => {
+      const opened = await open({}, [required('DeliveryNote')]);
+
+      bar(opened).querySelector<HTMLAnchorElement>('a.pt-btn--xl')!.click();
+
+      await vi.waitFor(() =>
+        expect(TestBed.inject(Router).url).toBe('/driver/trips/trip/documents'),
+      );
+    });
+
+    it('with nothing missing the page is as before: no warning, "Stesso giro" is the main button', async () => {
+      const opened = await open({}, [
+        required('DeliveryNote', [{}]),
+        { document: 'WasteForm', required: false, attachments: [] },
+      ]);
+
+      expect(opened.element.querySelector('.pt-notice--warn')).toBeNull();
+      expect(bar(opened).querySelector('a')).toBeNull();
+      expect(text(bar(opened).querySelector('button.pt-btn--xl.pt-btn--primary'))).toBe(
+        'Stesso giro',
+      );
+    });
+
+    it('when the documents cannot be read the page is as before', async () => {
+      const opened = await open({}, 'failure');
+
+      expect(opened.element.querySelector('.pt-notice--warn')).toBeNull();
+      expect(bar(opened).querySelector('a')).toBeNull();
+      expect(text(bar(opened).querySelector('button.pt-btn--xl.pt-btn--primary'))).toBe(
+        'Stesso giro',
+      );
+    });
+
+    it('ending the trip asks for no documents: the end sends none and nothing is read before it', async () => {
+      const harness = await RouterTestingHarness.create('/driver');
+      await settle(harness.fixture);
+      flushHome();
+      const facade = harness.routeDebugElement!.injector.get(TripsFacade);
+
+      const ending = facade.end('trip', { time: '10:45', kilograms: null, kilometres: null });
+      const end = http.expectOne('/api/operations/driver/trips/trip/end');
+      http.expectNone(DOCUMENTS_URL);
+      expect(end.request.body).toEqual({ time: '10:45', kilograms: null, kilometres: null });
+      end.flush(TRIP);
+
+      expect(await ending).toEqual(expect.objectContaining({ kind: 'done' }));
+      http.expectNone(DOCUMENTS_URL);
+    });
   });
 
   it('without an ended trip it goes to the home and shows nothing of a trip', async () => {

@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import localeIt from '@angular/common/locales/it';
 import { Component, LOCALE_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router, provideRouter } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { TranslateService } from '@ngx-translate/core';
 import { CurrentUser } from '../../../core/auth/auth-api';
@@ -28,7 +28,17 @@ const vehicle = (plate: string, kind: Trip['vehicle']['kind'] = 'StandaloneVehic
   requiresTrailer: false,
 });
 
-const ended = (id: string, number: number, day: string, extra: Partial<Trip> = {}): Trip => ({
+const ended = (
+  id: string,
+  number: number,
+  day: string,
+  extra: Partial<Trip> = {},
+): MyTrips['trips'][number] => ({
+  missingDocuments: 0,
+  trip: tripOf(id, number, day, extra),
+});
+
+const tripOf = (id: string, number: number, day: string, extra: Partial<Trip>): Trip => ({
   id,
   state: 'Ended',
   customer: { id: `c-${id}`, companyName: `Cliente ${id}`, vatNumber: null },
@@ -136,7 +146,9 @@ describe('MyTripsPage', () => {
     const back = element.querySelector<HTMLAnchorElement>('header a')!;
     expect(back.getAttribute('href')).toBe('/driver');
     expect(back.getAttribute('aria-label')).toBe('Torna alla home');
-    expect(text(element.querySelector('main > p'))).toBe('Viaggi conclusi negli ultimi 7 giorni.');
+    expect(text(element.querySelector('main > p'))).toBe(
+      'Viaggi conclusi negli ultimi 7 giorni. Tocca un viaggio per i suoi documenti.',
+    );
     http.verify();
   });
 
@@ -185,13 +197,33 @@ describe('MyTripsPage', () => {
     expect(element.textContent).not.toContain('€');
   });
 
-  it('lists read-only cards: nothing on the page opens a trip', async () => {
+  it('every card is a link with a chevron to the documents of its trip, the trips of the window only', async () => {
     const element = await open(PAGE);
 
-    expect(element.querySelectorAll('main a, main button').length).toBe(0);
-    element.querySelector<HTMLElement>('.pt-card')!.click();
-    await settle();
-    expect(TestBed.inject(Router).url).toBe('/driver/my-trips');
+    const cards = Array.from(element.querySelectorAll<HTMLAnchorElement>('main a.pt-card'));
+    expect(cards.map((card) => card.getAttribute('href'))).toEqual(
+      PAGE.trips.map((item) => `/driver/trips/${item.trip.id}/documents`),
+    );
+    for (const card of cards) {
+      expect(card.querySelector('use[href$="#chevron-right"]')).not.toBeNull();
+    }
+    expect(element.querySelectorAll('main button').length).toBe(0);
+  });
+
+  it('a card whose trip misses documents carries the pill "Manca un documento" or "Mancano <n> documenti", the others none', async () => {
+    const element = await open({
+      ...PAGE,
+      trips: [
+        { ...PAGE.trips[0], missingDocuments: 1 },
+        { ...PAGE.trips[1], missingDocuments: 2 },
+        PAGE.trips[2],
+      ],
+    });
+
+    const pills = Array.from(element.querySelectorAll('.pt-card')).map((card) =>
+      text(card.querySelector('.pt-pill--warn')),
+    );
+    expect(pills).toEqual(['Manca un documento', 'Mancano 2 documenti', undefined]);
   });
 
   it('says there is nothing to show when no trip ended in the last 7 days', async () => {

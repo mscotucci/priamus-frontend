@@ -84,6 +84,12 @@
       <div class="flex flex-col items-center gap-1">
         <app-icon name="tag" size="lg" /><span class="pt-muted">tag</span>
       </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="image" size="lg" /><span class="pt-muted">image</span>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <app-icon name="file" size="lg" /><span class="pt-muted">file</span>
+      </div>
     </div>
     <div class="flex flex-wrap items-center gap-4">
       <app-icon name="truck" size="xs" />
@@ -434,7 +440,8 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
         <app-icon name="chevron-right" />
       </a>
       <p class="pt-muted">
-        Contatori che aprono una pagina: pt-counters (bordo primario al passaggio, sfondo tenue al tocco)
+        Contatori che aprono una pagina: pt-counters (bordo primario al passaggio, sfondo tenue al
+        tocco)
       </p>
       <a class="pt-counters grid grid-cols-2 gap-3" href="#">
         <div class="pt-card">
@@ -555,6 +562,50 @@ Consegna al cancello 2, chiedere del capocantiere.</textarea>
         <span class="pt-question__number">4</span>
         <h3 class="pt-question__title">Dove?</h3>
       </section>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="g-file">
+    <h2 id="g-file" class="pt-label">
+      File allegato e miniatura — pt-file (riquadro, nome con indicazione, azione), pt-thumb
+    </h2>
+    <div class="pt-driver flex flex-col gap-4 p-4">
+      <ul class="m-0 flex list-none flex-col gap-2 p-0">
+        <li class="pt-file">
+          <span class="pt-tile pt-tile--primary"><app-icon name="image" /></span>
+          <span class="pt-file__name">Foto 1<span class="pt-file__hint">oggi 07:41</span></span>
+          <button class="pt-btn pt-btn--icon pt-btn--lg" type="button" aria-label="Rimuovi foto 1">
+            <app-icon name="close" />
+          </button>
+        </li>
+        <li class="pt-file">
+          <span class="pt-tile pt-tile--primary"><app-icon name="file" /></span>
+          <span class="pt-file__name">PDF 1<span class="pt-file__hint">ieri 16:05</span></span>
+          <button class="pt-btn pt-btn--icon pt-btn--lg" type="button" aria-label="Rimuovi PDF 1">
+            <app-icon name="close" />
+          </button>
+        </li>
+      </ul>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <a
+        class="pt-thumb"
+        href="#"
+        target="_blank"
+        aria-label="DDT, foto 1, aggiunta il 28/11 alle 07:41"
+        ><img
+          alt=""
+          src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Crect width='4' height='5' fill='%2394a3b8'/%3E%3C/svg%3E"
+      /></a>
+      <a
+        class="pt-thumb"
+        href="#"
+        target="_blank"
+        aria-label="DDT, foto 2, aggiunta il 28/11 alle 07:42"
+        ><img
+          alt=""
+          src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Crect width='4' height='5' fill='%2364748b'/%3E%3C/svg%3E"
+      /></a>
     </div>
   </section>
 
